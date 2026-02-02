@@ -1,0 +1,458 @@
+// AppointmentListPage - Calendar/list view for appointments
+
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
+import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, LayoutGrid, RefreshCw, Search } from 'lucide-react';
+import { Appointment, AppointmentStatus } from '@/types/clinical.types';
+import { mockAppointments, getAppointmentsByDate, getAppointmentsByDateRange, updateAppointmentStatus, cancelAppointment, markNoShow, rescheduleAppointment } from '@/data/appointments';
+import { useAuth } from '@/contexts/AuthContext';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { AppointmentCard } from '@/components/appointments/AppointmentCard';
+import { AppointmentBookingModal } from '@/components/appointments/AppointmentBookingModal';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+
+type ViewMode = 'day' | 'week' | 'list';
+type StatusFilter = 'all' | 'scheduled' | 'checked_in' | 'completed' | 'cancelled';
+
+export default function AppointmentListPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  
+  const [viewMode, setViewMode] = useState<ViewMode>('day');
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [newDate, setNewDate] = useState<Date>();
+  const [newTime, setNewTime] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Get appointments based on view mode
+  const appointments = useMemo(() => {
+    let result: Appointment[] = [];
+    
+    if (viewMode === 'day') {
+      result = getAppointmentsByDate(format(selectedDate, 'yyyy-MM-dd'));
+    } else if (viewMode === 'week') {
+      const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
+      const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
+      result = getAppointmentsByDateRange(
+        format(start, 'yyyy-MM-dd'),
+        format(end, 'yyyy-MM-dd')
+      );
+    } else {
+      result = [...mockAppointments];
+    }
+
+    // Filter by status
+    if (statusFilter !== 'all') {
+      result = result.filter(a => a.status === statusFilter);
+    }
+
+    // Filter by search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(a =>
+        a.patientName.toLowerCase().includes(query) ||
+        a.patientMrn.toLowerCase().includes(query) ||
+        a.doctorName.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort by date and time
+    result.sort((a, b) => {
+      const dateCompare = a.scheduledDate.localeCompare(b.scheduledDate);
+      if (dateCompare !== 0) return dateCompare;
+      return a.scheduledTime.localeCompare(b.scheduledTime);
+    });
+
+    return result;
+  }, [viewMode, selectedDate, statusFilter, searchQuery, refreshKey]);
+
+  // Week days for week view
+  const weekDays = useMemo(() => {
+    const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
+    const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start, end });
+  }, [selectedDate]);
+
+  const navigateDate = (direction: 'prev' | 'next') => {
+    if (viewMode === 'day') {
+      setSelectedDate(direction === 'prev' ? subDays(selectedDate, 1) : addDays(selectedDate, 1));
+    } else {
+      setSelectedDate(direction === 'prev' ? subDays(selectedDate, 7) : addDays(selectedDate, 7));
+    }
+  };
+
+  const handleCheckIn = (appointment: Appointment) => {
+    updateAppointmentStatus(appointment.id, 'checked_in');
+    setRefreshKey(k => k + 1);
+    toast({
+      title: 'Patient Checked In',
+      description: `${appointment.patientName} has been checked in.`,
+    });
+  };
+
+  const handleReschedule = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setNewDate(new Date(appointment.scheduledDate));
+    setNewTime(appointment.scheduledTime);
+    setRescheduleDialogOpen(true);
+  };
+
+  const confirmReschedule = () => {
+    if (selectedAppointment && newDate && newTime) {
+      rescheduleAppointment(selectedAppointment.id, format(newDate, 'yyyy-MM-dd'), newTime);
+      setRescheduleDialogOpen(false);
+      setSelectedAppointment(null);
+      setRefreshKey(k => k + 1);
+      toast({
+        title: 'Appointment Rescheduled',
+        description: `Rescheduled to ${format(newDate, 'MMMM d, yyyy')} at ${newTime}`,
+      });
+    }
+  };
+
+  const handleCancel = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setCancelDialogOpen(true);
+  };
+
+  const confirmCancel = () => {
+    if (selectedAppointment) {
+      cancelAppointment(selectedAppointment.id, 'Cancelled by staff');
+      setCancelDialogOpen(false);
+      setSelectedAppointment(null);
+      setRefreshKey(k => k + 1);
+      toast({
+        title: 'Appointment Cancelled',
+        description: `Appointment for ${selectedAppointment.patientName} has been cancelled.`,
+      });
+    }
+  };
+
+  const handleNoShow = (appointment: Appointment) => {
+    markNoShow(appointment.id);
+    setRefreshKey(k => k + 1);
+    toast({
+      title: 'Marked as No Show',
+      description: `${appointment.patientName} has been marked as no show.`,
+    });
+  };
+
+  const handleViewProfile = (patientId: string) => {
+    const baseRoute = user?.role === 'receptionist' ? '/receptionist' :
+                     user?.role === 'doctor' ? '/doctor' :
+                     user?.role === 'cmo' ? '/cmo' :
+                     user?.role === 'clinical_lead' ? '/clinical-lead' : '';
+    navigate(`${baseRoute}/patients/${patientId}`);
+  };
+
+  const getAppointmentsForDay = (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    return appointments.filter(a => a.scheduledDate === dateStr);
+  };
+
+  return (
+    <DashboardLayout>
+      <div className="p-4 md:p-6 space-y-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Appointments</h1>
+            <p className="text-muted-foreground">
+              Manage and schedule patient appointments
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setRefreshKey(k => k + 1)}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button onClick={() => setBookingModalOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Book Appointment
+            </Button>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Date Navigation */}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" onClick={() => navigateDate('prev')}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="min-w-[200px]">
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  {viewMode === 'week' 
+                    ? `${format(weekDays[0], 'MMM d')} - ${format(weekDays[6], 'MMM d, yyyy')}`
+                    : format(selectedDate, 'MMMM d, yyyy')
+                  }
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+            <Button variant="outline" size="icon" onClick={() => navigateDate('next')}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setSelectedDate(new Date())}
+            >
+              Today
+            </Button>
+          </div>
+
+          {/* View Mode */}
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="ml-auto">
+            <TabsList>
+              <TabsTrigger value="day">
+                <LayoutGrid className="h-4 w-4 mr-1" />
+                Day
+              </TabsTrigger>
+              <TabsTrigger value="week">
+                <CalendarIcon className="h-4 w-4 mr-1" />
+                Week
+              </TabsTrigger>
+              <TabsTrigger value="list">
+                <List className="h-4 w-4 mr-1" />
+                List
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by patient or doctor..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+            <SelectTrigger className="w-[150px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Status</SelectItem>
+              <SelectItem value="scheduled">Scheduled</SelectItem>
+              <SelectItem value="checked_in">Checked In</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Content */}
+        <div className="min-h-[500px]">
+          {viewMode === 'week' ? (
+            <div className="grid grid-cols-7 gap-2">
+              {weekDays.map((day) => {
+                const dayAppointments = getAppointmentsForDay(day);
+                return (
+                  <div key={day.toISOString()} className="min-h-[400px]">
+                    <div className={cn(
+                      'text-center p-2 rounded-t-lg font-medium',
+                      isToday(day) ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                    )}>
+                      <div className="text-xs">{format(day, 'EEE')}</div>
+                      <div className="text-lg">{format(day, 'd')}</div>
+                    </div>
+                    <ScrollArea className="h-[350px] border rounded-b-lg">
+                      <div className="p-1 space-y-1">
+                        {dayAppointments.length === 0 ? (
+                          <p className="text-xs text-center text-muted-foreground py-4">
+                            No appointments
+                          </p>
+                        ) : (
+                          dayAppointments.map((apt) => (
+                            <AppointmentCard
+                              key={apt.id}
+                              appointment={apt}
+                              variant="compact"
+                              showActions={false}
+                              onClick={() => {
+                                setSelectedDate(day);
+                                setViewMode('day');
+                              }}
+                            />
+                          ))
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <ScrollArea className="h-[calc(100vh-350px)]">
+              <div className="space-y-3 pr-4">
+                {appointments.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-lg font-medium">No appointments found</p>
+                    <p className="text-muted-foreground">
+                      {viewMode === 'day' 
+                        ? `No appointments for ${format(selectedDate, 'MMMM d, yyyy')}`
+                        : 'Try adjusting your filters'
+                      }
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {viewMode === 'list' && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {appointments.map((apt) => (
+                          <AppointmentCard
+                            key={apt.id}
+                            appointment={apt}
+                            onCheckIn={handleCheckIn}
+                            onReschedule={handleReschedule}
+                            onCancel={handleCancel}
+                            onNoShow={handleNoShow}
+                            onViewProfile={handleViewProfile}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    {viewMode === 'day' && (
+                      <div className="space-y-3">
+                        {appointments.map((apt) => (
+                          <AppointmentCard
+                            key={apt.id}
+                            appointment={apt}
+                            onCheckIn={handleCheckIn}
+                            onReschedule={handleReschedule}
+                            onCancel={handleCancel}
+                            onNoShow={handleNoShow}
+                            onViewProfile={handleViewProfile}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </ScrollArea>
+          )}
+        </div>
+      </div>
+
+      {/* Booking Modal */}
+      <AppointmentBookingModal
+        open={bookingModalOpen}
+        onOpenChange={setBookingModalOpen}
+        initialDate={selectedDate}
+        onSuccess={() => setRefreshKey(k => k + 1)}
+      />
+
+      {/* Reschedule Dialog */}
+      <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reschedule Appointment</DialogTitle>
+            <DialogDescription>
+              Select a new date and time for {selectedAppointment?.patientName}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={newDate}
+                onSelect={setNewDate}
+                disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+              />
+            </div>
+            <Select value={newTime} onValueChange={setNewTime}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select time..." />
+              </SelectTrigger>
+              <SelectContent>
+                {['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30'].map(t => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRescheduleDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmReschedule} disabled={!newDate || !newTime}>
+              Reschedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel Appointment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to cancel the appointment for {selectedAppointment?.patientName}?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
+              Keep Appointment
+            </Button>
+            <Button variant="destructive" onClick={confirmCancel}>
+              Cancel Appointment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </DashboardLayout>
+  );
+}

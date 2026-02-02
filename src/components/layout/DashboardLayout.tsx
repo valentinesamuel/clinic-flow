@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole } from '@/types/user.types';
 import { AppSidebar } from './AppSidebar';
 import { MobileBottomNav } from './MobileBottomNav';
 import { AppHeader } from './AppHeader';
@@ -19,31 +20,20 @@ export function DashboardLayout({ children, allowedRoles }: DashboardLayoutProps
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to={`/${user.role}`} replace />;
+    const route = user.role === 'hospital_admin' ? '/hospital-admin' : user.role === 'clinical_lead' ? '/clinical-lead' : user.role === 'lab_tech' ? '/lab-tech' : `/${user.role}`;
+    return <Navigate to={route} replace />;
   }
 
   return (
     <div className="min-h-screen flex w-full bg-background">
-      {/* Desktop Sidebar */}
       <AppSidebar />
-      
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-h-screen">
-        {/* Mobile Header */}
         <AppHeader />
-        
-        {/* Desktop Sync Indicator */}
         <div className="hidden md:block fixed top-4 right-4 z-50">
           <SyncStatusIndicator />
         </div>
-        
-        {/* Page Content */}
-        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">
-          {children}
-        </main>
+        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">{children}</main>
       </div>
-      
-      {/* Mobile Bottom Nav */}
       <MobileBottomNav />
     </div>
   );

@@ -1,479 +1,614 @@
 
 
-# Complete Patient Management Module Enhancement
+# Appointment Module & Patient Queue Management Implementation Plan
 
-## Summary
+## Overview
 
-This plan delivers a polished, clinically-focused patient management experience by:
-1. Adding edit patient flow with full routing
-2. Completing registration routes for all applicable roles
-3. Fleshing out the Overview, Medical History, and Vital Signs tabs with real data and mature UI
-4. Preparing placeholder infrastructure for Appointments, Prescriptions, Lab Results, and Billing tabs
+This plan implements a comprehensive scheduling and patient flow management system that enables efficient clinic operations from appointment booking through patient checkout. The design prioritizes minimal clicks, real-time visibility, and a mature healthcare aesthetic.
 
 ---
 
-## Part 1: Registration & Edit Flow
+## Module Architecture
 
-### 1.1 New Files
-
-| File | Purpose |
-|------|---------|
-| `src/pages/patients/PatientEditPage.tsx` | Page wrapper for editing existing patients |
-
-### 1.2 Modified Files
-
-| File | Changes |
-|------|---------|
-| `src/components/patients/PatientRegistrationForm.tsx` | Add edit mode support via `initialPatient` prop |
-| `src/App.tsx` | Add missing routes, fix route ordering |
-
-### 1.3 PatientRegistrationForm Edit Mode Changes
-
-The form will accept an optional `initialPatient` prop to enable edit mode:
+### Patient Flow Journey
 
 ```text
-Props:
-  - initialPatient?: Patient (NEW - when provided, form is in edit mode)
-
-Conditional Behavior:
-  - Title: "Register New Patient" vs "Edit Patient - [Name]"
-  - Submit: "Register Patient" vs "Save Changes"
-  - Draft auto-save: Enabled in create, Disabled in edit
-  - On submit: addPatient() vs updatePatient()
-  - Phone check: Excludes current patient ID in edit mode
-  - MRN: Auto-generated in create, shown read-only in edit
-  - Shows "Last updated" timestamp in edit mode
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           PATIENT FLOW PIPELINE                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  [Book Appointment] → [Check-In] → [Triage] → [Doctor Queue] → [Checkout]   │
+│        ↓                  ↓           ↓            ↓              ↓         │
+│   Receptionist/      Reception     Nurse        Doctor      Pharmacy/Lab/   │
+│   Patient Portal                                             Billing         │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
-
-### 1.4 Route Additions to App.tsx
-
-```text
-CMO:
-  /cmo/patients/new          → PatientRegistrationPage
-  /cmo/patients/:id/edit     → PatientEditPage
-
-Clinical Lead:
-  /clinical-lead/patients         → PatientListPage
-  /clinical-lead/patients/new     → PatientRegistrationPage
-  /clinical-lead/patients/:id     → PatientProfilePage
-  /clinical-lead/patients/:id/edit → PatientEditPage
-
-Receptionist:
-  /receptionist/patients/:id/edit → PatientEditPage
-
-Doctor:
-  /doctor/patients/new       → PatientRegistrationPage
-  /doctor/patients/:id/edit  → PatientEditPage
-
-Nurse:
-  /nurse/patients/:id/edit   → PatientEditPage
-```
-
-Route order fix: Specific routes (e.g., `/patients/new`) must appear BEFORE wildcard routes (`/*`).
 
 ---
 
-## Part 2: Patient Profile Tab Enhancements
+## Part 1: Appointment Booking System
 
-### 2.1 Overview Tab Enhancement
+### 1.1 Appointment Calendar View
 
-Transform from basic cards to a clinically actionable summary:
+**Route**: `/{role}/appointments`
 
-**Quick Glance Section (Top Row)**
-Three key metric cards:
-- Last Visit: Date + doctor name + "X days ago"
-- Next Appointment: Date/time or "None scheduled" with Book button
-- Outstanding Balance: Amount in NGN with "Pay" button if > 0
+**Design**: Full-width calendar with multiple viewing modes:
 
-**Recent Activity Timeline**
-Vertical timeline showing last 5 activities:
-- Consultation icon + "Consultation with Dr. X" + date
-- Prescription icon + "Prescription dispensed" + date
-- Lab icon + "Lab results ready" + date
-- Payment icon + "Payment of NGN X,XXX" + date
+| View Mode | Description |
+|-----------|-------------|
+| Day View | Hourly slots for a single day (default for clinical staff) |
+| Week View | 7-day overview with slot availability |
+| Month View | High-level availability indicators |
 
-Each item clickable to navigate to relevant tab.
+**Calendar Features**:
+- Colour-coded appointments by type (Consultation, Follow-up, Emergency, Lab Only)
+- Doctor filter dropdown (multi-select)
+- Patient quick-search overlay
+- Drag-to-reschedule (desktop only)
+- Click slot to create appointment
 
-**Information Cards (Grid)**
-Keep existing but enhance:
-- Contact Information (with click-to-call, click-to-email)
-- Address Information
-- Next of Kin (with emergency call button)
-- Payment & Insurance (with expiry warning if < 30 days)
+### 1.2 Appointment Booking Modal/Page
 
-### 2.2 Medical History Tab Enhancement
+**Accessible via**: "Book Appointment" button, calendar slot click, or patient profile
 
-Transform from empty placeholder to consultation timeline:
+**Form Sections**:
 
-**Header Actions**
-- Filter by date range (Last 30 days, 90 days, 1 year, All)
-- Search consultations by diagnosis
+**Section 1: Patient Selection**
+- Patient search autocomplete (Name, MRN, Phone)
+- Selected patient card showing name, MRN, payment type, last visit
 
-**Consultation Cards (Accordion)**
-Each consultation shows:
-```text
-┌─────────────────────────────────────────────────────────────┐
-│ ● Feb 1, 2024                                   Dr. Nwosu   │
-│   Follow-up Visit                                           │
-├─────────────────────────────────────────────────────────────┤
-│ Chief Complaint: Hypertension follow-up                     │
-│ Diagnosis: Essential hypertension (I10)                     │
-│                                                             │
-│ [View Details] [View Prescription] [View Lab Results]       │
-└─────────────────────────────────────────────────────────────┘
-```
+**Section 2: Appointment Details**
+- Date picker (disabled past dates)
+- Time slot selector (shows available slots based on doctor)
+- Doctor dropdown (filtered by availability)
+- Appointment type (Consultation, Follow-up, Procedure, Lab Only)
+- Duration (auto-set based on type, editable)
+- Reason for visit (required, text input)
 
-**Expanded View Shows:**
-- Chief Complaint
-- History of Present Illness
-- Physical Examination findings
-- Diagnosis with ICD codes
-- Treatment Plan
-- Follow-up date
+**Section 3: Scheduling Options**
+- Priority indicator (Normal, High, Emergency)
+- Recurring appointment toggle (for follow-ups)
+- Notes field (optional)
 
-**Empty State**
-"No consultations recorded. Patient history will appear here after their first visit."
+**Validation**:
+- Prevent double-booking same slot
+- Warn if patient has appointment same day
+- Confirm if booking outside normal hours
 
-### 2.3 Vital Signs Tab Enhancement
+### 1.3 Appointment Card Component
 
-Transform from placeholder to comprehensive vitals display:
+Reusable card displaying appointment details:
 
-**Latest Vitals Card (Prominent)**
-Large card showing most recent readings in a grid:
 ```text
 ┌────────────────────────────────────────────────────────────────┐
-│ Latest Vitals - Feb 1, 2024, 09:15 AM                         │
-│ Recorded by: Fatima Ibrahim (Nurse)                           │
-├────────────────────────────────────────────────────────────────┤
-│  Blood Pressure    Temperature    Pulse    O2 Sat             │
-│  [140/90 mmHg]     [36.8°C]       [78 bpm] [98%]              │
-│   ▲ HIGH           Normal         Normal   Normal             │
+│ 09:00 AM                                        [Consultation] │
 │                                                                │
-│  Weight     Height    BMI           Respiratory               │
-│  [72 kg]    [165 cm]  [26.4]        [16 /min]                 │
-│   Normal    Normal    Overweight    Normal                    │
+│ Adaora Okafor                                                  │
+│ LC-2024-0001 • Female, 45 yrs                                  │
+│                                                                │
+│ Blood pressure follow-up                                       │
+│                                                                │
+│ Dr. Chukwuemeka Nwosu                           [Scheduled ●]  │
+│                                                                │
+│ [Check In]  [Reschedule]  [Cancel]  [View Profile]            │
 └────────────────────────────────────────────────────────────────┘
 ```
 
-**Abnormal Value Flagging:**
-- Red badge + upward/downward arrow for out-of-range
-- Yellow badge for borderline (within 10% of threshold)
-- Thresholds from existing `getAbnormalVitals()` logic
+---
 
-**Vitals History Section**
-- Table view of past readings (most recent first)
-- Columns: Date, BP, Temp, Pulse, O2, BMI, Recorded By
-- Pagination if > 10 entries
+## Part 2: Check-In Flow
 
-**Blood Pressure Trend Chart (Using Recharts)**
-- Line chart showing BP readings over time
-- Filter: Last 7 days, 30 days, 90 days
-- Systolic and diastolic as separate lines
-- Reference lines for normal range (120/80)
+### 2.1 Check-In Queue Screen
 
-**Record New Vitals Button (Nurse/Doctor only)**
-Opens a modal with vital entry form:
-- All vital fields with validation
-- Auto-calculate BMI from weight/height
-- Flag abnormal values in real-time
-- Submit adds to mock data and refreshes view
+**Route**: `/{role}/check-in`
 
-### 2.4 Appointments Tab (Placeholder - Ready for Module)
+**Target Users**: Receptionist
 
-Show data from existing mock appointments:
+**Layout**: Two-column design
 
-**Upcoming Appointments Section**
-Cards for scheduled appointments:
-- Date, Time, Doctor, Type badge (Consultation/Follow-up)
-- Status badge (Scheduled/Confirmed)
-- Actions: Reschedule (placeholder), Cancel (placeholder)
+**Left Column - Scheduled Appointments (70%)**
+- Today's appointments sorted by time
+- Filter: All, Pending, Checked-In, Completed
+- Each card shows: Time, Patient, Reason, Status
+- Quick actions: Check In, No Show, Reschedule
 
-**Past Appointments Section (Collapsed by default)**
-- Same card format but muted colors
-- "View Consultation" link if completed
+**Right Column - Walk-In Registration (30%)**
+- "Register Walk-In" prominent button
+- Recent walk-ins list (today)
+- Quick patient search for returning patients
 
-**Empty State**
-"No appointments scheduled."
-[Schedule Appointment] button
+### 2.2 Check-In Modal
 
-### 2.5 Prescriptions Tab (Placeholder - Ready for Module)
+When receptionist clicks "Check In":
 
-Show data from existing mock prescriptions:
+**Step 1: Identity Verification**
+- Display patient photo (if available)
+- Confirm name and date of birth
+- Update contact information if changed
 
-**Active Prescriptions**
-Green-accented cards:
-```text
-┌─────────────────────────────────────────────────────────────┐
-│ Lisinopril 10mg                           [Active] ●        │
-│ Once daily - Morning with water                             │
-│ Prescribed by Dr. Nwosu on Feb 1, 2024                      │
-│                                      [Request Refill]       │
-└─────────────────────────────────────────────────────────────┘
-```
+**Step 2: Insurance Verification** (if HMO patient)
+- Auto-verify HMO status (simulated API)
+- Display active/inactive badge
+- Policy expiry warning if < 30 days
+- Capture co-pay amount
 
-**Past Prescriptions (Collapsed)**
-Gray cards with dispensed date
+**Step 3: Queue Assignment**
+- Select destination queue (Triage / Direct to Doctor)
+- Priority selection (Normal, High, Emergency)
+- Assign to specific doctor (if direct)
+- Generate queue number
 
-**Empty State**
-"No prescriptions on record."
-
-### 2.6 Lab Results Tab (Placeholder - Ready for Module)
-
-Show data from existing mock lab orders:
-
-**Pending Tests Section (Yellow accent)**
-- Test name, ordered date, status badge (Ordered/Sample Collected/Processing)
-- "Waiting for results" message
-
-**Completed Results Section**
-Cards with:
-- Test name, completion date
-- Abnormal flag if any test in order is abnormal
-- "View Results" expands to show test details table:
-
-```text
-Test Name       | Result    | Normal Range | Status
-Fasting Blood   | 156 mg/dL | 70-100 mg/dL | ▲ HIGH
-Sugar           |           |              |
-```
-
-**Empty State**
-"No lab tests ordered."
-
-### 2.7 Billing Tab (Placeholder - Ready for Module)
-
-Show data from existing mock bills:
-
-**Outstanding Balance Alert (if > 0)**
-Red banner with total balance and "Pay Now" button
-
-**Recent Invoices Table**
-- Invoice #, Date, Amount, Status (Paid/Partial/Pending), Actions
-- Click row to see itemized bill
-
-**Payment History (Collapsed)**
-- Date, Amount, Method (Cash/Card/HMO), Receipt download link
-
-**Empty State**
-"No billing records."
+**Success**: 
+- Toast: "Patient checked in - Queue #5"
+- Print queue ticket option
+- Patient moves to selected queue
 
 ---
 
-## Part 3: New Data Functions
+## Part 3: Triage Queue (Nurse)
 
-Add helper functions to support the enhanced tabs:
+### 3.1 Triage Dashboard Enhancement
 
-### 3.1 Additions to vitals.ts
+**Route**: `/nurse/triage`
 
-```typescript
-// Add more vitals for pat-001 to show history
-export const addVitals = (vitals: Omit<VitalSigns, 'id'>): VitalSigns
+**Layout**: Kanban-style board or list view toggle
 
-// Calculate BMI
-export const calculateBMI = (weight: number, height: number): number
+**Columns/Sections**:
+1. **Waiting for Triage** - Patients from check-in
+2. **Triage In Progress** - Currently with nurse
+3. **Ready for Doctor** - Vitals complete, in doctor queue
 
-// Get BMI category
-export const getBMICategory = (bmi: number): 'Underweight' | 'Normal' | 'Overweight' | 'Obese'
+**Queue Card Features**:
+- Patient name and queue number
+- Wait time with colour coding (Green <15min, Yellow 15-30min, Red >30min)
+- Priority badge (Normal/High/Emergency)
+- Reason for visit
+- Quick actions: Start Triage, View History
 
-// Check if vital is abnormal
-export const isVitalAbnormal = (field: string, value: number): { abnormal: boolean; severity: 'warning' | 'critical' }
-```
+### 3.2 Triage Flow
 
-### 3.2 Additions to patients.ts
+When nurse clicks "Start Triage":
 
-```typescript
-// Update patient (already exists but needs enhancement)
-export const updatePatient = (id: string, updates: Partial<Patient>): Patient | undefined
-```
+**Opens dedicated triage screen** with:
 
-### 3.3 Create consultations mock data
+**Left Panel - Patient Context (30%)**
+- Patient summary card
+- Recent vitals history
+- Active medications
+- Known allergies (prominent red badges)
+- Chronic conditions
 
-New file: `src/data/consultations.ts`
+**Right Panel - Triage Form (70%)**
 
-```typescript
-// Mock consultations linked to patients
-export const mockConsultations: Consultation[] = [
-  {
-    id: 'con-001',
-    patientId: 'pat-001',
-    doctorId: 'usr-004',
-    appointmentId: 'apt-001',
-    chiefComplaint: 'Blood pressure follow-up',
-    historyOfPresentIllness: 'Patient reports occasional headaches...',
-    physicalExamination: 'BP 140/90, general appearance healthy...',
-    diagnosis: ['Essential hypertension'],
-    icdCodes: ['I10'],
-    treatmentPlan: 'Continue current medication...',
-    prescriptionId: 'rx-001',
-    labOrderIds: ['lab-001'],
-    followUpDate: '2024-03-01',
-    createdAt: '2024-02-01T10:00:00Z',
-    updatedAt: '2024-02-01T10:00:00Z',
-  },
-  // ... more consultations for other patients
-];
+**Vitals Entry Section**:
+- Blood Pressure (Systolic/Diastolic) with validation
+- Temperature (°C/°F toggle)
+- Pulse Rate
+- Respiratory Rate
+- Oxygen Saturation
+- Weight & Height → Auto-calculate BMI
+- Real-time abnormal value flagging
 
-export const getConsultationsByPatient = (patientId: string): Consultation[]
-export const getRecentConsultations = (patientId: string, limit: number): Consultation[]
-```
+**Chief Complaint Section**:
+- Text area for presenting complaint
+- Symptom duration dropdown
+- Pain scale selector (0-10)
+
+**Priority Assessment Section**:
+- Algorithm-suggested priority (based on vitals + symptoms)
+- Nurse can override with reason
+- Emergency flag with immediate doctor notification
+
+**Queue Assignment**:
+- Select doctor queue
+- Add notes for doctor
+
+**Submit**: 
+- Saves vitals
+- Updates patient record
+- Moves patient to doctor queue
+- Toast: "Triage complete - Patient assigned to Dr. Nwosu"
 
 ---
 
-## Part 4: New Components
+## Part 4: Doctor Queue
 
-### 4.1 VitalSignsCard Component
+### 4.1 Doctor Queue Dashboard
 
-Reusable component for displaying vitals with abnormal flagging:
+**Route**: `/doctor/queue`
 
-```text
-src/components/clinical/VitalSignsCard.tsx
+**Layout**: Clean list with context panel
 
-Props:
-  - vitals: VitalSigns
-  - showRecordedBy?: boolean
-  - compact?: boolean
+**Main List (60%)**:
+- Patients assigned to logged-in doctor
+- Sorted by: Priority (Emergency first), then Wait Time
+- Each card shows:
+  - Queue position indicator
+  - Patient name, age, gender
+  - Reason for visit
+  - Wait time
+  - Triage summary (vital alerts)
+  - Actions: See Patient, Skip, Transfer
 
-Features:
-  - Grid layout for vital metrics
-  - Color-coded abnormal flags
-  - BMI category display
-  - Responsive design (stack on mobile)
-```
+**Context Panel (40%)** - Shows when patient selected:
+- Full patient summary
+- Latest vitals with trend indicators
+- Recent consultations
+- Active medications
+- Quick links to: Start Consultation, View Full Profile
 
-### 4.2 VitalsEntryModal Component
-
-Modal for recording new vitals:
-
-```text
-src/components/clinical/VitalsEntryModal.tsx
-
-Props:
-  - patientId: string
-  - onSuccess: (vitals: VitalSigns) => void
-  - onClose: () => void
-
-Features:
-  - All vital input fields with validation
-  - Real-time BMI calculation
-  - Real-time abnormal flagging
-  - Submit handler that adds to mock data
-```
-
-### 4.3 ConsultationCard Component
+### 4.2 Doctor Queue Card Component
 
 ```text
-src/components/clinical/ConsultationCard.tsx
-
-Props:
-  - consultation: Consultation
-  - expanded?: boolean
-  - onToggle?: () => void
-
-Features:
-  - Accordion-style expand/collapse
-  - Shows summary when collapsed
-  - Full details when expanded
-  - Links to related prescription/labs
-```
-
-### 4.4 ActivityTimeline Component
-
-```text
-src/components/patients/ActivityTimeline.tsx
-
-Props:
-  - patientId: string
-  - limit?: number
-
-Features:
-  - Aggregates data from consultations, prescriptions, labs, bills
-  - Sorts by date
-  - Shows icon per activity type
-  - Clickable to navigate to relevant tab
+┌────────────────────────────────────────────────────────────────┐
+│ #1                                              [🔴 Emergency] │
+│                                                                │
+│ ● Aisha Mohammed                                               │
+│   14 yrs • Female • LC-2024-0005                               │
+│                                                                │
+│   Severe asthma attack                                         │
+│                                                                │
+│   ⚠️ BP: 110/70  |  Temp: 37.2°C  |  O2: 89% ▼                 │
+│                                                                │
+│   Wait: 45 min                                                 │
+│                                                                │
+│   [See Patient]  [View History]  [Transfer]                    │
+└────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Part 5: File Summary
+## Part 5: Patient Portal Appointment Booking
 
-### New Files (7)
+### 5.1 Patient Appointment Booking Flow
 
-| File | Purpose |
-|------|---------|
-| `src/pages/patients/PatientEditPage.tsx` | Edit patient wrapper page |
-| `src/data/consultations.ts` | Mock consultation data |
-| `src/components/clinical/VitalSignsCard.tsx` | Vitals display component |
-| `src/components/clinical/VitalsEntryModal.tsx` | Record vitals modal |
-| `src/components/clinical/ConsultationCard.tsx` | Consultation accordion card |
-| `src/components/patients/ActivityTimeline.tsx` | Recent activity timeline |
-| `src/components/clinical/VitalsTrendChart.tsx` | BP trend chart using Recharts |
+**Route**: `/patient/appointments`
 
-### Modified Files (5)
+**Layout**: Mobile-optimized, step-by-step wizard
+
+**Step 1: Select Service**
+- Cards for appointment types (General Consultation, Follow-up, Lab Only)
+- Brief description of each
+
+**Step 2: Select Doctor** (optional)
+- List of available doctors with photos and specializations
+- "Any available doctor" option
+
+**Step 3: Select Date & Time**
+- Calendar with available dates highlighted
+- Time slots grid for selected date
+- Morning/Afternoon filter
+
+**Step 4: Confirm Details**
+- Reason for visit input
+- Summary of selected options
+- Terms acceptance checkbox
+
+**Step 5: Confirmation**
+- Success screen with appointment details
+- "Add to Calendar" button
+- SMS/Email confirmation note
+
+---
+
+## Part 6: Queue Status Display
+
+### 6.1 Public Queue Display Component
+
+For waiting room screens or patient portal:
+
+```text
+┌────────────────────────────────────────────────────────────────┐
+│                    WAITING ROOM STATUS                         │
+├────────────────────────────────────────────────────────────────┤
+│                                                                │
+│   Now Serving: #12                                             │
+│                                                                │
+│   Triage Queue:  3 waiting  |  ~15 min average                 │
+│   Doctor Queue:  5 waiting  |  ~25 min average                 │
+│   Pharmacy:      2 waiting  |  ~10 min average                 │
+│                                                                │
+│   ─────────────────────────────────────────────────────────    │
+│                                                                │
+│   Your Number: #15                                             │
+│   Estimated Wait: 30-45 minutes                                │
+│                                                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Part 7: Appointment Management Actions
+
+### 7.1 Reschedule Appointment
+
+**Modal with**:
+- Current appointment details
+- New date/time selection
+- Reason for reschedule dropdown
+- Confirm button
+- Automatic notification (simulated)
+
+### 7.2 Cancel Appointment
+
+**Modal with**:
+- Appointment details
+- Cancellation reason dropdown
+- Option to notify patient (checkbox)
+- Confirm with warning about HMO implications
+
+### 7.3 Mark No-Show
+
+**Quick action with**:
+- Confirmation dialog
+- Auto-updates appointment status
+- Option to reschedule immediately
+
+---
+
+## File Structure
+
+### New Files to Create
+
+```text
+src/
+├── components/
+│   └── appointments/
+│       ├── AppointmentCalendar.tsx        # Calendar view with day/week/month
+│       ├── AppointmentCard.tsx            # Reusable appointment card
+│       ├── AppointmentBookingModal.tsx    # Booking form modal
+│       ├── AppointmentRescheduleModal.tsx # Reschedule dialog
+│       ├── TimeSlotPicker.tsx             # Available time slots grid
+│       └── DoctorSelector.tsx             # Doctor selection with availability
+│   └── queue/
+│       ├── QueueBoard.tsx                 # Kanban-style queue board
+│       ├── QueueCard.tsx                  # Patient queue item card
+│       ├── QueueStats.tsx                 # Queue statistics summary
+│       ├── CheckInModal.tsx               # Check-in flow modal
+│       ├── TriagePanel.tsx                # Triage form panel
+│       └── WaitingRoomDisplay.tsx         # Public queue status
+├── pages/
+│   └── appointments/
+│       ├── AppointmentListPage.tsx        # Appointment calendar/list view
+│       ├── AppointmentBookingPage.tsx     # Full-page booking (patient portal)
+│   └── queue/
+│       ├── CheckInQueuePage.tsx           # Receptionist check-in view
+│       ├── TriageQueuePage.tsx            # Nurse triage queue
+│       └── DoctorQueuePage.tsx            # Doctor patient queue
+├── data/
+│   └── appointments.ts                    # Enhanced with CRUD functions
+│   └── queue.ts                           # Enhanced with queue management
+```
+
+### Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/patients/PatientRegistrationForm.tsx` | Add edit mode |
-| `src/components/patients/PatientProfile.tsx` | Enhanced tabs with real data |
-| `src/data/vitals.ts` | Add helper functions, more mock data |
-| `src/data/patients.ts` | Ensure updatePatient works correctly |
-| `src/App.tsx` | Add all missing routes, fix order |
+| `src/App.tsx` | Add appointment and queue routes |
+| `src/components/layout/AppSidebar.tsx` | Update navigation links |
+| `src/data/appointments.ts` | Add CRUD functions, availability checking |
+| `src/data/queue.ts` | Add queue management functions |
+| `src/types/clinical.types.ts` | Add new appointment-related types if needed |
+| `src/pages/dashboards/ReceptionistDashboard.tsx` | Integrate check-in queue |
+| `src/pages/dashboards/NurseDashboard.tsx` | Integrate triage queue |
+| `src/pages/dashboards/DoctorDashboard.tsx` | Integrate doctor queue |
 
 ---
 
-## Part 6: UI/UX Design Principles
+## Route Configuration
 
-### Minimal Clicks Philosophy
+| Route | Component | Access |
+|-------|-----------|--------|
+| `/receptionist/appointments` | AppointmentListPage | Receptionist |
+| `/receptionist/check-in` | CheckInQueuePage | Receptionist |
+| `/doctor/queue` | DoctorQueuePage | Doctor |
+| `/doctor/appointments` | AppointmentListPage | Doctor |
+| `/nurse/triage` | TriageQueuePage | Nurse |
+| `/nurse/queue` | QueueBoard | Nurse |
+| `/cmo/appointments` | AppointmentListPage | CMO |
+| `/clinical-lead/queue` | QueueBoard | Clinical Lead |
+| `/patient/appointments` | PatientAppointmentPage | Patient |
+| `/patient/book` | AppointmentBookingPage | Patient |
 
-| Action | Current | Target |
-|--------|---------|--------|
-| Edit patient from profile | Click Edit → Navigate → Edit | Same (1 click) |
-| View vitals from overview | Click tab → scroll | Direct link in overview |
-| Record vitals | Tab → scroll → button → form | Tab → button → modal (2 clicks) |
-| View consultation details | Tab → click card → navigate | Tab → click card → expand in-place |
+---
 
-### Mature Healthcare Aesthetic
+## Data Layer Enhancements
 
-- No emojis, only Lucide icons
-- Color palette: Blue for primary, Red for alerts/abnormal, Yellow for warnings, Green for success/normal
-- Muted backgrounds with clear data hierarchy
-- Consistent spacing and typography
+### appointments.ts Additions
+
+```typescript
+// CRUD Operations
+export const createAppointment = (data: AppointmentInput): Appointment
+export const updateAppointment = (id: string, updates: Partial<Appointment>): Appointment
+export const cancelAppointment = (id: string, reason: string): Appointment
+export const rescheduleAppointment = (id: string, newDate: string, newTime: string): Appointment
+
+// Availability
+export const getAvailableSlots = (doctorId: string, date: string): TimeSlot[]
+export const getDoctorAvailability = (date: string): DoctorAvailability[]
+export const isSlotAvailable = (doctorId: string, date: string, time: string): boolean
+
+// Queries
+export const getAppointmentsByDateRange = (start: string, end: string): Appointment[]
+export const getAppointmentsByStatus = (status: AppointmentStatus): Appointment[]
+```
+
+### queue.ts Additions
+
+```typescript
+// Queue Operations
+export const addToQueue = (entry: QueueInput): QueueEntry
+export const updateQueueEntry = (id: string, updates: Partial<QueueEntry>): QueueEntry
+export const moveToNextQueue = (id: string, targetQueue: QueueType): QueueEntry
+export const completeQueueEntry = (id: string): QueueEntry
+
+// Statistics
+export const getQueueStats = (queueType: QueueType): QueueStats
+export const getAverageWaitTime = (queueType: QueueType): number
+export const getQueuePosition = (id: string): number
+```
+
+---
+
+## UI/UX Design Specifications
+
+### Colour Coding System
+
+| Element | Colour | Usage |
+|---------|--------|-------|
+| Consultation | Blue | Default appointment type |
+| Follow-up | Teal | Return visits |
+| Emergency | Red | Urgent cases |
+| Lab Only | Purple | Non-clinical visits |
+| Procedure | Orange | Scheduled procedures |
+
+### Wait Time Indicators
+
+| Duration | Colour | Icon |
+|----------|--------|------|
+| < 15 min | Green | None |
+| 15-30 min | Yellow | Warning |
+| > 30 min | Red | Alert |
+
+### Priority Badges
+
+| Priority | Design |
+|----------|--------|
+| Normal | Grey outline badge |
+| High | Yellow filled badge |
+| Emergency | Red filled badge with pulse animation |
 
 ### Mobile Responsiveness
 
-- Cards stack vertically on mobile
-- Vitals grid becomes 2x3 instead of 1x6
-- Tabs become scrollable horizontal list
-- Touch targets minimum 44px
+- Calendar collapses to day view on mobile
+- Queue cards stack vertically
+- Bottom sheet modals instead of centered modals
+- Swipe actions for queue management
+
+---
+
+## Component Specifications
+
+### AppointmentCalendar Component
+
+**Props**:
+```typescript
+interface AppointmentCalendarProps {
+  view: 'day' | 'week' | 'month';
+  selectedDate: Date;
+  doctorFilter?: string[];
+  onSlotClick?: (date: Date, time: string) => void;
+  onAppointmentClick?: (appointment: Appointment) => void;
+}
+```
+
+**Features**:
+- Navigation arrows for date changing
+- Today button to jump to current date
+- View toggle buttons
+- Appointment density indicators in month view
+
+### QueueCard Component
+
+**Props**:
+```typescript
+interface QueueCardProps {
+  entry: QueueEntry;
+  showVitals?: boolean;
+  showActions?: boolean;
+  onAction?: (action: 'start' | 'complete' | 'transfer' | 'skip') => void;
+  onClick?: () => void;
+}
+```
+
+### TimeSlotPicker Component
+
+**Props**:
+```typescript
+interface TimeSlotPickerProps {
+  date: Date;
+  doctorId: string;
+  duration: number;
+  onSelect: (time: string) => void;
+  selectedTime?: string;
+}
+```
+
+**Layout**:
+- Morning slots (08:00 - 12:00)
+- Afternoon slots (14:00 - 17:00)
+- Greyed out unavailable slots
+- Highlighted selected slot
 
 ---
 
 ## Implementation Order
 
-1. **PatientEditPage** + Routes - Enable edit flow
-2. **PatientRegistrationForm edit mode** - Form reuse
-3. **consultations.ts** - Mock data for history
-4. **vitals.ts enhancements** - More data + helpers
-5. **VitalSignsCard** - Reusable vitals display
-6. **VitalsEntryModal** - Record new vitals
-7. **VitalsTrendChart** - BP trend visualization
-8. **ConsultationCard** - Medical history display
-9. **ActivityTimeline** - Overview enhancement
-10. **PatientProfile.tsx** - Wire everything together
+### Phase 1: Core Components (Days 1-2)
+1. `AppointmentCard` - Display component
+2. `QueueCard` - Queue item display
+3. `TimeSlotPicker` - Slot selection
+4. `DoctorSelector` - Doctor picker
+
+### Phase 2: Appointment System (Days 3-4)
+5. `AppointmentBookingModal` - Booking form
+6. `AppointmentCalendar` - Calendar view
+7. `AppointmentListPage` - Main appointments page
+8. Data layer enhancements for appointments
+
+### Phase 3: Queue Management (Days 5-6)
+9. `CheckInModal` - Check-in flow
+10. `CheckInQueuePage` - Receptionist view
+11. `QueueBoard` - Kanban queue view
+12. `TriagePanel` - Nurse triage form
+13. `TriageQueuePage` - Nurse dashboard integration
+
+### Phase 4: Doctor Queue (Day 7)
+14. `DoctorQueuePage` - Doctor queue view
+15. Context panel with patient details
+16. Start consultation flow integration
+
+### Phase 5: Patient Portal & Polish (Day 8)
+17. Patient appointment booking wizard
+18. Route configuration
+19. Dashboard integrations
+20. Final UI polish and testing
 
 ---
 
-## Expected Outcome
+## Success Criteria
 
 After implementation:
 
-1. Edit patient button navigates correctly to edit page
-2. Edit form pre-populates with existing patient data
-3. All roles have appropriate registration/edit routes
-4. Overview tab shows actionable patient summary
-5. Medical History tab displays consultation timeline
-6. Vital Signs tab shows latest readings with abnormal flags
-7. Vital Signs tab includes BP trend chart
-8. Nurses can record new vitals via modal
-9. Other tabs show real data from mock (ready for module expansion)
-10. Consistent, professional healthcare UI throughout
+1. Receptionist can book appointments from calendar view
+2. Walk-in patients can be registered and queued
+3. Check-in process captures insurance verification
+4. Nurse can view triage queue and record vitals
+5. Priority patients automatically sorted to top
+6. Doctors see their queue with wait times
+7. Patient portal allows self-booking
+8. Queue statistics visible in real-time
+9. All transitions animate smoothly
+10. Mobile experience is fully functional
+
+---
+
+## Technical Notes
+
+### State Management
+- Queue state uses React useState with mock data
+- Appointment updates simulate API calls with 500ms delay
+- Real-time updates simulated with setInterval for queue refresh
+
+### Performance
+- Calendar lazy loads appointments by visible range
+- Queue cards use virtualization if > 20 items
+- Debounced search for patient lookup
+
+### Accessibility
+- All interactive elements keyboard navigable
+- ARIA labels for queue positions and wait times
+- Colour coding supplemented with icons/text
+- Focus management in multi-step flows
 

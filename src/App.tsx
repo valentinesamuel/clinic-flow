@@ -23,6 +23,7 @@ import PermissionSettings from "./pages/settings/PermissionSettings";
 import PatientListPage from "./pages/patients/PatientListPage";
 import PatientRegistrationPage from "./pages/patients/PatientRegistrationPage";
 import PatientProfilePage from "./pages/patients/PatientProfilePage";
+import PatientEditPage from "./pages/patients/PatientEditPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,9 +44,11 @@ const App = () => (
                 {/* CMO Routes */}
                 <Route path="/cmo" element={<CMODashboard />} />
                 <Route path="/cmo/patients" element={<PatientListPage />} />
+                <Route path="/cmo/patients/new" element={<PatientRegistrationPage />} />
                 <Route path="/cmo/patients/:id" element={<PatientProfilePage />} />
-                <Route path="/cmo/*" element={<CMODashboard />} />
+                <Route path="/cmo/patients/:id/edit" element={<PatientEditPage />} />
                 <Route path="/cmo/settings/permissions" element={<PermissionSettings />} />
+                <Route path="/cmo/*" element={<CMODashboard />} />
                 
                 {/* Hospital Admin Routes */}
                 <Route path="/hospital-admin" element={<HospitalAdminDashboard />} />
@@ -53,27 +56,26 @@ const App = () => (
                 
                 {/* Clinical Lead Routes */}
                 <Route path="/clinical-lead" element={<ClinicalLeadDashboard />} />
+                <Route path="/clinical-lead/patients" element={<PatientListPage />} />
+                <Route path="/clinical-lead/patients/new" element={<PatientRegistrationPage />} />
+                <Route path="/clinical-lead/patients/:id" element={<PatientProfilePage />} />
+                <Route path="/clinical-lead/patients/:id/edit" element={<PatientEditPage />} />
                 <Route path="/clinical-lead/*" element={<ClinicalLeadDashboard />} />
-                
-                {/* Doctor Routes */}
-                <Route path="/doctor" element={<DoctorDashboard />} />
-                <Route path="/doctor/*" element={<DoctorDashboard />} />
-                
-                {/* Nurse Routes */}
-                <Route path="/nurse" element={<NurseDashboard />} />
-                <Route path="/nurse/*" element={<NurseDashboard />} />
                 
                 {/* Receptionist Routes */}
                 <Route path="/receptionist" element={<ReceptionistDashboard />} />
                 <Route path="/receptionist/patients" element={<PatientListPage />} />
                 <Route path="/receptionist/patients/new" element={<PatientRegistrationPage />} />
                 <Route path="/receptionist/patients/:id" element={<PatientProfilePage />} />
+                <Route path="/receptionist/patients/:id/edit" element={<PatientEditPage />} />
                 <Route path="/receptionist/*" element={<ReceptionistDashboard />} />
                 
                 {/* Doctor Routes */}
                 <Route path="/doctor" element={<DoctorDashboard />} />
                 <Route path="/doctor/patients" element={<PatientListPage />} />
+                <Route path="/doctor/patients/new" element={<PatientRegistrationPage />} />
                 <Route path="/doctor/patients/:id" element={<PatientProfilePage />} />
+                <Route path="/doctor/patients/:id/edit" element={<PatientEditPage />} />
                 <Route path="/doctor/*" element={<DoctorDashboard />} />
                 
                 {/* Nurse Routes */}
@@ -81,7 +83,10 @@ const App = () => (
                 <Route path="/nurse/patients" element={<PatientListPage />} />
                 <Route path="/nurse/patients/new" element={<PatientRegistrationPage />} />
                 <Route path="/nurse/patients/:id" element={<PatientProfilePage />} />
+                <Route path="/nurse/patients/:id/edit" element={<PatientEditPage />} />
                 <Route path="/nurse/*" element={<NurseDashboard />} />
+                
+                {/* Billing Routes */}
                 <Route path="/billing" element={<BillingDashboard />} />
                 <Route path="/billing/*" element={<BillingDashboard />} />
                 

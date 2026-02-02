@@ -1,14 +1,8 @@
+// Updated AuthContext with 10 roles
+
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-
-export type UserRole = 'admin' | 'doctor' | 'nurse' | 'billing' | 'patient';
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: UserRole;
-  avatar?: string;
-}
+import { User, UserRole, roleMetadata } from '@/types/user.types';
+import { mockUsers } from '@/data/users';
 
 interface AuthContextType {
   user: User | null;
@@ -16,39 +10,6 @@ interface AuthContextType {
   login: (role: UserRole) => void;
   logout: () => void;
 }
-
-const mockUsers: Record<UserRole, User> = {
-  admin: {
-    id: '1',
-    name: 'Dr. Adaeze Okonkwo',
-    email: 'admin@lifecare.ng',
-    role: 'admin',
-  },
-  doctor: {
-    id: '2',
-    name: 'Dr. Chukwuemeka Nwosu',
-    email: 'doctor@lifecare.ng',
-    role: 'doctor',
-  },
-  nurse: {
-    id: '3',
-    name: 'Nurse Fatima Ibrahim',
-    email: 'nurse@lifecare.ng',
-    role: 'nurse',
-  },
-  billing: {
-    id: '4',
-    name: 'Grace Adeyemi',
-    email: 'billing@lifecare.ng',
-    role: 'billing',
-  },
-  patient: {
-    id: '5',
-    name: 'Oluwaseun Bakare',
-    email: 'patient@example.com',
-    role: 'patient',
-  },
-};
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -84,3 +45,7 @@ export function useAuth() {
   }
   return context;
 }
+
+// Re-export types for convenience
+export type { User, UserRole };
+export { roleMetadata };

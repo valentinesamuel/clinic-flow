@@ -1,38 +1,14 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserRole, roleMetadata, roleCategories } from '@/types/user.types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Stethoscope, ShieldCheck, User, Clipboard, CreditCard, Users } from 'lucide-react';
+import { Stethoscope, ShieldCheck, User, Clipboard, CreditCard, Users, TestTube, Pill, Building, UserCog } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
-const roleConfig: Record<UserRole, { label: string; icon: typeof User; description: string }> = {
-  admin: {
-    label: 'Admin / Director',
-    icon: ShieldCheck,
-    description: 'Full clinic oversight',
-  },
-  doctor: {
-    label: 'Doctor',
-    icon: Stethoscope,
-    description: 'Patient consultations',
-  },
-  nurse: {
-    label: 'Nurse',
-    icon: Clipboard,
-    description: 'Triage & vitals',
-  },
-  billing: {
-    label: 'Front Desk / Billing',
-    icon: CreditCard,
-    description: 'Payments & claims',
-  },
-  patient: {
-    label: 'Patient',
-    icon: Users,
-    description: 'View appointments & results',
-  },
+const roleIcons: Record<UserRole, typeof User> = {
+  cmo: ShieldCheck, hospital_admin: Building, clinical_lead: UserCog, doctor: Stethoscope, nurse: Clipboard, receptionist: Users, billing: CreditCard, pharmacist: Pill, lab_tech: TestTube, patient: User,
 };
 
 export default function Login() {
@@ -42,13 +18,35 @@ export default function Login() {
 
   const handleDemoLogin = (role: UserRole) => {
     login(role);
-    navigate(`/${role}`);
+    const route = role === 'hospital_admin' ? '/hospital-admin' : role === 'clinical_lead' ? '/clinical-lead' : role === 'lab_tech' ? '/lab-tech' : `/${role}`;
+    navigate(route);
   };
+
+  const renderRoleGroup = (title: string, roles: UserRole[], isHybrid = false) => (
+    <div className="space-y-2">
+      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+        {title}
+        {isHybrid && <Badge variant="outline" className="text-[10px]">Coming Soon</Badge>}
+      </p>
+      {roles.map((role) => {
+        const meta = roleMetadata[role];
+        const Icon = roleIcons[role];
+        return (
+          <Button key={role} variant="outline" className="w-full justify-start h-auto py-3" onClick={() => handleDemoLogin(role)}>
+            <Icon className="h-5 w-5 mr-3 text-primary" />
+            <div className="text-left">
+              <p className="font-medium">{meta.label}</p>
+              <p className="text-xs text-muted-foreground">{meta.description}</p>
+            </div>
+          </Button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md space-y-6">
-        {/* Branding */}
         <div className="text-center">
           <div className="mx-auto h-16 w-16 rounded-full bg-primary flex items-center justify-center mb-4">
             <Stethoscope className="h-8 w-8 text-primary-foreground" />
@@ -57,95 +55,24 @@ export default function Login() {
           <p className="text-muted-foreground mt-1">Hospital Management System</p>
         </div>
 
-        {/* Demo Role Selection */}
         {showDemo && (
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-lg">Demo Mode</CardTitle>
-              <CardDescription>
-                Select a role to explore the dashboard
-              </CardDescription>
+              <CardDescription>Select a role to explore the dashboard</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {(Object.keys(roleConfig) as UserRole[]).map((role) => {
-                const config = roleConfig[role];
-                const Icon = config.icon;
-                return (
-                  <Button
-                    key={role}
-                    variant="outline"
-                    className="w-full justify-start h-auto py-3"
-                    onClick={() => handleDemoLogin(role)}
-                  >
-                    <Icon className="h-5 w-5 mr-3 text-primary" />
-                    <div className="text-left">
-                      <p className="font-medium">{config.label}</p>
-                      <p className="text-xs text-muted-foreground">{config.description}</p>
-                    </div>
-                  </Button>
-                );
-              })}
+            <CardContent className="space-y-4">
+              {renderRoleGroup('Executive & Administration', roleCategories.executive)}
+              {renderRoleGroup('Clinical Staff', roleCategories.clinical)}
+              {renderRoleGroup('Support Staff', roleCategories.support)}
+              {renderRoleGroup('Hybrid Modules', roleCategories.hybrid, true)}
+              {renderRoleGroup('Patient Portal', roleCategories.portal)}
             </CardContent>
           </Card>
         )}
 
-        {/* Traditional Login Form */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Staff Login</CardTitle>
-            <CardDescription>
-              Enter your credentials to access the system
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email or Phone</Label>
-                <Input
-                  id="email"
-                  type="text"
-                  placeholder="email@lifecare.ng"
-                  className="h-12"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  className="h-12"
-                />
-              </div>
-              <Button type="submit" className="w-full h-12">
-                Sign In
-              </Button>
-              <div className="flex justify-between text-sm">
-                <button
-                  type="button"
-                  className="text-primary hover:underline"
-                  onClick={() => {}}
-                >
-                  Forgot Password?
-                </button>
-                <button
-                  type="button"
-                  className="text-muted-foreground hover:underline"
-                  onClick={() => {}}
-                >
-                  Contact Admin
-                </button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-        {/* Toggle Demo Mode */}
         <div className="text-center">
-          <button
-            className="text-sm text-muted-foreground hover:text-foreground"
-            onClick={() => setShowDemo(!showDemo)}
-          >
+          <button className="text-sm text-muted-foreground hover:text-foreground" onClick={() => setShowDemo(!showDemo)}>
             {showDemo ? 'Hide demo options' : 'Show demo options'}
           </button>
         </div>

@@ -24,6 +24,10 @@ import PatientListPage from "./pages/patients/PatientListPage";
 import PatientRegistrationPage from "./pages/patients/PatientRegistrationPage";
 import PatientProfilePage from "./pages/patients/PatientProfilePage";
 import PatientEditPage from "./pages/patients/PatientEditPage";
+import AppointmentListPage from "./pages/appointments/AppointmentListPage";
+import CheckInQueuePage from "./pages/queue/CheckInQueuePage";
+import TriageQueuePage from "./pages/queue/TriageQueuePage";
+import DoctorQueuePage from "./pages/queue/DoctorQueuePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +51,7 @@ const App = () => (
                 <Route path="/cmo/patients/new" element={<PatientRegistrationPage />} />
                 <Route path="/cmo/patients/:id" element={<PatientProfilePage />} />
                 <Route path="/cmo/patients/:id/edit" element={<PatientEditPage />} />
+                <Route path="/cmo/appointments" element={<AppointmentListPage />} />
                 <Route path="/cmo/settings/permissions" element={<PermissionSettings />} />
                 <Route path="/cmo/*" element={<CMODashboard />} />
                 
@@ -60,6 +65,7 @@ const App = () => (
                 <Route path="/clinical-lead/patients/new" element={<PatientRegistrationPage />} />
                 <Route path="/clinical-lead/patients/:id" element={<PatientProfilePage />} />
                 <Route path="/clinical-lead/patients/:id/edit" element={<PatientEditPage />} />
+                <Route path="/clinical-lead/queue" element={<TriageQueuePage />} />
                 <Route path="/clinical-lead/*" element={<ClinicalLeadDashboard />} />
                 
                 {/* Receptionist Routes */}
@@ -68,6 +74,8 @@ const App = () => (
                 <Route path="/receptionist/patients/new" element={<PatientRegistrationPage />} />
                 <Route path="/receptionist/patients/:id" element={<PatientProfilePage />} />
                 <Route path="/receptionist/patients/:id/edit" element={<PatientEditPage />} />
+                <Route path="/receptionist/check-in" element={<CheckInQueuePage />} />
+                <Route path="/receptionist/appointments" element={<AppointmentListPage />} />
                 <Route path="/receptionist/*" element={<ReceptionistDashboard />} />
                 
                 {/* Doctor Routes */}
@@ -76,6 +84,8 @@ const App = () => (
                 <Route path="/doctor/patients/new" element={<PatientRegistrationPage />} />
                 <Route path="/doctor/patients/:id" element={<PatientProfilePage />} />
                 <Route path="/doctor/patients/:id/edit" element={<PatientEditPage />} />
+                <Route path="/doctor/queue" element={<DoctorQueuePage />} />
+                <Route path="/doctor/appointments" element={<AppointmentListPage />} />
                 <Route path="/doctor/*" element={<DoctorDashboard />} />
                 
                 {/* Nurse Routes */}
@@ -84,6 +94,8 @@ const App = () => (
                 <Route path="/nurse/patients/new" element={<PatientRegistrationPage />} />
                 <Route path="/nurse/patients/:id" element={<PatientProfilePage />} />
                 <Route path="/nurse/patients/:id/edit" element={<PatientEditPage />} />
+                <Route path="/nurse/triage" element={<TriageQueuePage />} />
+                <Route path="/nurse/queue" element={<TriageQueuePage />} />
                 <Route path="/nurse/*" element={<NurseDashboard />} />
                 
                 {/* Billing Routes */}

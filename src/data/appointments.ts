@@ -1,9 +1,10 @@
-// Mock Appointments Data
+// Mock Appointments Data with CRUD Operations
 
-import { Appointment } from '@/types/clinical.types';
+import { Appointment, AppointmentStatus, AppointmentType } from '@/types/clinical.types';
 
 const today = new Date().toISOString().split('T')[0];
 const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
 
 export const mockAppointments: Appointment[] = [
   {
@@ -140,8 +141,8 @@ export const mockAppointments: Appointment[] = [
     patientId: 'pat-009',
     patientName: 'Chisom Nnamdi',
     patientMrn: 'LC-2024-0009',
-    doctorId: 'usr-004',
-    doctorName: 'Dr. Chukwuemeka Nwosu',
+    doctorId: 'doc-002',
+    doctorName: 'Dr. Amaka Obi',
     appointmentType: 'consultation',
     status: 'scheduled',
     scheduledDate: tomorrow,
@@ -160,7 +161,7 @@ export const mockAppointments: Appointment[] = [
     doctorName: 'Dr. Chukwuemeka Nwosu',
     appointmentType: 'consultation',
     status: 'completed',
-    scheduledDate: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+    scheduledDate: yesterday,
     scheduledTime: '11:00',
     duration: 30,
     reasonForVisit: 'Migraine treatment',
@@ -168,6 +169,11 @@ export const mockAppointments: Appointment[] = [
     createdBy: 'usr-006',
   },
 ];
+
+// ID counter for new appointments
+let appointmentIdCounter = mockAppointments.length;
+
+// ============ Query Functions ============
 
 export const getTodaysAppointments = (): Appointment[] => 
   mockAppointments.filter(a => a.scheduledDate === today);
@@ -183,3 +189,184 @@ export const getUpcomingAppointments = (): Appointment[] =>
     a.scheduledDate >= today && 
     ['scheduled', 'confirmed'].includes(a.status)
   );
+
+export const getAppointmentsByDateRange = (startDate: string, endDate: string): Appointment[] =>
+  mockAppointments.filter(a => 
+    a.scheduledDate >= startDate && a.scheduledDate <= endDate
+  );
+
+export const getAppointmentsByStatus = (status: AppointmentStatus): Appointment[] =>
+  mockAppointments.filter(a => a.status === status);
+
+export const getAppointmentsByDate = (date: string): Appointment[] =>
+  mockAppointments.filter(a => a.scheduledDate === date);
+
+export const getAppointmentById = (id: string): Appointment | undefined =>
+  mockAppointments.find(a => a.id === id);
+
+// ============ CRUD Operations ============
+
+export interface AppointmentInput {
+  patientId: string;
+  patientName: string;
+  patientMrn: string;
+  doctorId: string;
+  doctorName: string;
+  appointmentType: AppointmentType;
+  scheduledDate: string;
+  scheduledTime: string;
+  duration: number;
+  reasonForVisit: string;
+  notes?: string;
+}
+
+export const createAppointment = (data: AppointmentInput): Appointment => {
+  appointmentIdCounter++;
+  const newAppointment: Appointment = {
+    ...data,
+    id: `apt-${String(appointmentIdCounter).padStart(3, '0')}`,
+    status: 'scheduled',
+    createdAt: new Date().toISOString(),
+    createdBy: 'current-user', // Would be actual user ID in real app
+  };
+  mockAppointments.push(newAppointment);
+  return newAppointment;
+};
+
+export const updateAppointment = (id: string, updates: Partial<Appointment>): Appointment | undefined => {
+  const index = mockAppointments.findIndex(a => a.id === id);
+  if (index === -1) return undefined;
+  
+  mockAppointments[index] = {
+    ...mockAppointments[index],
+    ...updates,
+  };
+  return mockAppointments[index];
+};
+
+export const updateAppointmentStatus = (id: string, status: AppointmentStatus): Appointment | undefined => {
+  return updateAppointment(id, { status });
+};
+
+export const cancelAppointment = (id: string, reason?: string): Appointment | undefined => {
+  return updateAppointment(id, { 
+    status: 'cancelled',
+    notes: reason ? `Cancelled: ${reason}` : 'Cancelled'
+  });
+};
+
+export const rescheduleAppointment = (
+  id: string, 
+  newDate: string, 
+  newTime: string
+): Appointment | undefined => {
+  const appointment = getAppointmentById(id);
+  if (!appointment) return undefined;
+  
+  return updateAppointment(id, {
+    scheduledDate: newDate,
+    scheduledTime: newTime,
+    notes: appointment.notes 
+      ? `${appointment.notes}\nRescheduled from ${appointment.scheduledDate} ${appointment.scheduledTime}`
+      : `Rescheduled from ${appointment.scheduledDate} ${appointment.scheduledTime}`,
+  });
+};
+
+export const markNoShow = (id: string): Appointment | undefined => {
+  return updateAppointment(id, { status: 'no_show' });
+};
+
+export const checkInAppointment = (id: string): Appointment | undefined => {
+  return updateAppointment(id, { status: 'checked_in' });
+};
+
+// ============ Availability Functions ============
+
+export interface TimeSlot {
+  time: string;
+  available: boolean;
+}
+
+export const getAvailableSlots = (
+  doctorId: string, 
+  date: string,
+  duration: number = 30
+): TimeSlot[] => {
+  const slots: TimeSlot[] = [];
+  const doctorAppointments = mockAppointments.filter(
+    a => a.doctorId === doctorId && 
+         a.scheduledDate === date &&
+         !['cancelled', 'no_show'].includes(a.status)
+  );
+  
+  const startHour = 8;
+  const endHour = 17;
+  const breakStart = 13;
+  const breakEnd = 14;
+  
+  for (let hour = startHour; hour < endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += duration) {
+      // Skip lunch break
+      if (hour >= breakStart && hour < breakEnd) continue;
+      
+      const timeStr = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+      
+      // Check if slot conflicts with existing appointment
+      const hasConflict = doctorAppointments.some(apt => {
+        const aptHour = parseInt(apt.scheduledTime.split(':')[0]);
+        const aptMinute = parseInt(apt.scheduledTime.split(':')[1]);
+        const aptStart = aptHour * 60 + aptMinute;
+        const aptEnd = aptStart + apt.duration;
+        const slotStart = hour * 60 + minute;
+        const slotEnd = slotStart + duration;
+        
+        return slotStart < aptEnd && slotEnd > aptStart;
+      });
+      
+      slots.push({
+        time: timeStr,
+        available: !hasConflict,
+      });
+    }
+  }
+  
+  return slots;
+};
+
+export const isSlotAvailable = (
+  doctorId: string, 
+  date: string, 
+  time: string,
+  duration: number = 30
+): boolean => {
+  const slots = getAvailableSlots(doctorId, date, duration);
+  const slot = slots.find(s => s.time === time);
+  return slot?.available ?? false;
+};
+
+export interface DoctorAvailability {
+  doctorId: string;
+  doctorName: string;
+  availableSlots: number;
+  nextAvailable?: string;
+}
+
+export const getDoctorAvailability = (date: string): DoctorAvailability[] => {
+  const doctors = [
+    { id: 'usr-004', name: 'Dr. Chukwuemeka Nwosu' },
+    { id: 'doc-002', name: 'Dr. Amaka Obi' },
+    { id: 'doc-003', name: 'Dr. Ibrahim Musa' },
+  ];
+  
+  return doctors.map(doc => {
+    const slots = getAvailableSlots(doc.id, date);
+    const availableSlots = slots.filter(s => s.available);
+    
+    return {
+      doctorId: doc.id,
+      doctorName: doc.name,
+      availableSlots: availableSlots.length,
+      nextAvailable: availableSlots[0]?.time,
+    };
+  });
+};

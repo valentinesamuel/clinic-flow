@@ -17,11 +17,11 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Save, X, AlertCircle, Check } from 'lucide-react';
+import { Loader2, Save, X, AlertCircle, Check, Clock } from 'lucide-react';
 import { nigerianStates, getLGAsForState } from '@/data/nigerian-locations';
-import { addPatient, isPhoneUnique, calculateAge } from '@/data/patients';
+import { addPatient, updatePatient, isPhoneUnique, calculateAge } from '@/data/patients';
 import { Patient, BloodGroup, Gender, MaritalStatus, PaymentType } from '@/types/patient.types';
-
+import { format } from 'date-fns';
 // HMO Providers
 const hmoProviders = [
   { id: 'hyg-001', name: 'Hygeia HMO', defaultCopay: 5000 },
@@ -75,21 +75,60 @@ type PatientFormData = z.infer<typeof patientFormSchema>;
 interface PatientRegistrationFormProps {
   onSuccess: (patient: Patient) => void;
   onCancel: () => void;
+  initialPatient?: Patient;
 }
 
 const DRAFT_KEY = 'draft_patient_registration';
 
-export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistrationFormProps) {
+export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }: PatientRegistrationFormProps) {
+  const isEditMode = !!initialPatient;
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [phoneStatus, setPhoneStatus] = useState<'idle' | 'checking' | 'unique' | 'duplicate'>('idle');
   const [hasDraft, setHasDraft] = useState(false);
-  const [selectedState, setSelectedState] = useState('');
-  const [computedAge, setComputedAge] = useState<number | null>(null);
+  const [selectedState, setSelectedState] = useState(initialPatient?.state || '');
+  const [computedAge, setComputedAge] = useState<number | null>(
+    initialPatient ? calculateAge(initialPatient.dateOfBirth) : null
+  );
+
+  // Find the state value from the label for edit mode
+  const getStateValue = (stateLabel: string) => {
+    const found = nigerianStates.find(s => s.label === stateLabel || s.value === stateLabel);
+    return found?.value || stateLabel;
+  };
 
   const form = useForm<PatientFormData>({
     resolver: zodResolver(patientFormSchema),
-    defaultValues: {
+    defaultValues: initialPatient ? {
+      firstName: initialPatient.firstName,
+      lastName: initialPatient.lastName,
+      middleName: initialPatient.middleName || '',
+      dateOfBirth: initialPatient.dateOfBirth,
+      gender: initialPatient.gender,
+      bloodGroup: initialPatient.bloodGroup,
+      maritalStatus: initialPatient.maritalStatus,
+      phone: initialPatient.phone,
+      altPhone: initialPatient.altPhone || '',
+      email: initialPatient.email || '',
+      address: initialPatient.address,
+      city: initialPatient.lga, // LGA serves as city
+      state: getStateValue(initialPatient.state),
+      lga: initialPatient.lga,
+      occupation: initialPatient.occupation || '',
+      paymentType: initialPatient.paymentType,
+      hasInsurance: initialPatient.paymentType === 'hmo',
+      hmoProviderId: initialPatient.hmoDetails?.providerId || '',
+      policyNumber: initialPatient.hmoDetails?.enrollmentId || '',
+      policyExpiry: initialPatient.hmoDetails?.expiryDate || '',
+      idType: '',
+      idNumber: '',
+      emergencyName: initialPatient.nextOfKin.name,
+      emergencyRelationship: initialPatient.nextOfKin.relationship,
+      emergencyPhone: initialPatient.nextOfKin.phone,
+      allergies: initialPatient.allergies.join(', '),
+      chronicConditions: initialPatient.chronicConditions.join(', '),
+      currentMedications: '',
+    } : {
       firstName: '',
       lastName: '',
       middleName: '',
@@ -128,16 +167,20 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
   const watchPhone = watch('phone');
   const watchHmoProvider = watch('hmoProviderId');
 
-  // Check for draft on mount
+  // Check for draft on mount (only in create mode)
   useEffect(() => {
-    const draft = localStorage.getItem(DRAFT_KEY);
-    if (draft) {
-      setHasDraft(true);
+    if (!isEditMode) {
+      const draft = localStorage.getItem(DRAFT_KEY);
+      if (draft) {
+        setHasDraft(true);
+      }
     }
-  }, []);
+  }, [isEditMode]);
 
-  // Auto-save draft every 30 seconds
+  // Auto-save draft every 30 seconds (only in create mode)
   useEffect(() => {
+    if (isEditMode) return;
+    
     const interval = setInterval(() => {
       const formData = form.getValues();
       if (Object.values(formData).some(v => v)) {
@@ -146,7 +189,7 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [form]);
+  }, [form, isEditMode]);
 
   // Calculate age when DOB changes
   useEffect(() => {
@@ -167,12 +210,13 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
 
     setPhoneStatus('checking');
     const timer = setTimeout(() => {
-      const unique = isPhoneUnique(watchPhone);
+      // In edit mode, exclude the current patient's phone from the uniqueness check
+      const unique = isPhoneUnique(watchPhone, isEditMode ? initialPatient?.id : undefined);
       setPhoneStatus(unique ? 'unique' : 'duplicate');
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [watchPhone]);
+  }, [watchPhone, isEditMode, initialPatient?.id]);
 
   // Auto-set copay when HMO provider changes
   useEffect(() => {
@@ -233,6 +277,9 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
+      // Get the state label for display
+      const stateLabel = nigerianStates.find(s => s.value === data.state)?.label || data.state;
+
       // Prepare patient data
       const patientData = {
         firstName: data.firstName,
@@ -246,7 +293,7 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
         altPhone: data.altPhone,
         email: data.email,
         address: data.address,
-        state: data.state,
+        state: stateLabel,
         lga: data.lga,
         nationality: 'Nigerian',
         occupation: data.occupation,
@@ -266,25 +313,40 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
           phone: data.emergencyPhone,
           address: data.address,
         },
-        allergies: data.allergies ? data.allergies.split(',').map(a => a.trim()) : [],
-        chronicConditions: data.chronicConditions ? data.chronicConditions.split(',').map(c => c.trim()) : [],
+        allergies: data.allergies ? data.allergies.split(',').map(a => a.trim()).filter(Boolean) : [],
+        chronicConditions: data.chronicConditions ? data.chronicConditions.split(',').map(c => c.trim()).filter(Boolean) : [],
         isActive: true,
       };
 
-      const newPatient = addPatient(patientData);
-      
-      // Clear draft
-      localStorage.removeItem(DRAFT_KEY);
+      if (isEditMode && initialPatient) {
+        // Update existing patient
+        const updatedPatient = updatePatient(initialPatient.id, patientData);
+        if (updatedPatient) {
+          toast({
+            title: 'Patient details updated',
+            description: `Changes saved for ${updatedPatient.firstName} ${updatedPatient.lastName}`,
+          });
+          onSuccess(updatedPatient);
+        } else {
+          throw new Error('Failed to update patient');
+        }
+      } else {
+        // Create new patient
+        const newPatient = addPatient(patientData);
+        
+        // Clear draft
+        localStorage.removeItem(DRAFT_KEY);
 
-      toast({
-        title: 'Patient registered successfully',
-        description: `Patient Number: ${newPatient.mrn}`,
-      });
+        toast({
+          title: 'Patient registered successfully',
+          description: `Patient Number: ${newPatient.mrn}`,
+        });
 
-      onSuccess(newPatient);
+        onSuccess(newPatient);
+      }
     } catch (error) {
       toast({
-        title: 'Registration failed',
+        title: isEditMode ? 'Update failed' : 'Registration failed',
         description: 'Please try again.',
         variant: 'destructive',
       });
@@ -297,8 +359,8 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Draft Recovery Banner */}
-      {hasDraft && (
+      {/* Draft Recovery Banner - Only in create mode */}
+      {!isEditMode && hasDraft && (
         <div className="mb-6 p-4 bg-muted rounded-lg flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-5 w-5 text-primary" />
@@ -315,20 +377,41 @@ export function PatientRegistrationForm({ onSuccess, onCancel }: PatientRegistra
         </div>
       )}
 
+      {/* Edit Mode Header Info */}
+      {isEditMode && initialPatient && (
+        <div className="mb-6 p-4 bg-muted/50 rounded-lg border">
+          <div className="flex items-center gap-4">
+            <div>
+              <p className="text-sm font-medium">Patient Number: <span className="font-mono">{initialPatient.mrn}</span></p>
+              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                <Clock className="h-3 w-3" />
+                Last updated: {format(new Date(initialPatient.updatedAt), 'dd MMM yyyy, hh:mm a')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header Actions */}
       <div className="flex items-center justify-between mb-6 sticky top-0 bg-background z-10 py-4 border-b">
-        <h1 className="text-2xl font-bold">Register New Patient</h1>
+        <h1 className="text-2xl font-bold">
+          {isEditMode 
+            ? `Edit Patient - ${initialPatient?.firstName} ${initialPatient?.lastName}` 
+            : 'Register New Patient'}
+        </h1>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={onCancel}>
             Cancel
           </Button>
-          <Button variant="outline" onClick={saveDraft}>
-            <Save className="h-4 w-4 mr-2" />
-            Save Draft
-          </Button>
+          {!isEditMode && (
+            <Button variant="outline" onClick={saveDraft}>
+              <Save className="h-4 w-4 mr-2" />
+              Save Draft
+            </Button>
+          )}
           <Button onClick={handleSubmit(onSubmit)} disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Register Patient
+            {isEditMode ? 'Save Changes' : 'Register Patient'}
           </Button>
         </div>
       </div>

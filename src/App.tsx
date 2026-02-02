@@ -20,6 +20,9 @@ import PharmacistDashboard from "./pages/dashboards/PharmacistDashboard";
 import LabTechDashboard from "./pages/dashboards/LabTechDashboard";
 import PatientDashboard from "./pages/dashboards/PatientDashboard";
 import PermissionSettings from "./pages/settings/PermissionSettings";
+import PatientListPage from "./pages/patients/PatientListPage";
+import PatientRegistrationPage from "./pages/patients/PatientRegistrationPage";
+import PatientProfilePage from "./pages/patients/PatientProfilePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +42,8 @@ const App = () => (
                 
                 {/* CMO Routes */}
                 <Route path="/cmo" element={<CMODashboard />} />
+                <Route path="/cmo/patients" element={<PatientListPage />} />
+                <Route path="/cmo/patients/:id" element={<PatientProfilePage />} />
                 <Route path="/cmo/*" element={<CMODashboard />} />
                 <Route path="/cmo/settings/permissions" element={<PermissionSettings />} />
                 
@@ -60,9 +65,23 @@ const App = () => (
                 
                 {/* Receptionist Routes */}
                 <Route path="/receptionist" element={<ReceptionistDashboard />} />
+                <Route path="/receptionist/patients" element={<PatientListPage />} />
+                <Route path="/receptionist/patients/new" element={<PatientRegistrationPage />} />
+                <Route path="/receptionist/patients/:id" element={<PatientProfilePage />} />
                 <Route path="/receptionist/*" element={<ReceptionistDashboard />} />
                 
-                {/* Billing Routes */}
+                {/* Doctor Routes */}
+                <Route path="/doctor" element={<DoctorDashboard />} />
+                <Route path="/doctor/patients" element={<PatientListPage />} />
+                <Route path="/doctor/patients/:id" element={<PatientProfilePage />} />
+                <Route path="/doctor/*" element={<DoctorDashboard />} />
+                
+                {/* Nurse Routes */}
+                <Route path="/nurse" element={<NurseDashboard />} />
+                <Route path="/nurse/patients" element={<PatientListPage />} />
+                <Route path="/nurse/patients/new" element={<PatientRegistrationPage />} />
+                <Route path="/nurse/patients/:id" element={<PatientProfilePage />} />
+                <Route path="/nurse/*" element={<NurseDashboard />} />
                 <Route path="/billing" element={<BillingDashboard />} />
                 <Route path="/billing/*" element={<BillingDashboard />} />
                 

@@ -1,6 +1,6 @@
 // Mock Patients Data - Nigerian names and addresses
 
-import { Patient } from '@/types/patient.types';
+import { Patient, PaymentType } from '@/types/patient.types';
 
 export const mockPatients: Patient[] = [
   {
@@ -315,13 +315,27 @@ export const mockPatients: Patient[] = [
   },
 ];
 
+// Counter for generating unique IDs
+let patientIdCounter = mockPatients.length;
+
+// Generate new MRN in format LC-YYYY-XXXX
+export const generateMRN = (): string => {
+  const year = new Date().getFullYear();
+  const sequence = String(mockPatients.length + 1).padStart(4, '0');
+  return `LC-${year}-${sequence}`;
+};
+
+// Get patient by ID
 export const getPatientById = (id: string): Patient | undefined => 
   mockPatients.find(p => p.id === id);
 
+// Get patient by MRN
 export const getPatientByMrn = (mrn: string): Patient | undefined => 
   mockPatients.find(p => p.mrn === mrn);
 
+// Search patients by name, MRN, or phone
 export const searchPatients = (query: string): Patient[] => {
+  if (!query || query.length < 2) return [];
   const lowerQuery = query.toLowerCase();
   return mockPatients.filter(p => 
     p.firstName.toLowerCase().includes(lowerQuery) ||
@@ -329,4 +343,107 @@ export const searchPatients = (query: string): Patient[] => {
     p.mrn.toLowerCase().includes(lowerQuery) ||
     p.phone.includes(query)
   );
+};
+
+// Get all patients
+export const getAllPatients = (): Patient[] => [...mockPatients];
+
+// Get patients with pagination
+export const getPatientsPaginated = (
+  page: number = 1, 
+  limit: number = 20, 
+  filter?: { paymentType?: PaymentType; search?: string }
+): { patients: Patient[]; total: number; totalPages: number } => {
+  let filtered = [...mockPatients];
+  
+  // Apply filters
+  if (filter?.paymentType) {
+    filtered = filtered.filter(p => p.paymentType === filter.paymentType);
+  }
+  
+  if (filter?.search && filter.search.length >= 2) {
+    const lowerQuery = filter.search.toLowerCase();
+    filtered = filtered.filter(p => 
+      p.firstName.toLowerCase().includes(lowerQuery) ||
+      p.lastName.toLowerCase().includes(lowerQuery) ||
+      p.mrn.toLowerCase().includes(lowerQuery) ||
+      p.phone.includes(filter.search!)
+    );
+  }
+  
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit);
+  const start = (page - 1) * limit;
+  const patients = filtered.slice(start, start + limit);
+  
+  return { patients, total, totalPages };
+};
+
+// Get patients by payment type
+export const getPatientsByPaymentType = (type: PaymentType): Patient[] => 
+  mockPatients.filter(p => p.paymentType === type);
+
+// Get recent patients (by creation date)
+export const getRecentPatients = (days: number = 7): Patient[] => {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - days);
+  return mockPatients.filter(p => new Date(p.createdAt) >= cutoff);
+};
+
+// Add a new patient
+export const addPatient = (
+  patientData: Omit<Patient, 'id' | 'mrn' | 'createdAt' | 'updatedAt'>
+): Patient => {
+  patientIdCounter++;
+  const now = new Date().toISOString();
+  const newPatient: Patient = {
+    ...patientData,
+    id: `pat-${String(patientIdCounter).padStart(3, '0')}`,
+    mrn: generateMRN(),
+    createdAt: now,
+    updatedAt: now,
+  };
+  mockPatients.push(newPatient);
+  return newPatient;
+};
+
+// Update an existing patient
+export const updatePatient = (
+  id: string, 
+  updates: Partial<Omit<Patient, 'id' | 'mrn' | 'createdAt'>>
+): Patient | undefined => {
+  const index = mockPatients.findIndex(p => p.id === id);
+  if (index === -1) return undefined;
+  
+  mockPatients[index] = {
+    ...mockPatients[index],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  return mockPatients[index];
+};
+
+// Delete a patient (soft delete by setting isActive to false)
+export const deletePatient = (id: string): boolean => {
+  const patient = updatePatient(id, { isActive: false });
+  return !!patient;
+};
+
+// Check if phone number is unique
+export const isPhoneUnique = (phone: string, excludeId?: string): boolean => {
+  return !mockPatients.some(p => 
+    p.phone === phone && p.id !== excludeId
+  );
+};
+
+// Calculate age from date of birth
+export const calculateAge = (dateOfBirth: string): number => {
+  const today = new Date();
+  const birthDate = new Date(dateOfBirth);
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
 };

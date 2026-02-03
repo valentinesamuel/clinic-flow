@@ -1,5 +1,5 @@
-// Receptionist Dashboard - Registration, Scheduling, Queue
-
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,22 +12,48 @@ import {
   UserPlus,
   Search,
   CheckCircle,
-  AlertCircle,
+  ChevronRight,
 } from 'lucide-react';
 import { getTodaysAppointments } from '@/data/appointments';
 import { getQueueByType, getWaitingCount, calculateWaitTime } from '@/data/queue';
 import { getDoctors } from '@/data/staff';
+import { searchPatients } from '@/data/patients';
+import { useDashboardActions } from '@/hooks/useDashboardActions';
+import { CheckInModal } from '@/components/queue/CheckInModal';
 
 export default function ReceptionistDashboard() {
+  const navigate = useNavigate();
+  const { actions } = useDashboardActions('receptionist');
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
+  
   const todaysAppointments = getTodaysAppointments();
   const checkInQueue = getQueueByType('check_in');
   const doctors = getDoctors();
+  
+  const searchResults = searchQuery.length >= 2 ? searchPatients(searchQuery).slice(0, 5) : [];
 
   const getWaitTimeColor = (minutes: number) => {
-    if (minutes < 20) return 'text-green-600';
-    if (minutes < 40) return 'text-yellow-600';
-    return 'text-red-600';
+    if (minutes < 20) return 'text-green-600 dark:text-green-400';
+    if (minutes < 40) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-red-600 dark:text-red-400';
   };
+
+  const handleCheckIn = (appointmentId: string) => {
+    setSelectedAppointmentId(appointmentId);
+    setCheckInModalOpen(true);
+  };
+
+  const handleCheckInComplete = () => {
+    setCheckInModalOpen(false);
+    setSelectedAppointmentId(null);
+  };
+
+  const selectedAppointment = selectedAppointmentId 
+    ? todaysAppointments.find(a => a.id === selectedAppointmentId) 
+    : null;
 
   return (
     <DashboardLayout allowedRoles={['receptionist']}>
@@ -38,7 +64,7 @@ export default function ReceptionistDashboard() {
             <h1 className="text-2xl font-bold">Reception Dashboard</h1>
             <p className="text-muted-foreground">Registration, scheduling & queue management</p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2" onClick={actions.newPatient}>
             <UserPlus className="h-4 w-4" />
             New Patient
           </Button>
@@ -52,14 +78,38 @@ export default function ReceptionistDashboard() {
               <Input 
                 placeholder="Search patient by name, MRN, or phone..." 
                 className="pl-10 h-12"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            {searchResults.length > 0 && (
+              <div className="mt-3 border rounded-lg divide-y">
+                {searchResults.map((patient) => (
+                  <div 
+                    key={patient.id}
+                    className="flex items-center justify-between p-3 hover:bg-accent/50 cursor-pointer transition-colors"
+                    onClick={() => navigate(`/receptionist/patients/${patient.id}`)}
+                  >
+                    <div>
+                      <p className="font-medium">{patient.firstName} {patient.lastName}</p>
+                      <p className="text-sm text-muted-foreground">{patient.mrn} • {patient.phone}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={patient.paymentType === 'hmo' ? 'default' : 'secondary'}>
+                        {patient.paymentType.toUpperCase()}
+                      </Badge>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={actions.viewAppointments}>
             <CardHeader className="pb-2">
               <CardDescription className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
@@ -74,7 +124,7 @@ export default function ReceptionistDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors" onClick={actions.checkIn}>
             <CardHeader className="pb-2">
               <CardDescription className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
@@ -95,7 +145,9 @@ export default function ReceptionistDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">28</p>
+              <p className="text-2xl font-bold">
+                {todaysAppointments.filter(a => a.status === 'checked_in' || a.status === 'in_progress' || a.status === 'completed').length}
+              </p>
               <p className="text-xs text-muted-foreground">Processed</p>
             </CardContent>
           </Card>
@@ -108,7 +160,7 @@ export default function ReceptionistDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">8</p>
+              <p className="text-2xl font-bold">{checkInQueue.length}</p>
               <p className="text-xs text-muted-foreground">Registered</p>
             </CardContent>
           </Card>
@@ -119,27 +171,36 @@ export default function ReceptionistDashboard() {
           {/* Upcoming Appointments */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                Today's Schedule
-              </CardTitle>
-              <CardDescription>Appointments awaiting check-in</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    Today's Schedule
+                  </CardTitle>
+                  <CardDescription>Appointments awaiting check-in</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={actions.viewAppointments}>
+                  View All
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {todaysAppointments
                 .filter(a => ['scheduled', 'confirmed'].includes(a.status))
                 .slice(0, 5)
                 .map((apt) => (
-                  <div key={apt.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
-                    <div>
-                      <p className="text-sm font-medium">{apt.patientName}</p>
+                  <div key={apt.id} className="flex items-center justify-between p-3 rounded-lg bg-muted hover:bg-accent/50 transition-colors">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">{apt.patientName}</p>
                       <p className="text-xs text-muted-foreground">
                         {apt.scheduledTime} • {apt.doctorName}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline">{apt.appointmentType}</Badge>
-                      <Button size="sm">Check In</Button>
+                      <Badge variant="outline" className="text-xs shrink-0">{apt.appointmentType.replace('_', ' ')}</Badge>
+                      <Button size="sm" onClick={() => handleCheckIn(apt.id)}>
+                        Check In
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -154,31 +215,40 @@ export default function ReceptionistDashboard() {
           {/* Check-in Queue */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                Walk-in Queue
-              </CardTitle>
-              <CardDescription>Patients waiting for check-in</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5 text-primary" />
+                    Walk-in Queue
+                  </CardTitle>
+                  <CardDescription>Patients waiting for check-in</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={actions.checkIn}>
+                  Manage
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
-              {checkInQueue.map((entry) => {
+              {checkInQueue.slice(0, 5).map((entry) => {
                 const waitMinutes = calculateWaitTime(entry.checkInTime);
                 return (
-                  <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
+                  <div key={entry.id} className="flex items-center justify-between p-3 rounded-lg bg-muted hover:bg-accent/50 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-bold">#{entry.queueNumber}</span>
+                        <span className="text-sm font-bold text-primary">#{entry.queueNumber}</span>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{entry.patientName}</p>
-                        <p className="text-xs text-muted-foreground">{entry.reasonForVisit}</p>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{entry.patientName}</p>
+                        <p className="text-xs text-muted-foreground truncate">{entry.reasonForVisit}</p>
                       </div>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0">
                       <p className={`text-sm font-medium ${getWaitTimeColor(waitMinutes)}`}>
                         {waitMinutes} min
                       </p>
-                      <Button size="sm" variant="outline">Process</Button>
+                      <Button size="sm" variant="outline" onClick={actions.checkIn}>
+                        Process
+                      </Button>
                     </div>
                   </div>
                 );
@@ -228,6 +298,16 @@ export default function ReceptionistDashboard() {
           </Card>
         </div>
       </div>
+
+      {/* Check-In Modal */}
+      {selectedAppointment && (
+        <CheckInModal
+          open={checkInModalOpen}
+          onOpenChange={setCheckInModalOpen}
+          appointment={selectedAppointment}
+          onSuccess={handleCheckInComplete}
+        />
+      )}
     </DashboardLayout>
   );
 }

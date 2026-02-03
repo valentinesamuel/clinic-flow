@@ -1,22 +1,23 @@
-// AppointmentListPage - Calendar/list view for appointments
+// AppointmentListPage - Calendar/list view for appointments with professional table
 
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, LayoutGrid, RefreshCw, Search } from 'lucide-react';
-import { Appointment, AppointmentStatus } from '@/types/clinical.types';
-import { mockAppointments, getAppointmentsByDate, getAppointmentsByDateRange, updateAppointmentStatus, cancelAppointment, markNoShow, rescheduleAppointment } from '@/data/appointments';
+import { Appointment } from '@/types/clinical.types';
+import { mockAppointments, getAppointmentsByDate, getAppointmentsByDateRange, updateAppointmentStatus, cancelAppointment, markNoShow, rescheduleAppointment, checkInAppointment } from '@/data/appointments';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AppointmentCard } from '@/components/appointments/AppointmentCard';
+import { AppointmentTable } from '@/components/appointments/AppointmentTable';
 import { AppointmentBookingModal } from '@/components/appointments/AppointmentBookingModal';
+import { CheckInModal } from '@/components/queue/CheckInModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Popover,
   PopoverContent,
@@ -48,17 +49,19 @@ export default function AppointmentListPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  const [viewMode, setViewMode] = useState<ViewMode>('day');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [newDate, setNewDate] = useState<Date>();
   const [newTime, setNewTime] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Get appointments based on view mode
   const appointments = useMemo(() => {
@@ -118,12 +121,14 @@ export default function AppointmentListPage() {
   };
 
   const handleCheckIn = (appointment: Appointment) => {
-    updateAppointmentStatus(appointment.id, 'checked_in');
+    setSelectedAppointment(appointment);
+    setCheckInModalOpen(true);
+  };
+
+  const handleCheckInSuccess = () => {
+    setCheckInModalOpen(false);
+    setSelectedAppointment(null);
     setRefreshKey(k => k + 1);
-    toast({
-      title: 'Patient Checked In',
-      description: `${appointment.patientName} has been checked in.`,
-    });
   };
 
   const handleReschedule = (appointment: Appointment) => {
@@ -249,6 +254,10 @@ export default function AppointmentListPage() {
           {/* View Mode */}
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)} className="ml-auto">
             <TabsList>
+              <TabsTrigger value="list">
+                <List className="h-4 w-4 mr-1" />
+                List
+              </TabsTrigger>
               <TabsTrigger value="day">
                 <LayoutGrid className="h-4 w-4 mr-1" />
                 Day
@@ -256,10 +265,6 @@ export default function AppointmentListPage() {
               <TabsTrigger value="week">
                 <CalendarIcon className="h-4 w-4 mr-1" />
                 Week
-              </TabsTrigger>
-              <TabsTrigger value="list">
-                <List className="h-4 w-4 mr-1" />
-                List
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -276,18 +281,19 @@ export default function AppointmentListPage() {
               className="pl-9"
             />
           </div>
-          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="scheduled">Scheduled</SelectItem>
-              <SelectItem value="checked_in">Checked In</SelectItem>
-              <SelectItem value="completed">Completed</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            {(['all', 'scheduled', 'checked_in', 'completed', 'cancelled'] as StatusFilter[]).map((filter) => (
+              <Button
+                key={filter}
+                variant={statusFilter === filter ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setStatusFilter(filter)}
+                className="capitalize"
+              >
+                {filter === 'all' ? 'All' : filter.replace('_', ' ')}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
@@ -331,6 +337,18 @@ export default function AppointmentListPage() {
                 );
               })}
             </div>
+          ) : viewMode === 'list' ? (
+            <AppointmentTable
+              appointments={appointments}
+              currentPage={currentPage}
+              itemsPerPage={15}
+              onPageChange={setCurrentPage}
+              onCheckIn={handleCheckIn}
+              onReschedule={handleReschedule}
+              onCancel={handleCancel}
+              onNoShow={handleNoShow}
+              onViewPatient={handleViewProfile}
+            />
           ) : (
             <ScrollArea className="h-[calc(100vh-350px)]">
               <div className="space-y-3 pr-4">
@@ -339,45 +357,23 @@ export default function AppointmentListPage() {
                     <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                     <p className="text-lg font-medium">No appointments found</p>
                     <p className="text-muted-foreground">
-                      {viewMode === 'day' 
-                        ? `No appointments for ${format(selectedDate, 'MMMM d, yyyy')}`
-                        : 'Try adjusting your filters'
-                      }
+                      No appointments for {format(selectedDate, 'MMMM d, yyyy')}
                     </p>
                   </div>
                 ) : (
-                  <>
-                    {viewMode === 'list' && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {appointments.map((apt) => (
-                          <AppointmentCard
-                            key={apt.id}
-                            appointment={apt}
-                            onCheckIn={handleCheckIn}
-                            onReschedule={handleReschedule}
-                            onCancel={handleCancel}
-                            onNoShow={handleNoShow}
-                            onViewProfile={handleViewProfile}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    {viewMode === 'day' && (
-                      <div className="space-y-3">
-                        {appointments.map((apt) => (
-                          <AppointmentCard
-                            key={apt.id}
-                            appointment={apt}
-                            onCheckIn={handleCheckIn}
-                            onReschedule={handleReschedule}
-                            onCancel={handleCancel}
-                            onNoShow={handleNoShow}
-                            onViewProfile={handleViewProfile}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </>
+                  <div className="space-y-3">
+                    {appointments.map((apt) => (
+                      <AppointmentCard
+                        key={apt.id}
+                        appointment={apt}
+                        onCheckIn={handleCheckIn}
+                        onReschedule={handleReschedule}
+                        onCancel={handleCancel}
+                        onNoShow={handleNoShow}
+                        onViewProfile={handleViewProfile}
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
             </ScrollArea>
@@ -392,6 +388,16 @@ export default function AppointmentListPage() {
         initialDate={selectedDate}
         onSuccess={() => setRefreshKey(k => k + 1)}
       />
+
+      {/* Check-In Modal */}
+      {selectedAppointment && (
+        <CheckInModal
+          open={checkInModalOpen}
+          onOpenChange={setCheckInModalOpen}
+          appointment={selectedAppointment}
+          onSuccess={handleCheckInSuccess}
+        />
+      )}
 
       {/* Reschedule Dialog */}
       <Dialog open={rescheduleDialogOpen} onOpenChange={setRescheduleDialogOpen}>

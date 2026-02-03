@@ -1,23 +1,21 @@
-// CheckInQueuePage - Receptionist check-in queue view
+// CheckInQueuePage - Redesigned with professional table and pagination
 
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Plus, Search, Filter, Clock, UserPlus, RefreshCw } from 'lucide-react';
+import { Plus, Search, Clock, UserPlus, RefreshCw, Users, CheckCircle, Calendar } from 'lucide-react';
 import { Appointment } from '@/types/clinical.types';
 import { getTodaysAppointments, markNoShow } from '@/data/appointments';
 import { getQueueByType } from '@/data/queue';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { AppointmentCard } from '@/components/appointments/AppointmentCard';
+import { AppointmentTable } from '@/components/appointments/AppointmentTable';
 import { CheckInModal } from '@/components/queue/CheckInModal';
 import { AppointmentBookingModal } from '@/components/appointments/AppointmentBookingModal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 
 type StatusFilter = 'all' | 'pending' | 'checked_in' | 'completed';
@@ -33,10 +31,13 @@ export default function CheckInQueuePage() {
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Get today's appointments
+  const allAppointments = useMemo(() => getTodaysAppointments(), [refreshKey]);
+  
   const appointments = useMemo(() => {
-    let result = getTodaysAppointments();
+    let result = [...allAppointments];
     
     // Filter by status
     if (statusFilter === 'pending') {
@@ -60,13 +61,15 @@ export default function CheckInQueuePage() {
     result.sort((a, b) => a.scheduledTime.localeCompare(b.scheduledTime));
     
     return result;
-  }, [statusFilter, searchQuery, refreshKey]);
+  }, [allAppointments, statusFilter, searchQuery]);
 
-  // Get check-in queue stats
-  const checkInQueue = getQueueByType('check_in');
-  const pendingCount = getTodaysAppointments().filter(a => 
-    ['scheduled', 'confirmed'].includes(a.status)
-  ).length;
+  // Stats
+  const stats = useMemo(() => ({
+    pending: allAppointments.filter(a => ['scheduled', 'confirmed'].includes(a.status)).length,
+    checkedIn: allAppointments.filter(a => a.status === 'checked_in').length,
+    completed: allAppointments.filter(a => a.status === 'completed').length,
+    total: allAppointments.length,
+  }), [allAppointments]);
 
   const handleCheckIn = (appointment: Appointment) => {
     setSelectedAppointment(appointment);
@@ -88,6 +91,8 @@ export default function CheckInQueuePage() {
   };
 
   const handleCheckInSuccess = () => {
+    setCheckInModalOpen(false);
+    setSelectedAppointment(null);
     setRefreshKey(k => k + 1);
   };
 
@@ -118,60 +123,68 @@ export default function CheckInQueuePage() {
           </div>
         </div>
 
-        {/* Stats */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
+          <Card 
+            className={`cursor-pointer transition-colors ${statusFilter === 'pending' ? 'border-primary bg-primary/5' : 'hover:bg-accent/50'}`}
+            onClick={() => setStatusFilter('pending')}
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-amber-600" />
+                <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{pendingCount}</p>
-                  <p className="text-xs text-muted-foreground">Pending</p>
+                  <p className="text-3xl font-bold">{stats.pending}</p>
+                  <p className="text-sm text-muted-foreground">Pending</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className={`cursor-pointer transition-colors ${statusFilter === 'checked_in' ? 'border-primary bg-primary/5' : 'hover:bg-accent/50'}`}
+            onClick={() => setStatusFilter('checked_in')}
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <UserPlus className="h-5 w-5 text-primary" />
+                <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                  <Users className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">
-                    {getTodaysAppointments().filter(a => a.status === 'checked_in').length}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Checked In</p>
+                  <p className="text-3xl font-bold">{stats.checkedIn}</p>
+                  <p className="text-sm text-muted-foreground">Checked In</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className={`cursor-pointer transition-colors ${statusFilter === 'completed' ? 'border-primary bg-primary/5' : 'hover:bg-accent/50'}`}
+            onClick={() => setStatusFilter('completed')}
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-green-600" />
+                <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">
-                    {getTodaysAppointments().filter(a => a.status === 'completed').length}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Completed</p>
+                  <p className="text-3xl font-bold">{stats.completed}</p>
+                  <p className="text-sm text-muted-foreground">Completed</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className={`cursor-pointer transition-colors ${statusFilter === 'all' ? 'border-primary bg-primary/5' : 'hover:bg-accent/50'}`}
+            onClick={() => setStatusFilter('all')}
+          >
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-muted-foreground" />
+                <div className="h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
+                  <Calendar className="h-6 w-6 text-muted-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{getTodaysAppointments().length}</p>
-                  <p className="text-xs text-muted-foreground">Total Today</p>
+                  <p className="text-3xl font-bold">{stats.total}</p>
+                  <p className="text-sm text-muted-foreground">Total Today</p>
                 </div>
               </div>
             </CardContent>
@@ -179,10 +192,10 @@ export default function CheckInQueuePage() {
         </div>
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Appointments List */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* Search and Filter */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Appointments Table */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* Search and Filters */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -193,38 +206,34 @@ export default function CheckInQueuePage() {
                   className="pl-9"
                 />
               </div>
-              <Tabs value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
-                <TabsList>
-                  <TabsTrigger value="pending">Pending</TabsTrigger>
-                  <TabsTrigger value="checked_in">Checked In</TabsTrigger>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <div className="flex gap-2">
+                {(['pending', 'checked_in', 'completed', 'all'] as StatusFilter[]).map((filter) => (
+                  <Button
+                    key={filter}
+                    variant={statusFilter === filter ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatusFilter(filter)}
+                    className="capitalize"
+                  >
+                    {filter === 'all' ? 'All' : filter.replace('_', ' ')}
+                  </Button>
+                ))}
+              </div>
             </div>
 
-            {/* Appointments */}
-            <ScrollArea className="h-[calc(100vh-380px)]">
-              <div className="space-y-3 pr-4">
-                {appointments.length === 0 ? (
-                  <div className="text-center py-12">
-                    <p className="text-muted-foreground">No appointments found</p>
-                  </div>
-                ) : (
-                  appointments.map((appointment) => (
-                    <AppointmentCard
-                      key={appointment.id}
-                      appointment={appointment}
-                      onCheckIn={handleCheckIn}
-                      onNoShow={handleNoShow}
-                      onViewProfile={handleViewProfile}
-                    />
-                  ))
-                )}
-              </div>
-            </ScrollArea>
+            {/* Appointments Table */}
+            <AppointmentTable
+              appointments={appointments}
+              currentPage={currentPage}
+              itemsPerPage={15}
+              onPageChange={setCurrentPage}
+              onCheckIn={handleCheckIn}
+              onNoShow={handleNoShow}
+              onViewPatient={handleViewProfile}
+            />
           </div>
 
-          {/* Sidebar - Walk-ins and Quick Actions */}
+          {/* Sidebar - Quick Actions */}
           <div className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
@@ -247,25 +256,68 @@ export default function CheckInQueuePage() {
                   <Plus className="h-4 w-4 mr-2" />
                   Walk-In Appointment
                 </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => navigate(`${baseRoute}/appointments`)}
+                >
+                  <Calendar className="h-4 w-4 mr-2" />
+                  View All Appointments
+                </Button>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Currently in Triage</CardTitle>
+                <CardTitle className="text-base">Triage Queue</CardTitle>
               </CardHeader>
               <CardContent>
                 {getQueueByType('triage').filter(q => q.status === 'waiting').length === 0 ? (
                   <p className="text-sm text-muted-foreground">No patients in triage queue</p>
                 ) : (
                   <div className="space-y-2">
-                    {getQueueByType('triage').filter(q => q.status === 'waiting').slice(0, 3).map((entry) => (
-                      <div key={entry.id} className="flex items-center justify-between p-2 rounded bg-muted/50">
-                        <div>
-                          <p className="text-sm font-medium">{entry.patientName}</p>
-                          <p className="text-xs text-muted-foreground">{entry.reasonForVisit}</p>
+                    {getQueueByType('triage').filter(q => q.status === 'waiting').slice(0, 5).map((entry) => (
+                      <div key={entry.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{entry.patientName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{entry.reasonForVisit}</p>
                         </div>
-                        <Badge variant="outline">#{entry.queueNumber}</Badge>
+                        <Badge variant="outline" className="shrink-0 ml-2">
+                          #{entry.queueNumber}
+                        </Badge>
+                      </div>
+                    ))}
+                    {getQueueByType('triage').filter(q => q.status === 'waiting').length > 5 && (
+                      <p className="text-xs text-center text-muted-foreground pt-2">
+                        +{getQueueByType('triage').filter(q => q.status === 'waiting').length - 5} more
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Doctor Queue</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {getQueueByType('doctor').filter(q => q.status === 'waiting').length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No patients waiting for doctor</p>
+                ) : (
+                  <div className="space-y-2">
+                    {getQueueByType('doctor').filter(q => q.status === 'waiting').slice(0, 5).map((entry) => (
+                      <div key={entry.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{entry.patientName}</p>
+                          <p className="text-xs text-muted-foreground truncate">{entry.reasonForVisit}</p>
+                        </div>
+                        <Badge 
+                          variant={entry.priority === 'emergency' ? 'destructive' : 'outline'} 
+                          className="shrink-0 ml-2"
+                        >
+                          #{entry.queueNumber}
+                        </Badge>
                       </div>
                     ))}
                   </div>

@@ -1,14 +1,18 @@
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Patient } from '@/types/patient.types';
-import { PatientNumber, GenderShort, BloodTypeDisplay } from '@/components/atoms/display';
+import { PatientNumber } from '@/components/atoms/display/PatientNumber';
+import { GenderIcon } from '@/components/atoms/display/GenderIcon';
+import { BloodTypeDisplay } from '@/components/atoms/display/BloodTypeDisplay';
 import { calculateAge } from '@/constants/designSystem';
 
 interface PatientQuickInfoProps {
   patient: Patient;
   showPhoto?: boolean;
   showMrn?: boolean;
+  showBloodType?: boolean;
   size?: 'sm' | 'md' | 'lg';
+  avatarSize?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
@@ -16,12 +20,17 @@ export function PatientQuickInfo({
   patient,
   showPhoto = true,
   showMrn = true,
+  showBloodType = true,
   size = 'md',
+  avatarSize,
   className,
 }: PatientQuickInfoProps) {
   const initials = `${patient.firstName[0]}${patient.lastName[0]}`.toUpperCase();
   const fullName = `${patient.firstName} ${patient.lastName}`;
   const age = calculateAge(patient.dateOfBirth);
+  
+  // Use avatarSize if provided, otherwise use size
+  const resolvedAvatarSize = avatarSize || size;
 
   const avatarSizes = {
     sm: 'h-8 w-8',
@@ -38,7 +47,7 @@ export function PatientQuickInfo({
   return (
     <div className={cn('flex items-center gap-3', className)}>
       {showPhoto && (
-        <Avatar className={avatarSizes[size]}>
+        <Avatar className={avatarSizes[resolvedAvatarSize]}>
           <AvatarImage src={patient.photoUrl} alt={fullName} />
           <AvatarFallback className="bg-primary/10 text-primary font-medium">
             {initials}
@@ -54,8 +63,8 @@ export function PatientQuickInfo({
           <span>•</span>
           <span>{age}yrs</span>
           <span>•</span>
-          <GenderShort gender={patient.gender} />
-          {patient.bloodGroup !== 'unknown' && (
+          <GenderIcon gender={patient.gender} size="sm" />
+          {showBloodType && patient.bloodGroup !== 'unknown' && (
             <>
               <span>•</span>
               <BloodTypeDisplay bloodGroup={patient.bloodGroup} size="sm" showIcon={false} />

@@ -6,8 +6,10 @@ interface QueuePaginationProps {
   currentPage: number;
   totalPages: number;
   totalItems: number;
-  startIndex: number;
-  endIndex: number;
+  // Support both startIndex/endIndex and itemsPerPage patterns
+  startIndex?: number;
+  endIndex?: number;
+  itemsPerPage?: number;
   onPageChange: (page: number) => void;
   className?: string;
 }
@@ -16,11 +18,16 @@ export function QueuePagination({
   currentPage,
   totalPages,
   totalItems,
-  startIndex,
-  endIndex,
+  startIndex: providedStartIndex,
+  endIndex: providedEndIndex,
+  itemsPerPage,
   onPageChange,
   className,
 }: QueuePaginationProps) {
+  // Calculate startIndex and endIndex if itemsPerPage is provided
+  const startIndex = providedStartIndex ?? ((currentPage - 1) * (itemsPerPage || 10)) + 1;
+  const endIndex = providedEndIndex ?? Math.min(currentPage * (itemsPerPage || 10), totalItems);
+
   // Generate page numbers to display
   const getPageNumbers = (): (number | 'ellipsis')[] => {
     const pages: (number | 'ellipsis')[] = [];
@@ -60,6 +67,8 @@ export function QueuePagination({
   const pages = getPageNumbers();
 
   if (totalPages <= 1) {
+    if (totalItems === 0) return null;
+    
     return (
       <div className={cn('text-sm text-muted-foreground', className)}>
         Showing {startIndex}-{endIndex} of {totalItems}

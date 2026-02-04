@@ -1,10 +1,21 @@
+// PatientCard - Refactored to use atomic components
+
 import { Patient } from '@/types/patient.types';
 import { calculateAge } from '@/data/patients';
+
+// Atomic components
+import { PatientNumber } from '@/components/atoms/display/PatientNumber';
+import { PatientAge } from '@/components/atoms/display/PatientAge';
+import { GenderIcon } from '@/components/atoms/display/GenderIcon';
+import { PhoneNumber } from '@/components/atoms/display/PhoneNumber';
+import { InsuranceBadge } from '@/components/atoms/display/InsuranceBadge';
+import { BloodTypeDisplay } from '@/components/atoms/display/BloodTypeDisplay';
+
+// UI components
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Eye, UserCheck, Phone, Mail } from 'lucide-react';
+import { Eye, UserCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PatientCardProps {
@@ -22,16 +33,7 @@ export function PatientCard({
   showActions = true,
   compact = false,
 }: PatientCardProps) {
-  const age = calculateAge(patient.dateOfBirth);
   const initials = `${patient.firstName[0]}${patient.lastName[0]}`.toUpperCase();
-
-  const paymentBadgeVariant = {
-    cash: 'secondary',
-    hmo: 'default',
-    corporate: 'outline',
-  } as const;
-
-  const genderIcon = patient.gender === 'male' ? '♂' : patient.gender === 'female' ? '♀' : '⚧';
 
   if (compact) {
     return (
@@ -52,13 +54,17 @@ export function PatientCard({
           <p className="font-medium text-sm truncate">
             {patient.firstName} {patient.lastName}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {patient.mrn} • {age} yrs {genderIcon}
-          </p>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <PatientNumber number={patient.mrn} size="sm" />
+            <span>•</span>
+            <PatientAge dateOfBirth={patient.dateOfBirth} />
+            <GenderIcon gender={patient.gender} size="sm" />
+          </div>
         </div>
-        <Badge variant={paymentBadgeVariant[patient.paymentType]} className="text-xs">
-          {patient.paymentType === 'hmo' ? patient.hmoDetails?.providerName : patient.paymentType}
-        </Badge>
+        <InsuranceBadge 
+          paymentType={patient.paymentType}
+          hmoName={patient.hmoDetails?.providerName}
+        />
       </div>
     );
   }
@@ -79,35 +85,26 @@ export function PatientCard({
               <h3 className="font-semibold text-foreground">
                 {patient.firstName} {patient.middleName ? `${patient.middleName} ` : ''}{patient.lastName}
               </h3>
-              <p className="text-sm text-muted-foreground">
-                {patient.mrn}
-              </p>
+              <PatientNumber number={patient.mrn} size="sm" />
             </div>
-            <Badge variant={paymentBadgeVariant[patient.paymentType]}>
-              {patient.paymentType === 'hmo' ? patient.hmoDetails?.providerName : patient.paymentType.toUpperCase()}
-            </Badge>
+            <InsuranceBadge 
+              paymentType={patient.paymentType}
+              hmoName={patient.hmoDetails?.providerName}
+            />
           </div>
           
           <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
-            <span className="flex items-center gap-1">
-              {genderIcon} {age} years
-            </span>
-            <span className="flex items-center gap-1">
-              <Phone className="h-3 w-3" />
-              {patient.phone}
-            </span>
-            {patient.email && (
-              <span className="flex items-center gap-1">
-                <Mail className="h-3 w-3" />
-                {patient.email}
-              </span>
-            )}
+            <div className="flex items-center gap-1">
+              <PatientAge dateOfBirth={patient.dateOfBirth} />
+              <GenderIcon gender={patient.gender} showLabel size="sm" />
+            </div>
+            <PhoneNumber phone={patient.phone} />
           </div>
           
           {patient.bloodGroup !== 'unknown' && (
-            <Badge variant="outline" className="mt-2 text-xs">
-              Blood Type: {patient.bloodGroup}
-            </Badge>
+            <div className="mt-2">
+              <BloodTypeDisplay bloodGroup={patient.bloodGroup} size="sm" />
+            </div>
           )}
         </div>
         

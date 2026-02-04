@@ -9,12 +9,12 @@ import { getQueueByType, startQueueEntry, getQueueStats } from '@/data/queue';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { QueueBoard } from '@/components/queue/QueueBoard';
-import { QueueCard } from '@/components/queue/QueueCard';
 import { TriagePanel } from '@/components/queue/TriagePanel';
+import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useToast } from '@/hooks/use-toast';
+import { PAGINATION } from '@/constants/designSystem';
 
 export default function TriageQueuePage() {
   const navigate = useNavigate();
@@ -24,11 +24,18 @@ export default function TriageQueuePage() {
   const [selectedEntry, setSelectedEntry] = useState<QueueEntry | null>(null);
   const [triagePanelOpen, setTriagePanelOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(PAGINATION.defaultPageSize);
 
   // Get triage queue entries
   const triageQueue = useMemo(() => {
     return getQueueByType('triage');
   }, [refreshKey]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(triageQueue.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedQueue = triageQueue.slice(startIndex, startIndex + itemsPerPage);
 
   const stats = getQueueStats('triage');
 
@@ -54,8 +61,10 @@ export default function TriageQueuePage() {
     navigate(`${baseRoute}/patients/${patientId}`);
   };
 
-  const baseRoute = user?.role === 'nurse' ? '/nurse' : 
-                   user?.role === 'clinical_lead' ? '/clinical-lead' : '';
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size);
+    setCurrentPage(1);
+  };
 
   return (
     <DashboardLayout>
@@ -79,7 +88,7 @@ export default function TriageQueuePage() {
 
         {/* Queue Board */}
         <QueueBoard
-          entries={triageQueue}
+          entries={paginatedQueue}
           title="Patients Awaiting Triage"
           onStart={handleStart}
           onViewHistory={handleViewHistory}
@@ -88,6 +97,16 @@ export default function TriageQueuePage() {
             { id: 'in_progress', title: 'Triage In Progress', className: 'bg-blue-50 dark:bg-blue-950/20' },
             { id: 'completed', title: 'Sent to Doctor', className: 'bg-green-50 dark:bg-green-950/20' },
           ]}
+        />
+
+        {/* Pagination */}
+        <QueuePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={triageQueue.length}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={handlePageSizeChange}
         />
       </div>
 

@@ -1,6 +1,8 @@
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { PageSizeSelector } from '@/components/atoms/input/PageSizeSelector';
+import { PAGINATION } from '@/constants/designSystem';
 
 interface QueuePaginationProps {
   currentPage: number;
@@ -11,6 +13,10 @@ interface QueuePaginationProps {
   endIndex?: number;
   itemsPerPage?: number;
   onPageChange: (page: number) => void;
+  // Page size selector props
+  showPageSizeSelector?: boolean;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: readonly number[] | number[];
   className?: string;
 }
 
@@ -22,6 +28,9 @@ export function QueuePagination({
   endIndex: providedEndIndex,
   itemsPerPage,
   onPageChange,
+  showPageSizeSelector = true,
+  onPageSizeChange,
+  pageSizeOptions = PAGINATION.pageSizeOptions,
   className,
 }: QueuePaginationProps) {
   // Calculate startIndex and endIndex if itemsPerPage is provided
@@ -66,12 +75,39 @@ export function QueuePagination({
 
   const pages = getPageNumbers();
 
-  if (totalPages <= 1) {
+  if (totalPages <= 1 && !showPageSizeSelector) {
     if (totalItems === 0) return null;
     
     return (
       <div className={cn('text-sm text-muted-foreground', className)}>
         Showing {startIndex}-{endIndex} of {totalItems}
+      </div>
+    );
+  }
+
+  // Show only page size selector if only 1 page but selector is enabled
+  if (totalPages <= 1) {
+    if (totalItems === 0) return null;
+
+    return (
+      <div
+        className={cn(
+          'flex flex-col sm:flex-row items-center justify-between gap-4',
+          className
+        )}
+      >
+        {showPageSizeSelector && onPageSizeChange && itemsPerPage ? (
+          <PageSizeSelector
+            value={itemsPerPage}
+            options={pageSizeOptions}
+            onChange={onPageSizeChange}
+          />
+        ) : (
+          <div />
+        )}
+        <span className="text-sm text-muted-foreground">
+          Showing {startIndex}-{endIndex} of {totalItems}
+        </span>
       </div>
     );
   }
@@ -83,9 +119,18 @@ export function QueuePagination({
         className
       )}
     >
-      <span className="text-sm text-muted-foreground">
-        Showing {startIndex}-{endIndex} of {totalItems}
-      </span>
+      <div className="flex items-center gap-4">
+        {showPageSizeSelector && onPageSizeChange && itemsPerPage ? (
+          <PageSizeSelector
+            value={itemsPerPage}
+            options={pageSizeOptions}
+            onChange={onPageSizeChange}
+          />
+        ) : null}
+        <span className="text-sm text-muted-foreground">
+          Showing {startIndex}-{endIndex} of {totalItems}
+        </span>
+      </div>
 
       <div className="flex items-center gap-1">
         <Button
@@ -98,7 +143,7 @@ export function QueuePagination({
           <span className="sr-only sm:not-sr-only sm:ml-1">Previous</span>
         </Button>
 
-        <div className="flex items-center gap-1">
+        <div className="hidden sm:flex items-center gap-1">
           {pages.map((page, index) =>
             page === 'ellipsis' ? (
               <span
@@ -120,6 +165,11 @@ export function QueuePagination({
             )
           )}
         </div>
+
+        {/* Mobile: Show current page / total */}
+        <span className="sm:hidden text-sm text-muted-foreground px-2">
+          {currentPage} / {totalPages}
+        </span>
 
         <Button
           variant="outline"

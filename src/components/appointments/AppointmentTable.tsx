@@ -3,8 +3,6 @@ import {
   User, 
   Clock, 
   MoreHorizontal,
-  ChevronLeft,
-  ChevronRight,
   CheckCircle,
   XCircle,
   Calendar as CalendarIcon
@@ -28,6 +26,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
+import { PAGINATION } from '@/constants/designSystem';
 import { cn } from '@/lib/utils';
 
 interface AppointmentTableProps {
@@ -35,6 +35,7 @@ interface AppointmentTableProps {
   currentPage: number;
   itemsPerPage?: number;
   onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
   onCheckIn?: (appointment: Appointment) => void;
   onReschedule?: (appointment: Appointment) => void;
   onCancel?: (appointment: Appointment) => void;
@@ -45,8 +46,9 @@ interface AppointmentTableProps {
 export function AppointmentTable({
   appointments,
   currentPage,
-  itemsPerPage = 15,
+  itemsPerPage = PAGINATION.defaultPageSize,
   onPageChange,
+  onPageSizeChange,
   onCheckIn,
   onReschedule,
   onCancel,
@@ -216,59 +218,16 @@ export function AppointmentTable({
         </Table>
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-muted-foreground">
-            Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, appointments.length)} of {appointments.length}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-            >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Previous
-            </Button>
-            <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                let pageNum: number;
-                if (totalPages <= 5) {
-                  pageNum = i + 1;
-                } else if (currentPage <= 3) {
-                  pageNum = i + 1;
-                } else if (currentPage >= totalPages - 2) {
-                  pageNum = totalPages - 4 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? 'default' : 'outline'}
-                    size="sm"
-                    className="w-9"
-                    onClick={() => onPageChange(pageNum)}
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage >= totalPages}
-            >
-              Next
-              <ChevronRight className="h-4 w-4 ml-1" />
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Pagination with page size selector */}
+      <QueuePagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={appointments.length}
+        itemsPerPage={itemsPerPage}
+        onPageChange={onPageChange}
+        showPageSizeSelector={!!onPageSizeChange}
+        onPageSizeChange={onPageSizeChange}
+      />
     </div>
   );
 }

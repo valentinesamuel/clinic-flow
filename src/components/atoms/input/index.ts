@@ -4,3 +4,4 @@ export { StateSelector } from './StateSelector';
 export { BloodTypeSelector } from './BloodTypeSelector';
 export { GenderSelector } from './GenderSelector';
 export { DateOfBirthPicker } from './DateOfBirthPicker';
+export { PageSizeSelector } from './PageSizeSelector';

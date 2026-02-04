@@ -12,6 +12,7 @@ import { getVitalsByPatient } from '@/data/vitals';
 import { getDoctors } from '@/data/staff';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { PAGINATION } from '@/constants/designSystem';
 
 // Refactored components using atomic design
 import { QueueTable } from '@/components/queue/QueueTable';
@@ -50,6 +51,7 @@ export default function DoctorQueuePage() {
   const [transferTarget, setTransferTarget] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(PAGINATION.defaultPageSize);
 
   // Get doctor queue entries (assigned to current user)
   const doctorQueue = useMemo(() => {
@@ -144,6 +146,11 @@ export default function DoctorQueuePage() {
     }
   };
 
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size);
+    setCurrentPage(1);
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6 p-4 md:p-6">
@@ -172,8 +179,9 @@ export default function DoctorQueuePage() {
         <QueueTable
           entries={doctorQueue}
           currentPage={currentPage}
-          itemsPerPage={10}
+          itemsPerPage={itemsPerPage}
           onPageChange={setCurrentPage}
+          onPageSizeChange={handlePageSizeChange}
           onRowClick={handleSelectEntry}
           onStart={handleStart}
           onViewHistory={handleViewProfile}

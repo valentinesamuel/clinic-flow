@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus } from 'lucide-react';
 import { getPatientsPaginated } from '@/data/patients';
 import { Patient, PaymentType } from '@/types/patient.types';
+import { PAGINATION } from '@/constants/designSystem';
 
 export default function PatientListPage() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function PatientListPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(PAGINATION.defaultPageSize);
   const [filter, setFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -27,14 +29,14 @@ export default function PatientListPage() {
   useEffect(() => {
     setLoading(true);
     const paymentFilter = filter !== 'all' ? filter as PaymentType : undefined;
-    const result = getPatientsPaginated(currentPage, 20, { 
+    const result = getPatientsPaginated(currentPage, itemsPerPage, { 
       paymentType: paymentFilter,
       search: searchQuery 
     });
     setPatients(result.patients);
     setTotalPages(result.totalPages);
     setLoading(false);
-  }, [currentPage, filter, searchQuery]);
+  }, [currentPage, filter, searchQuery, itemsPerPage]);
 
   const handleViewPatient = (patient: Patient) => {
     navigate(`${basePath}/patients/${patient.id}`);
@@ -46,6 +48,11 @@ export default function PatientListPage() {
 
   const handleRegisterNew = () => {
     navigate(`${basePath}/patients/new`);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size);
+    setCurrentPage(1);
   };
 
   return (
@@ -85,7 +92,9 @@ export default function PatientListPage() {
           loading={loading}
           currentPage={currentPage}
           totalPages={totalPages}
+          itemsPerPage={itemsPerPage}
           onPageChange={setCurrentPage}
+          onPageSizeChange={handlePageSizeChange}
           onViewPatient={handleViewPatient}
           onEditPatient={handleEditPatient}
         />

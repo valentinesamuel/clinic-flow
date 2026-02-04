@@ -111,8 +111,8 @@ export const QUEUE_COLOURS = {
 
 // Pagination defaults
 export const PAGINATION = {
-  defaultPageSize: 20,
-  pageSizeOptions: [10, 20, 50, 100],
+  defaultPageSize: 25,
+  pageSizeOptions: [10, 25, 50],
 } as const;
 
 // Auto-pause expiry (hours)

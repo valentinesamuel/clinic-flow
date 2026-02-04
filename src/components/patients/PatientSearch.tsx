@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, X, Plus, Loader2 } from 'lucide-react';
@@ -16,11 +16,14 @@ interface PatientSearchProps {
   autoFocus?: boolean;
 }
 
+// Default empty array outside component to avoid reference changes
+const EMPTY_EXCLUDE_IDS: string[] = [];
+
 export function PatientSearch({
   onSelect,
   onRegisterNew,
   placeholder = "Search by name, phone, or patient number...",
-  excludeIds = [],
+  excludeIds = EMPTY_EXCLUDE_IDS,
   className,
   autoFocus = false,
 }: PatientSearchProps) {
@@ -28,6 +31,9 @@ export function PatientSearch({
   const [results, setResults] = useState<Patient[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+
+  // Memoize excludeIds to prevent unnecessary effect triggers
+  const stableExcludeIds = useMemo(() => excludeIds, [excludeIds.join(',')]);
 
   // Debounced search
   useEffect(() => {
@@ -40,7 +46,7 @@ export function PatientSearch({
     setIsSearching(true);
     const timer = setTimeout(() => {
       const searchResults = searchPatients(query)
-        .filter(p => !excludeIds.includes(p.id))
+        .filter(p => !stableExcludeIds.includes(p.id))
         .slice(0, 10);
       setResults(searchResults);
       setIsSearching(false);
@@ -48,7 +54,7 @@ export function PatientSearch({
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [query, excludeIds]);
+  }, [query, stableExcludeIds]);
 
   const handleSelect = useCallback((patient: Patient) => {
     onSelect(patient);

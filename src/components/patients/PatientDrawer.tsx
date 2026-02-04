@@ -1,27 +1,29 @@
 import { format } from 'date-fns';
 import { 
-  User, 
   Activity, 
   AlertTriangle, 
   FileText, 
   Calendar,
-  Phone,
-  Mail,
-  MapPin,
-  Droplets,
-  CreditCard,
-  X
+  User
 } from 'lucide-react';
 import { Patient, QueueEntry } from '@/types/patient.types';
 import { VitalSigns } from '@/types/clinical.types';
-import { calculateAge } from '@/data/patients';
 import { getConsultationsByPatient } from '@/data/consultations';
+
+// Molecule components
+import { PatientQuickInfo } from '@/components/molecules/patient/PatientQuickInfo';
+import { PatientContact } from '@/components/molecules/patient/PatientContact';
+import { PatientInsurance } from '@/components/molecules/patient/PatientInsurance';
+import { PatientAllergyList } from '@/components/molecules/patient/PatientAllergyList';
+import { PatientConditionList } from '@/components/molecules/patient/PatientConditionList';
+
+// Other components
 import { VitalSignsCard } from '@/components/clinical/VitalSignsCard';
+import { PriorityBadge } from '@/components/atoms/display/PriorityBadge';
+
+// UI components
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Separator } from '@/components/ui/separator';
 import {
   Sheet,
   SheetContent,
@@ -53,19 +55,8 @@ export function PatientDrawer({
 }: PatientDrawerProps) {
   if (!patient) return null;
 
-  const age = calculateAge(patient.dateOfBirth);
-  const initials = `${patient.firstName[0]}${patient.lastName[0]}`.toUpperCase();
   const recentConsultations = getConsultationsByPatient(patient.id).slice(0, 3);
-
-  const priorityConfig = {
-    normal: { label: 'Normal', variant: 'secondary' as const },
-    high: { label: 'High Priority', variant: 'default' as const },
-    emergency: { label: 'Emergency', variant: 'destructive' as const },
-  };
-
-  const priority = queueEntry?.priority
-    ? priorityConfig[queueEntry.priority] 
-    : null;
+  const hasAlerts = patient.allergies.length > 0 || patient.chronicConditions.length > 0;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -75,44 +66,14 @@ export function PatientDrawer({
       >
         <SheetHeader className="p-6 pb-4 border-b bg-muted/30">
           <div className="flex items-start gap-4">
-            <Avatar className="h-16 w-16 border-2 border-background shadow-md">
-              <AvatarImage src={patient.photoUrl} />
-              <AvatarFallback className="text-lg bg-primary text-primary-foreground">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <SheetTitle className="text-xl">
-                  {patient.firstName} {patient.lastName}
-                </SheetTitle>
-                {priority && (
-                  <Badge variant={priority.variant} className="shrink-0">
-                    {priority.variant === 'destructive' && (
-                      <AlertTriangle className="h-3 w-3 mr-1" />
-                    )}
-                    {priority.label}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground font-mono mt-1">
-                {patient.mrn}
-              </p>
-              <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                <span>{age} years</span>
-                <span>•</span>
-                <span className="capitalize">{patient.gender}</span>
-                {patient.bloodGroup && (
-                  <>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <Droplets className="h-3 w-3" />
-                      {patient.bloodGroup}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
+            <PatientQuickInfo 
+              patient={patient} 
+              showBloodType 
+              avatarSize="lg"
+            />
+            {queueEntry?.priority && queueEntry.priority !== 'normal' && (
+              <PriorityBadge priority={queueEntry.priority} />
+            )}
           </div>
         </SheetHeader>
 
@@ -126,37 +87,13 @@ export function PatientDrawer({
                   Contact Information
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span>{patient.phone}</span>
-                </div>
-                {patient.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{patient.email}</span>
-                  </div>
-                )}
-                {(patient.address || patient.lga) && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>
-                      {patient.lga && patient.state 
-                        ? `${patient.lga}, ${patient.state}` 
-                        : patient.address}
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  <Badge variant={patient.paymentType === 'hmo' ? 'default' : 'secondary'}>
-                    {patient.paymentType === 'hmo' 
-                      ? patient.hmoDetails?.providerName 
-                      : patient.paymentType.toUpperCase()}
-                  </Badge>
-                </div>
+              <CardContent>
+                <PatientContact patient={patient} />
               </CardContent>
             </Card>
+
+            {/* Insurance Info */}
+            <PatientInsurance patient={patient} />
 
             {/* Reason for Visit */}
             {queueEntry && (
@@ -178,8 +115,8 @@ export function PatientDrawer({
               </Card>
             )}
 
-            {/* Alerts */}
-            {(patient.allergies.length > 0 || patient.chronicConditions.length > 0) && (
+            {/* Medical Alerts */}
+            {hasAlerts && (
               <Card className="border-destructive/30 bg-destructive/5">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-medium flex items-center gap-2 text-destructive">
@@ -191,25 +128,13 @@ export function PatientDrawer({
                   {patient.allergies.length > 0 && (
                     <div>
                       <p className="text-xs text-muted-foreground mb-2">Allergies</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {patient.allergies.map((allergy, i) => (
-                          <Badge key={i} variant="destructive" className="text-xs">
-                            {allergy}
-                          </Badge>
-                        ))}
-                      </div>
+                      <PatientAllergyList allergies={patient.allergies} />
                     </div>
                   )}
                   {patient.chronicConditions.length > 0 && (
                     <div>
                       <p className="text-xs text-muted-foreground mb-2">Chronic Conditions</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {patient.chronicConditions.map((condition, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            {condition}
-                          </Badge>
-                        ))}
-                      </div>
+                      <PatientConditionList conditions={patient.chronicConditions} />
                     </div>
                   )}
                 </CardContent>

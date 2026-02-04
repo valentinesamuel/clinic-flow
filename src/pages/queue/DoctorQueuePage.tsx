@@ -1,9 +1,9 @@
-// DoctorQueuePage - Doctor's patient queue with table and drawer
+// DoctorQueuePage - Refactored to use atomic components and QueueContext
 
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { RefreshCw, User } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { QueueEntry, Patient } from '@/types/patient.types';
 import { VitalSigns } from '@/types/clinical.types';
 import { getQueueByType, startQueueEntry, completeQueueEntry, transferQueue, getQueueStats } from '@/data/queue';
@@ -12,9 +12,13 @@ import { getVitalsByPatient } from '@/data/vitals';
 import { getDoctors } from '@/data/staff';
 import { useAuth } from '@/contexts/AuthContext';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
+
+// Refactored components using atomic design
 import { QueueTable } from '@/components/queue/QueueTable';
 import { QueueStatsInline } from '@/components/queue/QueueStats';
 import { PatientDrawer } from '@/components/patients/PatientDrawer';
+
+// UI components
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -164,7 +168,7 @@ export default function DoctorQueuePage() {
           </div>
         </div>
 
-        {/* Queue Table */}
+        {/* Queue Table - using refactored component with atomic design */}
         <QueueTable
           entries={doctorQueue}
           currentPage={currentPage}
@@ -178,7 +182,7 @@ export default function DoctorQueuePage() {
         />
       </div>
 
-      {/* Patient Context Drawer */}
+      {/* Patient Context Drawer - using refactored component with molecules */}
       <PatientDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}

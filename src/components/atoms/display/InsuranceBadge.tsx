@@ -1,11 +1,15 @@
 import { cn } from '@/lib/utils';
-import { Shield, ShieldCheck, ShieldX, ShieldAlert } from 'lucide-react';
+import { Shield, ShieldCheck, ShieldX, ShieldAlert, Wallet } from 'lucide-react';
+import { PaymentType } from '@/types/patient.types';
 
 type InsuranceStatus = 'active' | 'expired' | 'pending' | 'none';
 
 interface InsuranceBadgeProps {
-  status: InsuranceStatus;
+  // Support either status-based or paymentType-based usage
+  status?: InsuranceStatus;
+  paymentType?: PaymentType;
   providerName?: string;
+  hmoName?: string; // Alias for providerName
   expiryDate?: string;
   compact?: boolean;
   className?: string;
@@ -18,7 +22,7 @@ const statusConfig: Record<
   active: {
     icon: <ShieldCheck className="h-3 w-3" />,
     label: 'Active',
-    styles: 'bg-success/10 text-success border-success/20',
+    styles: 'bg-primary/10 text-primary border-primary/20',
   },
   expired: {
     icon: <ShieldX className="h-3 w-3" />,
@@ -28,23 +32,40 @@ const statusConfig: Record<
   pending: {
     icon: <ShieldAlert className="h-3 w-3" />,
     label: 'Pending',
-    styles: 'bg-warning/10 text-warning border-warning/20',
+    styles: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
   },
   none: {
-    icon: <Shield className="h-3 w-3" />,
-    label: 'No Insurance',
+    icon: <Wallet className="h-3 w-3" />,
+    label: 'Cash',
     styles: 'bg-muted text-muted-foreground border-border',
   },
 };
 
 export function InsuranceBadge({
   status,
+  paymentType,
   providerName,
+  hmoName,
   expiryDate,
-  compact = false,
+  compact = true,
   className,
 }: InsuranceBadgeProps) {
-  const config = statusConfig[status];
+  // Determine status from paymentType if not explicitly provided
+  let resolvedStatus: InsuranceStatus = status || 'none';
+  let displayName = providerName || hmoName;
+  
+  if (!status && paymentType) {
+    if (paymentType === 'hmo') {
+      resolvedStatus = 'active';
+    } else if (paymentType === 'corporate') {
+      resolvedStatus = 'active';
+      displayName = displayName || 'Corporate';
+    } else {
+      resolvedStatus = 'none';
+    }
+  }
+
+  const config = statusConfig[resolvedStatus];
 
   if (compact) {
     return (
@@ -54,10 +75,10 @@ export function InsuranceBadge({
           config.styles,
           className
         )}
-        title={providerName ? `${providerName} - ${config.label}` : config.label}
+        title={displayName ? `${displayName} - ${config.label}` : config.label}
       >
         {config.icon}
-        {status === 'none' ? 'Cash' : providerName || config.label}
+        {resolvedStatus === 'none' ? 'Cash' : displayName || config.label}
       </span>
     );
   }
@@ -73,9 +94,9 @@ export function InsuranceBadge({
       {config.icon}
       <div className="flex flex-col">
         <span className="text-xs font-medium">
-          {providerName || config.label}
+          {displayName || config.label}
         </span>
-        {expiryDate && status === 'active' && (
+        {expiryDate && resolvedStatus === 'active' && (
           <span className="text-xs opacity-75">
             Expires: {new Date(expiryDate).toLocaleDateString('en-GB')}
           </span>

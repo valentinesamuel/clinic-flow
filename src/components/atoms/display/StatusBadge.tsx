@@ -9,6 +9,7 @@ type StatusType =
   | 'no_show'
   | 'pending'
   | 'active'
+  | 'inactive'
   | 'cancelled'
   | 'draft'
   | 'approved'
@@ -29,6 +30,7 @@ const defaultLabels: Record<StatusType, string> = {
   no_show: 'No Show',
   pending: 'Pending',
   active: 'Active',
+  inactive: 'Inactive',
   cancelled: 'Cancelled',
   draft: 'Draft',
   approved: 'Approved',
@@ -38,14 +40,15 @@ const defaultLabels: Record<StatusType, string> = {
 const statusStyles: Record<StatusType, { bg: string; text: string }> = {
   waiting: { bg: 'bg-muted', text: 'text-muted-foreground' },
   in_progress: { bg: 'bg-primary/10', text: 'text-primary' },
-  paused: { bg: 'bg-warning/10', text: 'text-warning' },
-  completed: { bg: 'bg-success/10', text: 'text-success' },
+  paused: { bg: 'bg-amber-500/10', text: 'text-amber-600' },
+  completed: { bg: 'bg-green-500/10', text: 'text-green-600' },
   no_show: { bg: 'bg-muted', text: 'text-muted-foreground' },
-  pending: { bg: 'bg-warning/10', text: 'text-warning' },
-  active: { bg: 'bg-success/10', text: 'text-success' },
+  pending: { bg: 'bg-amber-500/10', text: 'text-amber-600' },
+  active: { bg: 'bg-green-500/10', text: 'text-green-600' },
+  inactive: { bg: 'bg-muted', text: 'text-muted-foreground' },
   cancelled: { bg: 'bg-destructive/10', text: 'text-destructive' },
   draft: { bg: 'bg-muted', text: 'text-muted-foreground' },
-  approved: { bg: 'bg-success/10', text: 'text-success' },
+  approved: { bg: 'bg-green-500/10', text: 'text-green-600' },
   rejected: { bg: 'bg-destructive/10', text: 'text-destructive' },
 };
 

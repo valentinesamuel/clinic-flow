@@ -1,8 +1,10 @@
-// QueueBoard - Kanban-style queue board for viewing multiple queue stages
+// QueueBoard - Refactored to use atomic components
 
 import { useState, useMemo } from 'react';
 import { List, LayoutGrid } from 'lucide-react';
-import { QueueEntry, QueueType, QueueStatus } from '@/types/patient.types';
+import { QueueEntry, QueueStatus } from '@/types/patient.types';
+
+// Atomic and molecule components
 import { QueueCard } from './QueueCard';
 import { QueueStats } from './QueueStats';
 import { Button } from '@/components/ui/button';

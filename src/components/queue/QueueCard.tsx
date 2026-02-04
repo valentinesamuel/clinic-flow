@@ -1,9 +1,16 @@
-// QueueCard - Patient queue item display with priority and wait time
+// QueueCard - Refactored to use atomic components
 
-import { format, differenceInMinutes } from 'date-fns';
-import { Clock, AlertTriangle, User, Activity, MoreHorizontal, ArrowRight, Eye, Play } from 'lucide-react';
-import { QueueEntry, QueuePriority } from '@/types/patient.types';
+import { differenceInMinutes } from 'date-fns';
+import { MoreHorizontal, ArrowRight, Eye, Play } from 'lucide-react';
+import { QueueEntry } from '@/types/patient.types';
 import { VitalSigns } from '@/types/clinical.types';
+
+// Atomic components
+import { WaitTimeIndicator } from '@/components/atoms/display/WaitTimeIndicator';
+import { PriorityBadge } from '@/components/atoms/display/PriorityBadge';
+import { PatientNumber } from '@/components/atoms/display/PatientNumber';
+
+// UI components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,7 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
@@ -31,35 +37,6 @@ interface QueueCardProps {
   onClick?: () => void;
 }
 
-const priorityConfig: Record<QueuePriority, { label: string; className: string; icon?: boolean }> = {
-  normal: { label: 'Normal', className: 'bg-muted text-muted-foreground border-muted' },
-  high: { label: 'High', className: 'bg-amber-500/10 text-amber-700 border-amber-200' },
-  emergency: { label: 'Emergency', className: 'bg-destructive text-destructive-foreground border-destructive animate-pulse', icon: true },
-};
-
-function getWaitTimeDisplay(checkInTime: string): { text: string; severity: 'good' | 'warning' | 'critical' } {
-  const minutes = differenceInMinutes(new Date(), new Date(checkInTime));
-  
-  if (minutes < 15) {
-    return { text: `${minutes} min`, severity: 'good' };
-  } else if (minutes < 30) {
-    return { text: `${minutes} min`, severity: 'warning' };
-  } else {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return { 
-      text: hours > 0 ? `${hours}h ${mins}m` : `${minutes} min`, 
-      severity: 'critical' 
-    };
-  }
-}
-
-const waitTimeColors = {
-  good: 'text-green-600',
-  warning: 'text-amber-600',
-  critical: 'text-destructive',
-};
-
 export function QueueCard({
   entry,
   position,
@@ -74,8 +51,7 @@ export function QueueCard({
   onViewHistory,
   onClick,
 }: QueueCardProps) {
-  const priorityStyle = priorityConfig[entry.priority];
-  const waitTime = getWaitTimeDisplay(entry.checkInTime);
+  const waitMinutes = differenceInMinutes(new Date(), new Date(entry.checkInTime));
   const isActive = entry.status === 'in_progress';
   const isWaiting = entry.status === 'waiting';
 
@@ -107,14 +83,9 @@ export function QueueCard({
           <p className="font-medium truncate">{entry.patientName}</p>
           <p className="text-sm text-muted-foreground truncate">{entry.reasonForVisit}</p>
         </div>
-        <div className={cn('text-sm font-medium', waitTimeColors[waitTime.severity])}>
-          {waitTime.text}
-        </div>
+        <WaitTimeIndicator minutes={waitMinutes} compact />
         {entry.priority !== 'normal' && (
-          <Badge className={cn('shrink-0', priorityStyle.className)}>
-            {priorityStyle.icon && <AlertTriangle className="h-3 w-3 mr-1" />}
-            {priorityStyle.label}
-          </Badge>
+          <PriorityBadge priority={entry.priority} size="sm" />
         )}
       </div>
     );
@@ -141,13 +112,10 @@ export function QueueCard({
             )}
             <div>
               <h4 className="font-semibold text-base">{entry.patientName}</h4>
-              <p className="text-sm text-muted-foreground">{entry.patientMrn}</p>
+              <PatientNumber number={entry.patientMrn} size="sm" />
             </div>
           </div>
-          <Badge className={cn(priorityStyle.className)}>
-            {priorityStyle.icon && <AlertTriangle className="h-3 w-3 mr-1" />}
-            {priorityStyle.label}
-          </Badge>
+          <PriorityBadge priority={entry.priority} />
         </div>
 
         {/* Reason for Visit */}
@@ -178,13 +146,7 @@ export function QueueCard({
 
         {/* Wait Time & Status */}
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span>Wait:</span>
-            <span className={cn('font-medium', waitTimeColors[waitTime.severity])}>
-              {waitTime.text}
-            </span>
-          </div>
+          <WaitTimeIndicator minutes={waitMinutes} showIcon />
           {isActive && (
             <Badge variant="outline" className="bg-primary/10 text-primary border-primary">
               In Progress

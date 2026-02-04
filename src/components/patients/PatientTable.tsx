@@ -1,8 +1,22 @@
+// PatientTable - Refactored to use atomic components
+
 import { format, formatDistanceToNow } from 'date-fns';
 import { Patient } from '@/types/patient.types';
 import { calculateAge } from '@/data/patients';
+
+// Atomic components
+import { PatientNumber } from '@/components/atoms/display/PatientNumber';
+import { PatientAge } from '@/components/atoms/display/PatientAge';
+import { GenderIcon } from '@/components/atoms/display/GenderIcon';
+import { PhoneNumber } from '@/components/atoms/display/PhoneNumber';
+import { InsuranceBadge } from '@/components/atoms/display/InsuranceBadge';
+import { StatusBadge } from '@/components/atoms/display/StatusBadge';
+
+// Molecule components
+import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
+
+// UI components
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Table,
@@ -19,7 +33,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Eye, Edit, ChevronLeft, ChevronRight, Phone, Copy, User, Shield } from 'lucide-react';
+import { Eye, Edit, Copy, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
@@ -104,9 +118,7 @@ export function PatientTable({
             </TableHeader>
             <TableBody>
               {patients.map((patient, index) => {
-                const age = calculateAge(patient.dateOfBirth);
                 const initials = `${patient.firstName[0]}${patient.lastName[0]}`.toUpperCase();
-                const genderIcon = patient.gender === 'male' ? 'M' : patient.gender === 'female' ? 'F' : 'O';
                 const lastVisitDate = new Date(patient.updatedAt);
                 const relativeTime = formatDistanceToNow(lastVisitDate, { addSuffix: true });
 
@@ -122,9 +134,7 @@ export function PatientTable({
                   >
                     <TableCell>
                       <div className="flex items-center gap-1 group">
-                        <span className="font-mono text-xs text-muted-foreground">
-                          {patient.mrn}
-                        </span>
+                        <PatientNumber number={patient.mrn} size="sm" />
                         <Button
                           variant="ghost"
                           size="icon"
@@ -157,37 +167,18 @@ export function PatientTable({
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">{age}</span>
-                        <span className="text-muted-foreground">yrs</span>
-                        <Badge variant="outline" className="text-xs px-1.5 py-0">
-                          {genderIcon}
-                        </Badge>
+                        <PatientAge dateOfBirth={patient.dateOfBirth} />
+                        <GenderIcon gender={patient.gender} showLabel size="sm" />
                       </div>
                     </TableCell>
                     <TableCell>
-                      <a 
-                        href={`tel:${patient.phone}`}
-                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-primary transition-colors"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Phone className="h-3.5 w-3.5" />
-                        {patient.phone}
-                      </a>
+                      <PhoneNumber phone={patient.phone} />
                     </TableCell>
                     <TableCell>
-                      <Badge 
-                        variant={patient.paymentType === 'hmo' ? 'default' : 'secondary'} 
-                        className="text-xs"
-                      >
-                        {patient.paymentType === 'hmo' ? (
-                          <div className="flex items-center gap-1">
-                            <Shield className="h-3 w-3" />
-                            {patient.hmoDetails?.providerName || 'HMO'}
-                          </div>
-                        ) : (
-                          patient.paymentType.toUpperCase()
-                        )}
-                      </Badge>
+                      <InsuranceBadge 
+                        paymentType={patient.paymentType} 
+                        hmoName={patient.hmoDetails?.providerName}
+                      />
                     </TableCell>
                     <TableCell>
                       <Tooltip>
@@ -202,15 +193,7 @@ export function PatientTable({
                       </Tooltip>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          'h-2 w-2 rounded-full',
-                          patient.isActive ? 'bg-green-500' : 'bg-gray-400'
-                        )} />
-                        <span className="text-xs">
-                          {patient.isActive ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
+                      <StatusBadge status={patient.isActive ? 'active' : 'inactive'} />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -260,9 +243,7 @@ export function PatientTable({
         {/* Mobile Cards */}
         <div className="md:hidden space-y-3">
           {patients.map((patient) => {
-            const age = calculateAge(patient.dateOfBirth);
             const initials = `${patient.firstName[0]}${patient.lastName[0]}`.toUpperCase();
-            const genderIcon = patient.gender === 'male' ? '♂' : patient.gender === 'female' ? '♀' : '⚧';
 
             return (
               <div 
@@ -282,86 +263,35 @@ export function PatientTable({
                       <p className="font-medium">
                         {patient.firstName} {patient.lastName}
                       </p>
-                      <p className="text-xs text-muted-foreground font-mono">
-                        {patient.mrn}
-                      </p>
+                      <PatientNumber number={patient.mrn} size="sm" />
                     </div>
                   </div>
-                  <Badge variant={patient.paymentType === 'hmo' ? 'default' : 'secondary'} className="text-xs">
-                    {patient.paymentType === 'hmo' 
-                      ? patient.hmoDetails?.providerName 
-                      : patient.paymentType.toUpperCase()}
-                  </Badge>
+                  <InsuranceBadge 
+                    paymentType={patient.paymentType} 
+                    hmoName={patient.hmoDetails?.providerName}
+                  />
                 </div>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                  <span>{age} years {genderIcon}</span>
-                  <span>{patient.phone}</span>
-                  <span className="flex items-center gap-1">
-                    <span className={cn(
-                      'h-1.5 w-1.5 rounded-full',
-                      patient.isActive ? 'bg-green-500' : 'bg-gray-400'
-                    )} />
-                    {patient.isActive ? 'Active' : 'Inactive'}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <PatientAge dateOfBirth={patient.dateOfBirth} />
+                    <GenderIcon gender={patient.gender} size="sm" />
+                  </div>
+                  <PhoneNumber phone={patient.phone} />
+                  <StatusBadge status={patient.isActive ? 'active' : 'inactive'} size="sm" />
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-2">
-            <p className="text-sm text-muted-foreground">
-              Page {currentPage} of {totalPages}
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(currentPage - 1)}
-                disabled={currentPage <= 1}
-              >
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Previous
-              </Button>
-              <div className="hidden sm:flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum: number;
-                  if (totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i;
-                  } else {
-                    pageNum = currentPage - 2 + i;
-                  }
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={currentPage === pageNum ? 'default' : 'outline'}
-                      size="sm"
-                      className="w-9"
-                      onClick={() => onPageChange(pageNum)}
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onPageChange(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-              >
-                Next
-                <ChevronRight className="h-4 w-4 ml-1" />
-              </Button>
-            </div>
-          </div>
-        )}
+        {/* Pagination using molecule component */}
+        <QueuePagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={patients.length}
+          itemsPerPage={20}
+          onPageChange={onPageChange}
+        />
       </div>
     </TooltipProvider>
   );

@@ -1,3 +1,5 @@
+// PatientListPage - Refactored to use atomic components
+
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,7 +50,7 @@ export default function PatientListPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 p-4 md:p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h1 className="text-2xl font-bold">Patients</h1>
           <Button onClick={handleRegisterNew}>
@@ -77,6 +79,7 @@ export default function PatientListPage() {
           </Select>
         </div>
 
+        {/* PatientTable now uses atomic components internally */}
         <PatientTable
           patients={patients}
           loading={loading}

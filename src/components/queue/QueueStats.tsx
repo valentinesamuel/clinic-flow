@@ -1,7 +1,8 @@
-// QueueStats - Queue statistics summary display
+// QueueStats - Refactored to use atomic components
 
 import { Users, Clock, AlertTriangle, TrendingUp } from 'lucide-react';
 import { QueueType } from '@/types/patient.types';
+import { WaitTimeIndicator } from '@/components/atoms/display/WaitTimeIndicator';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +17,6 @@ interface QueueStatsProps {
 }
 
 export function QueueStats({
-  queueType,
   waiting,
   inProgress,
   completed,
@@ -43,12 +43,6 @@ export function QueueStats({
       icon: Users,
       className: 'text-green-600 bg-green-500/10',
     },
-    {
-      label: 'Avg Wait',
-      value: `${avgWaitTime}m`,
-      icon: Clock,
-      className: avgWaitTime > 30 ? 'text-destructive bg-destructive/10' : 'text-muted-foreground bg-muted',
-    },
   ];
 
   return (
@@ -69,6 +63,24 @@ export function QueueStats({
         </Card>
       ))}
       
+      {/* Average Wait Time Card - using WaitTimeIndicator */}
+      <Card className="border-0 shadow-sm">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              'h-10 w-10 rounded-lg flex items-center justify-center',
+              avgWaitTime > 30 ? 'text-destructive bg-destructive/10' : 'text-muted-foreground bg-muted'
+            )}>
+              <Clock className="h-5 w-5" />
+            </div>
+            <div>
+              <WaitTimeIndicator minutes={avgWaitTime} compact showIcon={false} />
+              <p className="text-xs text-muted-foreground">Avg Wait</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      
       {emergencyCount > 0 && (
         <Card className="border-destructive bg-destructive/5 col-span-full">
           <CardContent className="p-4">
@@ -88,7 +100,7 @@ export function QueueStats({
   );
 }
 
-// Compact inline version for headers
+// Compact inline version for headers - using atomic WaitTimeIndicator
 export function QueueStatsInline({
   waiting,
   avgWaitTime,
@@ -107,9 +119,7 @@ export function QueueStatsInline({
       </div>
       <div className="flex items-center gap-1.5">
         <Clock className="h-4 w-4 text-muted-foreground" />
-        <span className={cn('font-medium', avgWaitTime > 30 && 'text-destructive')}>
-          ~{avgWaitTime}m
-        </span>
+        <WaitTimeIndicator minutes={avgWaitTime} compact showIcon={false} />
         <span className="text-muted-foreground">avg wait</span>
       </div>
       {emergencyCount > 0 && (

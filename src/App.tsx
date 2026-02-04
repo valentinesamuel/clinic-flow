@@ -6,8 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { SyncProvider } from "@/contexts/SyncContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
-
-// Pages
+import { QueueProvider } from "@/contexts/QueueContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import Login from "./pages/Login";
 import CMODashboard from "./pages/dashboards/CMODashboard";
 import HospitalAdminDashboard from "./pages/dashboards/HospitalAdminDashboard";
@@ -37,87 +37,91 @@ const App = () => (
     <AuthProvider>
       <PermissionProvider>
         <SyncProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Navigate to="/login" replace />} />
-                <Route path="/login" element={<Login />} />
-                
-                {/* CMO Routes */}
-                <Route path="/cmo" element={<CMODashboard />} />
-                <Route path="/cmo/patients" element={<PatientListPage />} />
-                <Route path="/cmo/patients/new" element={<PatientRegistrationPage />} />
-                <Route path="/cmo/patients/:id" element={<PatientProfilePage />} />
-                <Route path="/cmo/patients/:id/edit" element={<PatientEditPage />} />
-                <Route path="/cmo/appointments" element={<AppointmentListPage />} />
-                <Route path="/cmo/settings/permissions" element={<PermissionSettings />} />
-                <Route path="/cmo/*" element={<CMODashboard />} />
-                
-                {/* Hospital Admin Routes */}
-                <Route path="/hospital-admin" element={<HospitalAdminDashboard />} />
-                <Route path="/hospital-admin/*" element={<HospitalAdminDashboard />} />
-                
-                {/* Clinical Lead Routes */}
-                <Route path="/clinical-lead" element={<ClinicalLeadDashboard />} />
-                <Route path="/clinical-lead/patients" element={<PatientListPage />} />
-                <Route path="/clinical-lead/patients/new" element={<PatientRegistrationPage />} />
-                <Route path="/clinical-lead/patients/:id" element={<PatientProfilePage />} />
-                <Route path="/clinical-lead/patients/:id/edit" element={<PatientEditPage />} />
-                <Route path="/clinical-lead/queue" element={<TriageQueuePage />} />
-                <Route path="/clinical-lead/*" element={<ClinicalLeadDashboard />} />
-                
-                {/* Receptionist Routes */}
-                <Route path="/receptionist" element={<ReceptionistDashboard />} />
-                <Route path="/receptionist/patients" element={<PatientListPage />} />
-                <Route path="/receptionist/patients/new" element={<PatientRegistrationPage />} />
-                <Route path="/receptionist/patients/:id" element={<PatientProfilePage />} />
-                <Route path="/receptionist/patients/:id/edit" element={<PatientEditPage />} />
-                <Route path="/receptionist/check-in" element={<CheckInQueuePage />} />
-                <Route path="/receptionist/appointments" element={<AppointmentListPage />} />
-                <Route path="/receptionist/*" element={<ReceptionistDashboard />} />
-                
-                {/* Doctor Routes */}
-                <Route path="/doctor" element={<DoctorDashboard />} />
-                <Route path="/doctor/patients" element={<PatientListPage />} />
-                <Route path="/doctor/patients/new" element={<PatientRegistrationPage />} />
-                <Route path="/doctor/patients/:id" element={<PatientProfilePage />} />
-                <Route path="/doctor/patients/:id/edit" element={<PatientEditPage />} />
-                <Route path="/doctor/queue" element={<DoctorQueuePage />} />
-                <Route path="/doctor/appointments" element={<AppointmentListPage />} />
-                <Route path="/doctor/*" element={<DoctorDashboard />} />
-                
-                {/* Nurse Routes */}
-                <Route path="/nurse" element={<NurseDashboard />} />
-                <Route path="/nurse/patients" element={<PatientListPage />} />
-                <Route path="/nurse/patients/new" element={<PatientRegistrationPage />} />
-                <Route path="/nurse/patients/:id" element={<PatientProfilePage />} />
-                <Route path="/nurse/patients/:id/edit" element={<PatientEditPage />} />
-                <Route path="/nurse/triage" element={<TriageQueuePage />} />
-                <Route path="/nurse/queue" element={<TriageQueuePage />} />
-                <Route path="/nurse/*" element={<NurseDashboard />} />
-                
-                {/* Billing Routes */}
-                <Route path="/billing" element={<BillingDashboard />} />
-                <Route path="/billing/*" element={<BillingDashboard />} />
-                
-                {/* Pharmacist Routes */}
-                <Route path="/pharmacist" element={<PharmacistDashboard />} />
-                <Route path="/pharmacist/*" element={<PharmacistDashboard />} />
-                
-                {/* Lab Tech Routes */}
-                <Route path="/lab-tech" element={<LabTechDashboard />} />
-                <Route path="/lab-tech/*" element={<LabTechDashboard />} />
-                
-                {/* Patient Routes */}
-                <Route path="/patient" element={<PatientDashboard />} />
-                <Route path="/patient/*" element={<PatientDashboard />} />
-                
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
+          <QueueProvider>
+            <NotificationProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route path="/login" element={<Login />} />
+                    
+                    {/* CMO Routes */}
+                    <Route path="/cmo" element={<CMODashboard />} />
+                    <Route path="/cmo/patients" element={<PatientListPage />} />
+                    <Route path="/cmo/patients/new" element={<PatientRegistrationPage />} />
+                    <Route path="/cmo/patients/:id" element={<PatientProfilePage />} />
+                    <Route path="/cmo/patients/:id/edit" element={<PatientEditPage />} />
+                    <Route path="/cmo/appointments" element={<AppointmentListPage />} />
+                    <Route path="/cmo/settings/permissions" element={<PermissionSettings />} />
+                    <Route path="/cmo/*" element={<CMODashboard />} />
+                    
+                    {/* Hospital Admin Routes */}
+                    <Route path="/hospital-admin" element={<HospitalAdminDashboard />} />
+                    <Route path="/hospital-admin/*" element={<HospitalAdminDashboard />} />
+                    
+                    {/* Clinical Lead Routes */}
+                    <Route path="/clinical-lead" element={<ClinicalLeadDashboard />} />
+                    <Route path="/clinical-lead/patients" element={<PatientListPage />} />
+                    <Route path="/clinical-lead/patients/new" element={<PatientRegistrationPage />} />
+                    <Route path="/clinical-lead/patients/:id" element={<PatientProfilePage />} />
+                    <Route path="/clinical-lead/patients/:id/edit" element={<PatientEditPage />} />
+                    <Route path="/clinical-lead/queue" element={<TriageQueuePage />} />
+                    <Route path="/clinical-lead/*" element={<ClinicalLeadDashboard />} />
+                    
+                    {/* Receptionist Routes */}
+                    <Route path="/receptionist" element={<ReceptionistDashboard />} />
+                    <Route path="/receptionist/patients" element={<PatientListPage />} />
+                    <Route path="/receptionist/patients/new" element={<PatientRegistrationPage />} />
+                    <Route path="/receptionist/patients/:id" element={<PatientProfilePage />} />
+                    <Route path="/receptionist/patients/:id/edit" element={<PatientEditPage />} />
+                    <Route path="/receptionist/check-in" element={<CheckInQueuePage />} />
+                    <Route path="/receptionist/appointments" element={<AppointmentListPage />} />
+                    <Route path="/receptionist/*" element={<ReceptionistDashboard />} />
+                    
+                    {/* Doctor Routes */}
+                    <Route path="/doctor" element={<DoctorDashboard />} />
+                    <Route path="/doctor/patients" element={<PatientListPage />} />
+                    <Route path="/doctor/patients/new" element={<PatientRegistrationPage />} />
+                    <Route path="/doctor/patients/:id" element={<PatientProfilePage />} />
+                    <Route path="/doctor/patients/:id/edit" element={<PatientEditPage />} />
+                    <Route path="/doctor/queue" element={<DoctorQueuePage />} />
+                    <Route path="/doctor/appointments" element={<AppointmentListPage />} />
+                    <Route path="/doctor/*" element={<DoctorDashboard />} />
+                    
+                    {/* Nurse Routes */}
+                    <Route path="/nurse" element={<NurseDashboard />} />
+                    <Route path="/nurse/patients" element={<PatientListPage />} />
+                    <Route path="/nurse/patients/new" element={<PatientRegistrationPage />} />
+                    <Route path="/nurse/patients/:id" element={<PatientProfilePage />} />
+                    <Route path="/nurse/patients/:id/edit" element={<PatientEditPage />} />
+                    <Route path="/nurse/triage" element={<TriageQueuePage />} />
+                    <Route path="/nurse/queue" element={<TriageQueuePage />} />
+                    <Route path="/nurse/*" element={<NurseDashboard />} />
+                    
+                    {/* Billing Routes */}
+                    <Route path="/billing" element={<BillingDashboard />} />
+                    <Route path="/billing/*" element={<BillingDashboard />} />
+                    
+                    {/* Pharmacist Routes */}
+                    <Route path="/pharmacist" element={<PharmacistDashboard />} />
+                    <Route path="/pharmacist/*" element={<PharmacistDashboard />} />
+                    
+                    {/* Lab Tech Routes */}
+                    <Route path="/lab-tech" element={<LabTechDashboard />} />
+                    <Route path="/lab-tech/*" element={<LabTechDashboard />} />
+                    
+                    {/* Patient Routes */}
+                    <Route path="/patient" element={<PatientDashboard />} />
+                    <Route path="/patient/*" element={<PatientDashboard />} />
+                    
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+              </TooltipProvider>
+            </NotificationProvider>
+          </QueueProvider>
         </SyncProvider>
       </PermissionProvider>
     </AuthProvider>

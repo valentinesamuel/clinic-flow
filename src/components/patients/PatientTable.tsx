@@ -3,6 +3,7 @@
 import { format, formatDistanceToNow } from 'date-fns';
 import { Patient } from '@/types/patient.types';
 import { calculateAge } from '@/data/patients';
+import { PAGINATION } from '@/constants/designSystem';
 
 // Atomic components
 import { PatientNumber } from '@/components/atoms/display/PatientNumber';
@@ -42,7 +43,9 @@ interface PatientTableProps {
   loading?: boolean;
   currentPage: number;
   totalPages: number;
+  itemsPerPage?: number;
   onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
   onViewPatient: (patient: Patient) => void;
   onEditPatient?: (patient: Patient) => void;
 }
@@ -52,7 +55,9 @@ export function PatientTable({
   loading = false,
   currentPage,
   totalPages,
+  itemsPerPage = PAGINATION.defaultPageSize,
   onPageChange,
+  onPageSizeChange,
   onViewPatient,
   onEditPatient,
 }: PatientTableProps) {
@@ -284,13 +289,15 @@ export function PatientTable({
           })}
         </div>
 
-        {/* Pagination using molecule component */}
+        {/* Pagination with page size selector */}
         <QueuePagination
           currentPage={currentPage}
           totalPages={totalPages}
           totalItems={patients.length}
-          itemsPerPage={20}
+          itemsPerPage={itemsPerPage}
           onPageChange={onPageChange}
+          showPageSizeSelector={!!onPageSizeChange}
+          onPageSizeChange={onPageSizeChange}
         />
       </div>
     </TooltipProvider>

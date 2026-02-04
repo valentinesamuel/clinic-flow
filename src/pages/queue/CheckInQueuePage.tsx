@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import { PAGINATION } from '@/constants/designSystem';
 
 type StatusFilter = 'all' | 'pending' | 'checked_in' | 'completed';
 
@@ -32,6 +33,7 @@ export default function CheckInQueuePage() {
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(PAGINATION.defaultPageSize);
 
   // Get today's appointments
   const allAppointments = useMemo(() => getTodaysAppointments(), [refreshKey]);
@@ -94,6 +96,11 @@ export default function CheckInQueuePage() {
     setCheckInModalOpen(false);
     setSelectedAppointment(null);
     setRefreshKey(k => k + 1);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size);
+    setCurrentPage(1);
   };
 
   const baseRoute = user?.role === 'receptionist' ? '/receptionist' : 
@@ -225,8 +232,9 @@ export default function CheckInQueuePage() {
             <AppointmentTable
               appointments={appointments}
               currentPage={currentPage}
-              itemsPerPage={15}
+              itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
+              onPageSizeChange={handlePageSizeChange}
               onCheckIn={handleCheckIn}
               onNoShow={handleNoShow}
               onViewPatient={handleViewProfile}

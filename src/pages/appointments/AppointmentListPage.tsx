@@ -40,6 +40,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { PAGINATION } from '@/constants/designSystem';
 
 type ViewMode = 'day' | 'week' | 'list';
 type StatusFilter = 'all' | 'scheduled' | 'checked_in' | 'completed' | 'cancelled';
@@ -62,6 +63,7 @@ export default function AppointmentListPage() {
   const [newTime, setNewTime] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(PAGINATION.defaultPageSize);
 
   // Get appointments based on view mode
   const appointments = useMemo(() => {
@@ -189,6 +191,11 @@ export default function AppointmentListPage() {
   const getAppointmentsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     return appointments.filter(a => a.scheduledDate === dateStr);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size);
+    setCurrentPage(1);
   };
 
   return (
@@ -341,8 +348,9 @@ export default function AppointmentListPage() {
             <AppointmentTable
               appointments={appointments}
               currentPage={currentPage}
-              itemsPerPage={15}
+              itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
+              onPageSizeChange={handlePageSizeChange}
               onCheckIn={handleCheckIn}
               onReschedule={handleReschedule}
               onCancel={handleCancel}

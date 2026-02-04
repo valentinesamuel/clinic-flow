@@ -6,6 +6,7 @@ import { QueueEntry } from '@/types/patient.types';
 import { calculateWaitTime } from '@/data/queue';
 import { getPatientById } from '@/data/patients';
 import { getVitalsByPatient } from '@/data/vitals';
+import { PAGINATION } from '@/constants/designSystem';
 
 // Atomic components
 import { PatientNumber } from '@/components/atoms/display/PatientNumber';
@@ -42,6 +43,7 @@ interface QueueTableProps {
   currentPage: number;
   itemsPerPage?: number;
   onPageChange: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
   onRowClick: (entry: QueueEntry) => void;
   onStart?: (entry: QueueEntry) => void;
   onViewHistory?: (patientId: string) => void;
@@ -52,8 +54,9 @@ interface QueueTableProps {
 export function QueueTable({
   entries,
   currentPage,
-  itemsPerPage = 10,
+  itemsPerPage = PAGINATION.defaultPageSize,
   onPageChange,
+  onPageSizeChange,
   onRowClick,
   onStart,
   onViewHistory,
@@ -217,13 +220,15 @@ export function QueueTable({
         </Table>
       </div>
 
-      {/* Pagination using molecule component */}
+      {/* Pagination with page size selector */}
       <QueuePagination
         currentPage={currentPage}
         totalPages={totalPages}
         totalItems={entries.length}
         itemsPerPage={itemsPerPage}
         onPageChange={onPageChange}
+        showPageSizeSelector={!!onPageSizeChange}
+        onPageSizeChange={onPageSizeChange}
       />
     </div>
   );

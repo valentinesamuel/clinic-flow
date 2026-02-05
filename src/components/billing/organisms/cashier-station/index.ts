@@ -1,0 +1,1 @@
+export { PaymentCollectionForm } from './PaymentCollectionForm';

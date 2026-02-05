@@ -3,11 +3,12 @@
 export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'hmo' | 'corporate';
 export type BillStatus = 'pending' | 'partial' | 'paid' | 'waived' | 'refunded';
 export type ClaimStatus = 'draft' | 'submitted' | 'processing' | 'approved' | 'denied' | 'paid';
+export type ServiceCategory = 'consultation' | 'lab' | 'pharmacy' | 'procedure' | 'admission' | 'other';
 
 export interface BillItem {
   id: string;
   description: string;
-  category: 'consultation' | 'procedure' | 'lab' | 'pharmacy' | 'admission' | 'other';
+  category: ServiceCategory;
   quantity: number;
   unitPrice: number;
   discount: number;
@@ -102,4 +103,63 @@ export interface FinancialSummary {
   cashCollected: number;
   hmoReceivables: number;
   period: string;
+}
+
+// Payment Collection Types
+export interface PaymentItem {
+  id: string;
+  description: string;
+  category: ServiceCategory;
+  quantity: number;
+  unitPrice: number;
+  discount: number;
+  total: number;
+  subItems?: PaymentItem[];
+}
+
+export interface PaymentClearance {
+  id: string;
+  receiptNumber: string;
+  patientId: string;
+  patientName: string;
+  patientMrn: string;
+  items: PaymentItem[];
+  subtotal: number;
+  discount: number;
+  tax: number;
+  total: number;
+  amountPaid: number;
+  change: number;
+  paymentMethod: PaymentMethod;
+  referenceNumber?: string;
+  bank?: string;
+  hmoProviderId?: string;
+  hmoPreAuthCode?: string;
+  hmoCoverage?: number;
+  patientLiability?: number;
+  cashierId: string;
+  cashierName: string;
+  createdAt: string;
+  receiptUrl?: string;
+}
+
+export interface HMOVerification {
+  id: string;
+  providerId: string;
+  providerName: string;
+  policyNumber: string;
+  enrollmentId: string;
+  status: 'active' | 'expired' | 'suspended' | 'pending';
+  expiryDate: string;
+  coveredServices: ServiceCategory[];
+  coPayPercentage: number; // For pharmacy (typically 10%)
+  preAuthCode?: string;
+  verifiedAt: string;
+  errorMessage?: string;
+}
+
+export interface NigerianBank {
+  id: string;
+  name: string;
+  code: string;
 }

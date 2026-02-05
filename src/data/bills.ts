@@ -141,3 +141,68 @@ export const getTodaysBills = (): Bill[] => {
   const today = new Date().toISOString().split('T')[0];
   return mockBills.filter(b => b.createdAt.startsWith(today));
 };
+
+// Pagination and filtering helpers
+export interface BillFilters {
+  status?: Bill['status'];
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+}
+
+export function getBillsPaginated(
+  page: number,
+  limit: number,
+  filters?: BillFilters
+): { data: Bill[]; total: number; totalPages: number } {
+  let filtered = [...mockBills];
+
+  if (filters?.status) {
+    filtered = filtered.filter((b) => b.status === filters.status);
+  }
+
+  if (filters?.dateFrom) {
+    filtered = filtered.filter((b) => b.createdAt >= filters.dateFrom!);
+  }
+
+  if (filters?.dateTo) {
+    filtered = filtered.filter((b) => b.createdAt <= filters.dateTo!);
+  }
+
+  if (filters?.search) {
+    const searchLower = filters.search.toLowerCase();
+    filtered = filtered.filter(
+      (b) =>
+        b.patientName.toLowerCase().includes(searchLower) ||
+        b.patientMrn.toLowerCase().includes(searchLower) ||
+        b.billNumber.toLowerCase().includes(searchLower)
+    );
+  }
+
+  // Sort by date descending
+  filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit);
+  const start = (page - 1) * limit;
+  const data = filtered.slice(start, start + limit);
+
+  return { data, total, totalPages };
+}
+
+export function getBillById(id: string): Bill | undefined {
+  return mockBills.find((b) => b.id === id);
+}
+
+export function updateBillStatus(id: string, status: Bill['status']): Bill | undefined {
+  const bill = mockBills.find((b) => b.id === id);
+  if (bill) {
+    bill.status = status;
+    if (status === 'paid') {
+      bill.paidAt = new Date().toISOString();
+      bill.balance = 0;
+      bill.amountPaid = bill.total;
+    }
+  }
+  return bill;
+}

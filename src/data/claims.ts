@@ -163,3 +163,80 @@ export const getTotalPendingClaims = (): number =>
 
 export const getHMOProviderById = (id: string): HMOProvider | undefined => 
   mockHMOProviders.find(p => p.id === id);
+
+// Pagination and filtering helpers
+export interface ClaimFilters {
+  status?: HMOClaim['status'];
+  providerId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+}
+
+export function getClaimsPaginated(
+  page: number,
+  limit: number,
+  filters?: ClaimFilters
+): { data: HMOClaim[]; total: number; totalPages: number } {
+  let filtered = [...mockClaims];
+
+  if (filters?.status) {
+    filtered = filtered.filter((c) => c.status === filters.status);
+  }
+
+  if (filters?.providerId) {
+    filtered = filtered.filter((c) => c.hmoProviderId === filters.providerId);
+  }
+
+  if (filters?.dateFrom) {
+    filtered = filtered.filter((c) => c.createdAt >= filters.dateFrom!);
+  }
+
+  if (filters?.dateTo) {
+    filtered = filtered.filter((c) => c.createdAt <= filters.dateTo!);
+  }
+
+  if (filters?.search) {
+    const searchLower = filters.search.toLowerCase();
+    filtered = filtered.filter(
+      (c) =>
+        c.patientName.toLowerCase().includes(searchLower) ||
+        c.claimNumber.toLowerCase().includes(searchLower) ||
+        c.hmoProviderName.toLowerCase().includes(searchLower)
+    );
+  }
+
+  // Sort by date descending
+  filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const total = filtered.length;
+  const totalPages = Math.ceil(total / limit);
+  const start = (page - 1) * limit;
+  const data = filtered.slice(start, start + limit);
+
+  return { data, total, totalPages };
+}
+
+export function getClaimById(id: string): HMOClaim | undefined {
+  return mockClaims.find((c) => c.id === id);
+}
+
+export function submitClaim(id: string): HMOClaim | undefined {
+  const claim = mockClaims.find((c) => c.id === id);
+  if (claim && claim.status === 'draft') {
+    claim.status = 'submitted';
+    claim.submittedAt = new Date().toISOString();
+  }
+  return claim;
+}
+
+export function updateClaimStatus(id: string, status: HMOClaim['status']): HMOClaim | undefined {
+  const claim = mockClaims.find((c) => c.id === id);
+  if (claim) {
+    claim.status = status;
+    if (['approved', 'denied', 'paid'].includes(status)) {
+      claim.processedAt = new Date().toISOString();
+    }
+  }
+  return claim;
+}

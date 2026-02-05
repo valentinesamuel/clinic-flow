@@ -49,6 +49,8 @@ function getStatusBadge(status: ClaimStatus) {
     approved: { className: 'bg-green-100 text-green-700', label: 'Approved' },
     denied: { className: 'bg-red-100 text-red-700', label: 'Denied' },
     paid: { className: 'bg-purple-100 text-purple-700', label: 'Paid' },
+    withdrawn: { className: 'bg-orange-100 text-orange-700', label: 'Withdrawn' },
+    retracted: { className: 'bg-amber-100 text-amber-700', label: 'Retracted' },
   };
 
   const config = variants[status];

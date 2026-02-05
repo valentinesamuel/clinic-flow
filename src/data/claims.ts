@@ -59,9 +59,13 @@ export const mockClaims: HMOClaim[] = [
     claimAmount: 17500,
     status: 'submitted',
     submittedAt: '2024-02-01T12:00:00Z',
+    diagnoses: [
+      { code: 'I10', description: 'Essential (primary) hypertension', isPrimary: true },
+      { code: 'E78.5', description: 'Hyperlipidemia, unspecified', isPrimary: false },
+    ],
     documents: [
-      { id: 'doc-001', name: 'consultation_note.pdf', type: 'auto', uploadedAt: '2024-02-01T10:30:00Z' },
-      { id: 'doc-002', name: 'lab_results.pdf', type: 'auto', uploadedAt: '2024-02-01T10:30:00Z' },
+      { id: 'doc-001', name: 'consultation_note.pdf', type: 'auto', source: 'consultation', uploadedAt: '2024-02-01T10:30:00Z' },
+      { id: 'doc-002', name: 'lab_results.pdf', type: 'auto', source: 'lab', uploadedAt: '2024-02-01T10:30:00Z' },
     ],
     versions: [
       { version: 1, status: 'draft', changedAt: '2024-02-01T10:30:00Z', changedBy: 'usr-007', changedByName: 'Billing Officer' },
@@ -84,8 +88,11 @@ export const mockClaims: HMOClaim[] = [
     claimAmount: 16000,
     status: 'processing',
     submittedAt: '2024-02-01T15:00:00Z',
+    diagnoses: [
+      { code: 'J06.9', description: 'Acute upper respiratory infection, unspecified', isPrimary: true },
+    ],
     documents: [
-      { id: 'doc-003', name: 'consultation_note.pdf', type: 'auto', uploadedAt: '2024-02-01T14:30:00Z' },
+      { id: 'doc-003', name: 'consultation_note.pdf', type: 'auto', source: 'consultation', uploadedAt: '2024-02-01T14:30:00Z' },
     ],
     versions: [
       { version: 1, status: 'draft', changedAt: '2024-02-01T14:30:00Z', changedBy: 'usr-007', changedByName: 'Billing Officer' },
@@ -108,6 +115,9 @@ export const mockClaims: HMOClaim[] = [
     billId: 'bill-005',
     claimAmount: 38500,
     status: 'draft',
+    diagnoses: [
+      { code: 'J45.20', description: 'Mild intermittent asthma, uncomplicated', isPrimary: true },
+    ],
     documents: [],
     versions: [
       { version: 1, status: 'draft', changedAt: '2024-02-02T09:00:00Z', changedBy: 'usr-007', changedByName: 'Billing Officer' },
@@ -131,9 +141,13 @@ export const mockClaims: HMOClaim[] = [
     status: 'approved',
     submittedAt: '2024-01-25T10:00:00Z',
     processedAt: '2024-01-30T14:00:00Z',
+    diagnoses: [
+      { code: 'E78.5', description: 'Hyperlipidemia, unspecified', isPrimary: true },
+      { code: 'I10', description: 'Essential (primary) hypertension', isPrimary: false },
+    ],
     documents: [
-      { id: 'doc-004', name: 'consultation_note.pdf', type: 'auto', uploadedAt: '2024-01-25T09:00:00Z' },
-      { id: 'doc-005', name: 'prescription.pdf', type: 'auto', uploadedAt: '2024-01-25T09:00:00Z' },
+      { id: 'doc-004', name: 'consultation_note.pdf', type: 'auto', source: 'consultation', uploadedAt: '2024-01-25T09:00:00Z' },
+      { id: 'doc-005', name: 'prescription.pdf', type: 'auto', source: 'pharmacy', uploadedAt: '2024-01-25T09:00:00Z' },
     ],
     versions: [
       { version: 1, status: 'draft', changedAt: '2024-01-25T09:00:00Z', changedBy: 'usr-007', changedByName: 'Billing Officer' },
@@ -160,8 +174,11 @@ export const mockClaims: HMOClaim[] = [
     submittedAt: '2024-01-20T11:00:00Z',
     processedAt: '2024-01-28T16:00:00Z',
     denialReason: 'Service not covered under plan. Patient must upgrade plan or pay out of pocket.',
+    diagnoses: [
+      { code: 'M54.5', description: 'Low back pain', isPrimary: true },
+    ],
     documents: [
-      { id: 'doc-006', name: 'consultation_note.pdf', type: 'auto', uploadedAt: '2024-01-20T10:00:00Z' },
+      { id: 'doc-006', name: 'consultation_note.pdf', type: 'auto', source: 'consultation', uploadedAt: '2024-01-20T10:00:00Z' },
     ],
     versions: [
       { version: 1, status: 'draft', changedAt: '2024-01-20T10:00:00Z', changedBy: 'usr-007', changedByName: 'Billing Officer' },
@@ -187,9 +204,12 @@ export const mockClaims: HMOClaim[] = [
     status: 'paid',
     submittedAt: '2024-01-15T09:00:00Z',
     processedAt: '2024-01-22T11:00:00Z',
+    diagnoses: [
+      { code: 'E11.9', description: 'Type 2 diabetes mellitus without complications', isPrimary: true },
+    ],
     documents: [
-      { id: 'doc-007', name: 'consultation_note.pdf', type: 'auto', uploadedAt: '2024-01-15T08:00:00Z' },
-      { id: 'doc-008', name: 'lab_results.pdf', type: 'auto', uploadedAt: '2024-01-15T08:00:00Z' },
+      { id: 'doc-007', name: 'consultation_note.pdf', type: 'auto', source: 'consultation', uploadedAt: '2024-01-15T08:00:00Z' },
+      { id: 'doc-008', name: 'lab_results.pdf', type: 'auto', source: 'lab', uploadedAt: '2024-01-15T08:00:00Z' },
     ],
     versions: [
       { version: 1, status: 'draft', changedAt: '2024-01-15T08:00:00Z', changedBy: 'usr-007', changedByName: 'Billing Officer' },

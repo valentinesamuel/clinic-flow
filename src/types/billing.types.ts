@@ -2,8 +2,16 @@
 
 export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'hmo' | 'corporate';
 export type BillStatus = 'pending' | 'partial' | 'paid' | 'waived' | 'refunded';
-export type ClaimStatus = 'draft' | 'submitted' | 'processing' | 'approved' | 'denied' | 'paid';
+export type ClaimStatus = 'draft' | 'submitted' | 'processing' | 'approved' | 'denied' | 'paid' | 'withdrawn' | 'retracted';
 export type ServiceCategory = 'consultation' | 'lab' | 'pharmacy' | 'procedure' | 'admission' | 'other';
+export type WithdrawalReason = 'patient_self_pay' | 'hospital_cancelled' | 'claim_error' | 'treatment_changed';
+
+// Diagnosis codes for claims (ICD-10)
+export interface ClaimDiagnosis {
+  code: string;
+  description: string;
+  isPrimary: boolean;
+}
 
 export interface BillItem {
   id: string;
@@ -93,6 +101,7 @@ export interface HMOClaim {
   preAuthCode?: string;
   billId: string;
   items?: ClaimItem[];
+  diagnoses?: ClaimDiagnosis[];
   claimAmount: number;
   approvedAmount?: number;
   status: ClaimStatus;
@@ -105,6 +114,12 @@ export interface HMOClaim {
   currentVersion: number;
   createdAt: string;
   createdBy: string;
+  // Withdrawal/Retraction fields
+  withdrawnAt?: string;
+  withdrawnReason?: WithdrawalReason;
+  retractionNotes?: string;
+  privateBillId?: string;
+  privatePaymentId?: string;
 }
 
 export interface HMOProvider {

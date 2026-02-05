@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Check, ChevronLeft, ChevronRight, Search, User, Shield, FileText, Upload, X, File } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Search, User, Shield, FileText, Upload, X, File, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,12 +30,14 @@ import {
 import { cn } from '@/lib/utils';
 
 import { Patient } from '@/types/patient.types';
-import { Bill, HMOClaim, ClaimDocument, HMOProvider } from '@/types/billing.types';
+import { Bill, HMOClaim, ClaimDocument, ClaimDiagnosis, HMOProvider } from '@/types/billing.types';
 import { searchPatients, getPatientById } from '@/data/patients';
 import { getBillsByPatient, getBillById } from '@/data/bills';
 import { mockHMOProviders } from '@/data/claims';
 import { HMOProviderSelector } from '@/components/billing/molecules/hmo/HMOProviderSelector';
+import { DiagnosisSelector } from '@/components/billing/molecules/diagnosis/DiagnosisSelector';
 import { InsuranceBadge } from '@/components/atoms/display/InsuranceBadge';
+import { ICD10Code, getCommonICD10Codes } from '@/data/icd10-codes';
 
 interface ClaimCreationModalProps {
   open: boolean;
@@ -47,7 +49,7 @@ interface ClaimCreationModalProps {
   onCancel: () => void;
 }
 
-type Step = 1 | 2 | 3 | 4 | 5;
+type Step = 1 | 2 | 3 | 4 | 5 | 6;
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-NG', {
@@ -121,6 +123,9 @@ export function ClaimCreationModal({
   const [enrollmentId, setEnrollmentId] = useState(selectedPatient?.hmoDetails?.enrollmentId || '');
   const [preAuthCode, setPreAuthCode] = useState('');
 
+  // Diagnoses (ICD-10)
+  const [diagnoses, setDiagnoses] = useState<ClaimDiagnosis[]>([]);
+
   // Documents
   const [autoDocuments, setAutoDocuments] = useState<AutoDocument[]>([
     { id: 'doc-auto-1', name: 'Consultation Note', type: 'auto', source: 'consultation', selected: true },
@@ -149,6 +154,11 @@ export function ClaimCreationModal({
   const selectedProvider = useMemo(() => {
     return mockHMOProviders.find(p => p.id === hmoProviderId);
   }, [hmoProviderId]);
+
+  // Get suggested diagnoses based on common codes
+  const suggestedDiagnoses = useMemo(() => {
+    return getCommonICD10Codes();
+  }, []);
 
   const handleSelectPatient = (patient: Patient) => {
     setSelectedPatient(patient);
@@ -210,6 +220,7 @@ export function ClaimCreationModal({
       preAuthCode: preAuthCode || undefined,
       billId: selectedBill?.id,
       claimAmount,
+      diagnoses,
       documents,
       versions: [],
       currentVersion: 1,
@@ -238,6 +249,7 @@ export function ClaimCreationModal({
     setPolicyNumber('');
     setEnrollmentId('');
     setPreAuthCode('');
+    setDiagnoses([]);
     setUploadedFiles([]);
     onCancel();
   };
@@ -249,10 +261,12 @@ export function ClaimCreationModal({
       case 2:
         return !!hmoProviderId && !!enrollmentId;
       case 3:
-        return true; // Items are auto-populated
+        return diagnoses.length > 0; // At least one diagnosis required
       case 4:
-        return true; // Documents are optional
+        return true; // Items are auto-populated
       case 5:
+        return true; // Documents are optional
+      case 6:
         return true;
       default:
         return false;
@@ -267,12 +281,13 @@ export function ClaimCreationModal({
         </DialogHeader>
 
         {/* Step Indicator */}
-        <div className="flex justify-center gap-4 py-4">
-          <StepIndicator step={1} currentStep={currentStep} label="Patient & Bill" />
-          <StepIndicator step={2} currentStep={currentStep} label="HMO Details" />
-          <StepIndicator step={3} currentStep={currentStep} label="Items" />
-          <StepIndicator step={4} currentStep={currentStep} label="Documents" />
-          <StepIndicator step={5} currentStep={currentStep} label="Review" />
+        <div className="flex justify-center gap-2 py-4 overflow-x-auto">
+          <StepIndicator step={1} currentStep={currentStep} label="Patient" />
+          <StepIndicator step={2} currentStep={currentStep} label="HMO" />
+          <StepIndicator step={3} currentStep={currentStep} label="Diagnosis" />
+          <StepIndicator step={4} currentStep={currentStep} label="Items" />
+          <StepIndicator step={5} currentStep={currentStep} label="Docs" />
+          <StepIndicator step={6} currentStep={currentStep} label="Review" />
         </div>
 
         <div className="flex-1 overflow-hidden">
@@ -433,8 +448,31 @@ export function ClaimCreationModal({
             </ScrollArea>
           )}
 
-          {/* Step 3: Claim Items (Read-only from bill) */}
-          {currentStep === 3 && selectedBill && (
+          {/* Step 3: Diagnosis (ICD-10) */}
+          {currentStep === 3 && (
+            <ScrollArea className="h-[45vh]">
+              <div className="p-1">
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Stethoscope className="h-5 w-5 text-primary" />
+                    <Label className="text-base">Diagnosis Codes (ICD-10)</Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Add at least one diagnosis code. The first code added will be marked as primary.
+                  </p>
+                </div>
+                <DiagnosisSelector
+                  selectedDiagnoses={diagnoses}
+                  onDiagnosesChange={setDiagnoses}
+                  suggestedCodes={suggestedDiagnoses}
+                  required={true}
+                />
+              </div>
+            </ScrollArea>
+          )}
+
+          {/* Step 4: Claim Items (Read-only from bill) */}
+          {currentStep === 4 && selectedBill && (
             <ScrollArea className="h-[45vh]">
               <div className="space-y-4 p-1">
                 <p className="text-sm text-muted-foreground">
@@ -462,8 +500,8 @@ export function ClaimCreationModal({
             </ScrollArea>
           )}
 
-          {/* Step 4: Documents */}
-          {currentStep === 4 && (
+          {/* Step 5: Documents */}
+          {currentStep === 5 && (
             <ScrollArea className="h-[45vh]">
               <div className="space-y-4 p-1">
                 {/* Auto-attached documents */}
@@ -535,8 +573,8 @@ export function ClaimCreationModal({
             </ScrollArea>
           )}
 
-          {/* Step 5: Review */}
-          {currentStep === 5 && (
+          {/* Step 6: Review */}
+          {currentStep === 6 && (
             <ScrollArea className="h-[45vh]">
               <div className="space-y-4 p-1">
                 {/* Patient */}
@@ -556,6 +594,20 @@ export function ClaimCreationModal({
                   {preAuthCode && (
                     <p className="text-sm text-muted-foreground">Pre-Auth: {preAuthCode}</p>
                   )}
+                </div>
+
+                {/* Diagnoses */}
+                <div className="p-4 rounded-lg border">
+                  <p className="text-xs text-muted-foreground mb-2">Diagnoses</p>
+                  <div className="space-y-1">
+                    {diagnoses.map((d, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Badge variant="outline" className="font-mono text-xs">{d.code}</Badge>
+                        <span className="text-sm">{d.description}</span>
+                        {d.isPrimary && <Badge variant="default" className="text-xs">Primary</Badge>}
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Bill */}
@@ -595,7 +647,7 @@ export function ClaimCreationModal({
             <Button variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            {currentStep < 5 ? (
+            {currentStep < 6 ? (
               <Button onClick={() => setCurrentStep((currentStep + 1) as Step)} disabled={!canProceed(currentStep)}>
                 Continue
                 <ChevronRight className="h-4 w-4 ml-1" />

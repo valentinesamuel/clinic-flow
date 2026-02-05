@@ -15,6 +15,8 @@ const statusLabels: Record<ClaimStatus, string> = {
   approved: 'Approved',
   denied: 'Denied',
   paid: 'Paid',
+  withdrawn: 'Withdrawn',
+  retracted: 'Retracted',
 };
 
 const statusColors: Record<ClaimStatus, string> = {
@@ -24,6 +26,8 @@ const statusColors: Record<ClaimStatus, string> = {
   approved: 'bg-green-500',
   denied: 'bg-destructive',
   paid: 'bg-green-600',
+  withdrawn: 'bg-orange-500',
+  retracted: 'bg-amber-500',
 };
 
 export function ClaimVersionHistory({ versions, currentVersion }: ClaimVersionHistoryProps) {

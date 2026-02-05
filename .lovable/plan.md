@@ -1,376 +1,315 @@
 
-# Comprehensive Billing Flows: Claims & Bills Management
+# Enhanced HMO Claims Workflow: Full Lifecycle Management
 
 ## Overview
 
-Build impeccable UI/UX for:
-1. **Bill Creation** - From patient profile and billing dashboard
-2. **Bill Details Drawer** - Full-height drawer with complete bill information
-3. **Claim Lifecycle** - Create, save draft, submit, edit, resubmit, view with version history
-4. **Auto-generation Integration** - Bills from clinical orders
-5. **Document Management** - Auto-attach, manual upload, claim form generation
+This plan implements comprehensive HMO claim enhancements including:
+1. Test HMO patients for easier testing
+2. ICD-10 diagnosis codes on claims for evidence
+3. "Pay Out of Pocket" option when claims are denied
+4. Enhanced Claim Details with first 4 bill items and navigation to full bill
+5. Document preview functionality
+6. Claim withdrawal/cancellation workflow with retraction requests
+7. Private/Self-Pay conversion flow
 
 ---
 
-## Part 1: Bill Details Drawer
+## Part 1: Add Test HMO Patients
 
-### New Component: `src/components/billing/organisms/bill-details/BillDetailsDrawer.tsx`
+### Update: `src/data/patients.ts`
 
-Full-height right-side drawer (Sheet) following PatientDrawer pattern.
+Add 3 more HMO patients with different providers to facilitate testing:
 
-### Layout Structure
+| Patient | HMO Provider | Plan | Policy Status |
+|---------|--------------|------|---------------|
+| Nkechi Onyekachi | Hygeia HMO | Gold | Active |
+| Tunde Bakare | Reliance HMO | Standard | Active |
+| Amara Okwu | AXA Mansard | Premium | Active (near expiry) |
+
+These patients will have complete HMO details pre-filled for quick claim testing.
+
+---
+
+## Part 2: Add ICD-10 Diagnosis Codes to Claims
+
+### Update: `src/types/billing.types.ts`
+
+Add diagnosis fields to claim types:
+
+```text
+interface ClaimDiagnosis {
+  code: string;        // ICD-10 code (e.g., "I10")
+  description: string; // Diagnosis name (e.g., "Essential hypertension")
+  isPrimary: boolean;  // Primary vs secondary diagnosis
+}
+
+// Add to HMOClaim interface:
+diagnoses: ClaimDiagnosis[];
+```
+
+### Update: `src/data/claims.ts`
+
+Add diagnosis data to existing mock claims using ICD codes from consultations.
+
+### New: `src/data/icd10-codes.ts`
+
+Create a searchable catalog of common ICD-10 codes used in Nigerian clinics:
+
+| Code | Description |
+|------|-------------|
+| I10 | Essential hypertension |
+| E11.9 | Type 2 diabetes mellitus |
+| J06.9 | Acute upper respiratory infection |
+| J45.20 | Mild intermittent asthma |
+| M17.0 | Osteoarthritis of knee |
+| ... | (50+ common codes) |
+
+### Update: `ClaimCreationModal.tsx`
+
+Add diagnosis selection step (after HMO Details):
+- Auto-suggest diagnoses from linked consultation's ICD codes
+- Search/add additional ICD-10 codes
+- Mark primary diagnosis
+- At least one diagnosis required for submission
+
+---
+
+## Part 3: Pay Out of Pocket for Denied Claims
+
+### New Flow: When a claim is denied, patient can choose to pay privately
+
+### Update: `ClaimDetailsDrawer.tsx`
+
+When status is "denied", add new action button:
 
 ```text
 +------------------------------------------+
-|  BILL DETAILS                      [X]   |
-|  INV-2024-0001                           |
+|  DENIAL REASON                           |
+|  "Service not covered under plan..."     |
 |------------------------------------------|
-|  PATIENT INFO                            |
-|  ├─ Name: Aisha Mohammed                 |
-|  ├─ MRN: PT-2024-00123                   |
-|  ├─ Phone: +234 803 123 4567             |
-|  └─ Payment Type: [HMO Badge]            |
-|------------------------------------------|
-|  BILL SUMMARY                            |
-|  ├─ Created: 05 Feb 2026, 10:30 AM       |
-|  ├─ Cashier: Blessing Okafor             |
-|  ├─ Status: [Pending Badge]              |
-|  └─ Visit: Check-up                      |
-|------------------------------------------|
-|  ITEMS                                   |
+|  [Resubmit Claim]  [Pay Out of Pocket]   |
++------------------------------------------+
+```
+
+### New Component: `src/components/billing/organisms/claim-details/PayOutOfPocketModal.tsx`
+
+Modal workflow for converting HMO claim to self-pay:
+
+Step 1: Confirmation
+- Display claim amount
+- Show original bill details
+- Warn: "This will void the HMO claim and create a private bill"
+
+Step 2: Payment Method
+- Select: Cash, POS, or Transfer (HMO option removed)
+- Enter payment details
+
+Step 3: Process
+- Update claim status to "withdrawn"
+- Create new private bill (or update existing bill payment method)
+- Open PaymentCollectionForm
+
+### Data Changes
+
+```text
+// Add to ClaimStatus type:
+type ClaimStatus = 'draft' | 'submitted' | 'processing' | 'approved' | 'denied' | 'paid' | 'withdrawn' | 'retracted';
+
+// Add to HMOClaim interface:
+withdrawnAt?: string;
+withdrawnReason?: 'patient_self_pay' | 'hospital_cancelled' | 'claim_error';
+privatePaymentId?: string; // Link to new private payment
+```
+
+---
+
+## Part 4: Enhanced Bill Items in Claim Details
+
+### Update: `ClaimDetailsDrawer.tsx`
+
+Show first 4 items from the linked bill:
+
+```text
++------------------------------------------+
+|  BILL ITEMS                              |
 |  ┌────────────────────────────────────┐  |
 |  │ Consultation Fee        ₦15,000   │  |
 |  │ Lab: FBC                 ₦5,000   │  |
 |  │ Lab: MP                  ₦2,500   │  |
 |  │ Pharmacy: Paracetamol      ₦800   │  |
 |  └────────────────────────────────────┘  |
-|------------------------------------------|
-|  AMOUNTS                                 |
-|  Subtotal:                   ₦23,300     |
-|  Discount:                       ₦0      |
-|  Tax:                            ₦0      |
-|  ──────────────────────────────────      |
-|  TOTAL:                      ₦23,300     |
-|  Paid:                        ₦5,000     |
-|  Balance:                    ₦18,300     |
-|------------------------------------------|
-|  PAYMENT HISTORY                         |
-|  ├─ ₦5,000 Cash - 05 Feb, 10:35 AM      |
-|  └─ RCP-2024-ABC123                      |
-|------------------------------------------|
-|  NOTES                                   |
-|  "Partial payment, balance next visit"   |
-+------------------------------------------+
-|  [Print Invoice]  [Collect Payment]      |
-|  [Create Claim] (if HMO)                 |
+|  +2 more items  [View Full Bill →]       |
 +------------------------------------------+
 ```
 
-### Props
+### Linked Bill Navigation
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `open` | boolean | Drawer visibility |
-| `onOpenChange` | (open: boolean) => void | Toggle handler |
-| `bill` | Bill | Bill data |
-| `onCollect` | () => void | Trigger payment collection |
-| `onCreateClaim` | () => void | Create HMO claim from bill |
-| `onPrint` | () => void | Print invoice |
+- Clicking "Linked Bill" card opens `BillDetailsDrawer`
+- "View Full Bill" link opens `BillDetailsDrawer`
+- Pass bill data from claims data or fetch by ID
 
-### Features
-
-- Patient quick info with insurance badge
-- Itemised list with category icons
-- Payment history timeline
-- Action buttons contextual to status
-- "Create Claim" only visible for HMO patients with pending balance
-
----
-
-## Part 2: Bill Creation Flow
-
-### New Component: `src/components/billing/organisms/bill-creation/BillCreationForm.tsx`
-
-Multi-step modal for creating bills.
-
-### Step 1: Select/Confirm Patient
-
-| Field | Type | Notes |
-|-------|------|-------|
-| Patient Search | Combobox | Search by name/MRN |
-| Selected Patient | Display Card | Shows name, MRN, payment type |
-
-If opened from patient profile, patient is pre-selected.
-
-### Step 2: Add Items
-
-| Section | Description |
-|---------|-------------|
-| Category Tabs | Consultation, Lab, Pharmacy, Procedure, Other |
-| Item Search | Filter items within category |
-| Selected Items | List with quantity, unit price, discount |
-| Quick Add | Common items as chips |
-| Custom Item | "Add Custom" for ad-hoc charges |
-
-### Item Row
+### Implementation
 
 ```text
-+--------------------------------------------------+
-| [x] Consultation Fee     Qty: [1]   ₦15,000  [X] |
-+--------------------------------------------------+
+// ClaimDetailsDrawer receives new prop:
+onViewBill?: (billId: string) => void;
+
+// Get bill items:
+const bill = getBillById(claim.billId);
+const displayItems = bill?.items.slice(0, 4);
+const remainingCount = (bill?.items.length || 0) - 4;
 ```
 
-### Step 3: Review & Notes
-
-| Field | Description |
-|-------|-------------|
-| Items Summary | Read-only list |
-| Subtotal/Discount/Tax/Total | Calculated |
-| Notes | Optional textarea |
-| Visit Reason | Optional input |
-
-### Actions
-
-| Button | Action |
-|--------|--------|
-| Save as Draft | Save bill with status 'pending' |
-| Generate Bill | Create bill, optionally trigger payment |
-| Cancel | Close without saving |
-
-### Flow Entry Points
-
-1. **From Patient Profile** (Billing Tab) - Patient pre-filled
-2. **From Billing Dashboard** (Quick Action) - Patient search first
-3. **Auto-generated** - From clinical orders (internal trigger)
-
 ---
 
-## Part 3: Claim Creation Modal
+## Part 5: Document Preview
 
-### New Component: `src/components/billing/organisms/claim-submission/ClaimCreationModal.tsx`
+### Update: `ClaimDetailsDrawer.tsx`
 
-### Entry Points
-
-1. **From Bill Details Drawer** - "Create Claim" button (bill pre-selected)
-2. **From Claims List** - "New Claim" button (search patient first)
-3. **From Billing Dashboard** - "Submit Claim" button
-
-### Step 1: Select Patient & Bill (if not pre-filled)
-
-| Field | Description |
-|-------|-------------|
-| Patient Search | Combobox with autocomplete |
-| Bills Dropdown | Filter: Pending/Partial bills for patient |
-| Selected Bill | Shows bill number, amount, items |
-
-### Step 2: HMO Details
-
-| Field | Description |
-|-------|-------------|
-| HMO Provider | Dropdown from HMO_PROVIDERS |
-| Policy Number | Text input |
-| Enrollment ID | Auto-generated or manual |
-| Pre-Auth Code | Optional (if already obtained) |
-
-### Step 3: Claim Items
-
-Pre-filled from selected bill, with ability to:
-- Adjust claimed amounts (within limits)
-- Add clinical notes per item
-- Mark items as "Not Covered" (excluded from claim)
-
-### Step 4: Documents
-
-| Section | Description |
-|---------|-------------|
-| Auto-attached | Consultation notes, lab results (checkbox to include) |
-| Manual Upload | Drag-drop zone for PDFs/images |
-| Generate Form | Button to generate pre-filled HMO claim form PDF |
-
-### Step 5: Review & Submit
-
-| Field | Description |
-|-------|-------------|
-| Claim Summary | All details read-only |
-| Total Claim Amount | Calculated |
-| Expected Patient Liability | Co-pay if pharmacy items |
-
-### Actions
-
-| Button | Action |
-|--------|--------|
-| Save as Draft | Status = 'draft' |
-| Submit Claim | Status = 'submitted', timestamp |
-| Cancel | Close without saving |
-
----
-
-## Part 4: Claim Details Drawer
-
-### New Component: `src/components/billing/organisms/claim-details/ClaimDetailsDrawer.tsx`
-
-Full-height drawer for viewing claim details.
-
-### Layout
+Make document rows clickable with preview action:
 
 ```text
 +------------------------------------------+
-|  CLAIM DETAILS                     [X]   |
+|  DOCUMENTS (3)                           |
+|  ┌────────────────────────────────────┐  |
+|  │ consultation_note.pdf   [Preview] │  |
+|  │ lab_results.pdf         [Preview] │  |
+|  │ claim_form.pdf          [Preview] │  |
+|  └────────────────────────────────────┘  |
++------------------------------------------+
+```
+
+### New Component: `src/components/billing/molecules/documents/DocumentPreviewModal.tsx`
+
+| Feature | Implementation |
+|---------|----------------|
+| PDF Preview | Embed iframe or use react-pdf |
+| Image Preview | Native img tag with zoom |
+| Download | Download link |
+| Print | Print button |
+| Fallback | "Preview not available" with download option |
+
+Since this is mock data, show placeholder preview:
+- For PDFs: Show document metadata and a "Download" option
+- For images: Show placeholder thumbnail
+- In production: Would integrate with actual document storage
+
+---
+
+## Part 6: Claim Withdrawal/Cancellation Flow
+
+### Workflow Based on Status
+
+| Current Status | Action | Process |
+|----------------|--------|---------|
+| Draft | Delete | Immediate removal |
+| Submitted (Pending) | Cancel | Instant cancellation via HMO portal (simulated) |
+| Processing | Request Withdrawal | Submit withdrawal request |
+| Approved (Pre-payment) | Retraction Request | Issue formal retraction to HMO |
+| Paid | Cannot Withdraw | No action available |
+| Denied | Already closed | Convert to self-pay available |
+
+### New Component: `src/components/billing/organisms/claim-details/ClaimWithdrawalModal.tsx`
+
+Handles different withdrawal scenarios:
+
+#### For Submitted Claims (Instant Cancel)
+
+```text
++------------------------------------------+
+|  CANCEL CLAIM                            |
 |  CLM-2024-0001                           |
 |------------------------------------------|
-|  STATUS: [Submitted - Blue Badge]        |
-|  Submitted: 05 Feb 2026, 11:00 AM        |
+|  This claim is still pending and can be  |
+|  cancelled immediately.                  |
+|                                          |
+|  Reason for cancellation:                |
+|  ○ Patient opted for self-pay            |
+|  ○ Claim submitted in error              |
+|  ○ Bill needs correction                 |
+|  ○ Other: [________________]             |
 |------------------------------------------|
-|  PATIENT                                 |
-|  Aisha Mohammed (PT-2024-00123)          |
-|------------------------------------------|
-|  HMO PROVIDER                            |
-|  ├─ Hygeia HMO                           |
-|  ├─ Policy: NHIA-12345-6789              |
-|  ├─ Enrollment: HYG-2024-ABC123          |
-|  └─ Pre-Auth: PA-2024-XYZ789             |
-|------------------------------------------|
-|  LINKED BILL                             |
-|  INV-2024-0001 - ₦23,300 [View]          |
-|------------------------------------------|
-|  CLAIMED ITEMS                           |
-|  ┌────────────────────────────────────┐  |
-|  │ Consultation Fee        ₦15,000   │  |
-|  │ Lab: FBC                 ₦5,000   │  |
-|  │ Lab: MP                  ₦2,500   │  |
-|  └────────────────────────────────────┘  |
-|  Total Claimed:              ₦22,500     |
-|------------------------------------------|
-|  DOCUMENTS (3)                           |
-|  ├─ consultation_note.pdf    [View]      |
-|  ├─ lab_results.pdf          [View]      |
-|  └─ claim_form.pdf           [View]      |
-|------------------------------------------|
-|  VERSION HISTORY                         |
-|  ├─ v3: Resubmitted (05 Feb 14:00)       |
-|  ├─ v2: Denied (05 Feb 12:00)            |
-|  └─ v1: Submitted (05 Feb 11:00)         |
-|------------------------------------------|
-|  (If Denied) DENIAL REASON               |
-|  "Service not covered under plan..."     |
-+------------------------------------------+
-|  Actions based on status                 |
+|  [Cancel]           [Confirm Cancellation]|
 +------------------------------------------+
 ```
 
-### Status-Based Actions
-
-| Status | Available Actions |
-|--------|-------------------|
-| Draft | Edit, Submit, Delete |
-| Submitted | View, Cancel |
-| Processing | View |
-| Approved | View, Mark as Paid |
-| Denied | View, Edit & Resubmit, Appeal |
-| Paid | View, Print |
-
----
-
-## Part 5: Claim Edit/Resubmit Modal
-
-### New Component: `src/components/billing/organisms/claim-submission/ClaimEditModal.tsx`
-
-Re-uses ClaimCreationModal structure with modifications:
-
-### For Draft Claims
-
-- Full editing of all fields
-- Same as creation flow
-- Version incremented on save
-
-### For Denied Claims (Resubmission)
-
-- HMO details: Read-only (can request provider change)
-- Bill: Read-only (linked)
-- Items: Can adjust amounts, add notes
-- Documents: Can add new documents
-- **Required**: Resubmission Notes explaining changes
-
-### Resubmission Flow
+#### For Approved Claims (Retraction Request)
 
 ```text
 +------------------------------------------+
-|  RESUBMIT CLAIM                          |
-|  CLM-2024-0001 (v2 → v3)                 |
+|  REQUEST RETRACTION                      |
+|  CLM-2024-0001                           |
 |------------------------------------------|
-|  DENIAL REASON                           |
-|  "Service not covered under plan..."     |
+|  ⚠️ This claim has been APPROVED         |
+|                                          |
+|  To withdraw, you must:                  |
+|  1. Contact {HMO Provider} via their     |
+|     provider portal or relationship      |
+|     manager                              |
+|  2. Request that funds NOT be released   |
+|  3. Void the HMO invoice                 |
 |------------------------------------------|
-|  [Read-only sections]                    |
+|  HMO Contact: claims@hygeiahmo.com       |
+|  Phone: +234 1 271 2200                  |
 |------------------------------------------|
-|  RESUBMISSION NOTES *                    |
-|  [Textarea: Explain corrections made]    |
+|  Reason for retraction:                  |
+|  ○ Patient opted for private/self-pay    |
+|  ○ Treatment plan changed                |
+|  ○ Billing error discovered              |
 |------------------------------------------|
-|  ADDITIONAL DOCUMENTS                    |
-|  [Upload zone]                           |
+|  Notes for HMO:                          |
+|  [____________________________________]  |
 |------------------------------------------|
-|  [Cancel]  [Save Draft]  [Resubmit]      |
+|  [ ] I confirm I will contact the HMO    |
+|      to complete this retraction         |
+|------------------------------------------|
+|  [Cancel]        [Submit Retraction Request]|
 +------------------------------------------+
 ```
 
----
+### Post-Withdrawal Actions
 
-## Part 6: Version History Component
-
-### New Component: `src/components/billing/molecules/claim/ClaimVersionHistory.tsx`
-
-Timeline display of claim changes.
-
-| Version | Display |
-|---------|---------|
-| Current | Badge + "Current Version" |
-| Previous | Status change, timestamp, notes |
-| Original | Initial submission details |
-
-### Version Comparison
-
-Click any version to see:
-- What changed (diff)
-- Who made the change
-- Timestamp
+After successful withdrawal/retraction:
+1. Claim status updated to 'withdrawn' or 'retracted'
+2. Version history records the change
+3. Option appears: "Generate Private Bill"
+4. Opens BillCreationForm pre-filled with claim items
 
 ---
 
-## Part 7: Document Management
+## Part 7: Convert to Private Bill
 
-### Auto-Attach Logic
+### New Component: `src/components/billing/organisms/bill-creation/ConvertToPrivateBillModal.tsx`
 
-When creating a claim from a bill:
-1. Query consultations for patient on bill date
-2. Query lab results for items in bill
-3. Present as checkboxes (default: checked)
+When converting from HMO to self-pay:
 
-### Manual Upload Component
+```text
++------------------------------------------+
+|  GENERATE PRIVATE BILL                   |
+|------------------------------------------|
+|  Original Claim: CLM-2024-0001           |
+|  HMO Claim Amount: ₦22,500               |
+|------------------------------------------|
+|  The HMO claim has been withdrawn.       |
+|  A new private bill will be generated.   |
+|------------------------------------------|
+|  ITEMS TO BILL                           |
+|  ☑ Consultation Fee         ₦15,000      |
+|  ☑ Lab: FBC                  ₦5,000      |
+|  ☑ Lab: MP                   ₦2,500      |
+|  ──────────────────────────────────      |
+|  Total:                     ₦22,500      |
+|------------------------------------------|
+|  Apply Discount?  [____]  %              |
+|------------------------------------------|
+|  [Cancel]  [Generate Bill & Collect]     |
++------------------------------------------+
+```
 
-### `src/components/billing/molecules/documents/DocumentUploadZone.tsx`
-
-| Feature | Description |
-|---------|-------------|
-| Drag & Drop | Visual drop zone |
-| File Types | PDF, JPG, PNG (max 5MB each) |
-| Upload Status | Progress indicator |
-| Preview | Thumbnail for images, icon for PDFs |
-| Delete | Remove uploaded file |
-
-### Claim Form Generation
-
-### `src/components/billing/molecules/documents/ClaimFormGenerator.tsx`
-
-| Field | Source |
-|-------|--------|
-| Patient Name | From patient record |
-| HMO Details | From claim |
-| Diagnosis | From consultation |
-| Items & Amounts | From claim items |
-| Doctor Signature | Placeholder |
-| Date | Current date |
-
-Generates a print-friendly/downloadable PDF template.
+After generating:
+- New bill created with paymentMethod = 'cash' (or selected method)
+- Opens PaymentCollectionForm immediately
+- Original claim marked with reference to new bill
 
 ---
 
@@ -378,206 +317,162 @@ Generates a print-friendly/downloadable PDF template.
 
 ### Update: `src/types/billing.types.ts`
 
-Add new types:
-
 ```text
-interface ClaimVersion {
-  version: number;
-  status: ClaimStatus;
-  changedAt: string;
-  changedBy: string;
-  notes?: string;
-  previousValues?: Partial<HMOClaim>;
+// Extended ClaimStatus
+export type ClaimStatus = 
+  | 'draft' 
+  | 'submitted' 
+  | 'processing' 
+  | 'approved' 
+  | 'denied' 
+  | 'paid' 
+  | 'withdrawn'   // Cancelled before HMO payment
+  | 'retracted';  // Cancelled after HMO approval
+
+// New ClaimDiagnosis interface
+export interface ClaimDiagnosis {
+  code: string;
+  description: string;
+  isPrimary: boolean;
 }
 
-interface ClaimDocument {
-  id: string;
-  name: string;
-  type: 'auto' | 'manual' | 'generated';
-  source?: string; // consultation_id, lab_order_id, etc.
-  uploadedAt: string;
-  url?: string;
+// Extended HMOClaim
+export interface HMOClaim {
+  // ... existing fields ...
+  diagnoses: ClaimDiagnosis[];
+  withdrawnAt?: string;
+  withdrawnReason?: 'patient_self_pay' | 'hospital_cancelled' | 'claim_error';
+  retractionNotes?: string;
+  privatePaymentId?: string;
+  privateBillId?: string;
 }
-
-// Add to HMOClaim interface
-versions: ClaimVersion[];
-documents: ClaimDocument[];
 ```
 
 ### Update: `src/data/claims.ts`
 
-Add functions:
+Add new functions:
 
 ```text
-createClaim(data): HMOClaim
-updateClaim(id, data): HMOClaim
-saveClaimDraft(id, data): HMOClaim
-submitClaim(id): HMOClaim
-resubmitClaim(id, notes): HMOClaim
-addClaimDocument(id, doc): ClaimDocument
-getClaimVersions(id): ClaimVersion[]
+withdrawClaim(id: string, reason: string): HMOClaim
+requestRetraction(id: string, notes: string): HMOClaim
+convertToPrivateBill(claimId: string): { claim: HMOClaim; bill: Bill }
 ```
 
-### New: `src/data/bill-items.ts`
+### New: `src/data/icd10-codes.ts`
 
-Service catalog for bill creation:
-
-```text
-interface ServiceItem {
-  id: string;
-  name: string;
-  category: ServiceCategory;
-  defaultPrice: number;
-  isActive: boolean;
-}
-
-const CONSULTATION_ITEMS: ServiceItem[]
-const LAB_ITEMS: ServiceItem[]
-const PHARMACY_ITEMS: ServiceItem[]
-const PROCEDURE_ITEMS: ServiceItem[]
-```
-
-### Update: `src/data/bills.ts`
-
-Add functions:
-
-```text
-createBill(data): Bill
-updateBill(id, data): Bill
-addBillItem(billId, item): BillItem
-removeBillItem(billId, itemId): void
-getBillPaymentHistory(id): Payment[]
-```
+Searchable ICD-10 catalog with common Nigerian clinical codes.
 
 ---
 
-## Part 9: Integration Points
+## Part 9: File Structure Summary
 
-### BillsListPage Updates
-
-| Element | Action |
-|---------|--------|
-| Row click | Open BillDetailsDrawer |
-| "View" action | Open BillDetailsDrawer |
-| "Collect" action | Open PaymentCollectionForm |
-| Add "Create Bill" button | Open BillCreationForm |
-
-### ClaimsListPage Updates
-
-| Element | Action |
-|---------|--------|
-| Row click | Open ClaimDetailsDrawer |
-| "View" action | Open ClaimDetailsDrawer |
-| "Edit" action | Open ClaimEditModal |
-| "Resubmit" action | Open ClaimEditModal (resubmit mode) |
-| "New Claim" button | Open ClaimCreationModal |
-
-### BillingDashboard Updates
-
-| Element | Action |
-|---------|--------|
-| "Submit Claim" button | Open ClaimCreationModal |
-| Add "Create Bill" quick action | Open BillCreationForm |
-| Unpaid bills "Collect" | Already wired |
-| HMO stats cards | Remain non-clickable |
-
-### PatientProfile (Billing Tab)
-
-| Element | Action |
-|---------|--------|
-| "Create Bill" button | Open BillCreationForm (patient pre-filled) |
-| Bills list | Click opens BillDetailsDrawer |
-| Claims list | Click opens ClaimDetailsDrawer |
-
----
-
-## Part 10: File Structure Summary
-
-### New Files (15)
+### New Files (6)
 
 | File | Purpose |
 |------|---------|
-| `src/components/billing/organisms/bill-details/BillDetailsDrawer.tsx` | Bill details drawer |
-| `src/components/billing/organisms/bill-details/index.ts` | Barrel export |
-| `src/components/billing/organisms/bill-creation/BillCreationForm.tsx` | Bill creation modal |
-| `src/components/billing/organisms/bill-creation/index.ts` | Barrel export |
-| `src/components/billing/organisms/claim-submission/ClaimCreationModal.tsx` | Claim creation flow |
-| `src/components/billing/organisms/claim-submission/ClaimEditModal.tsx` | Edit/resubmit claims |
-| `src/components/billing/organisms/claim-submission/index.ts` | Barrel export |
-| `src/components/billing/organisms/claim-details/ClaimDetailsDrawer.tsx` | Claim details drawer |
-| `src/components/billing/organisms/claim-details/index.ts` | Barrel export |
-| `src/components/billing/molecules/claim/ClaimVersionHistory.tsx` | Version timeline |
-| `src/components/billing/molecules/claim/index.ts` | Barrel export |
-| `src/components/billing/molecules/documents/DocumentUploadZone.tsx` | File upload |
-| `src/components/billing/molecules/documents/ClaimFormGenerator.tsx` | PDF generation |
-| `src/components/billing/molecules/documents/index.ts` | Barrel export |
-| `src/data/bill-items.ts` | Service catalog |
+| `src/data/icd10-codes.ts` | ICD-10 code catalog |
+| `src/components/billing/organisms/claim-details/PayOutOfPocketModal.tsx` | Self-pay conversion |
+| `src/components/billing/organisms/claim-details/ClaimWithdrawalModal.tsx` | Withdrawal flows |
+| `src/components/billing/organisms/bill-creation/ConvertToPrivateBillModal.tsx` | Bill conversion |
+| `src/components/billing/molecules/documents/DocumentPreviewModal.tsx` | Document preview |
+| `src/components/billing/molecules/diagnosis/DiagnosisSelector.tsx` | ICD-10 selector |
 
-### Modified Files (7)
+### Modified Files (8)
 
 | File | Changes |
 |------|---------|
-| `src/types/billing.types.ts` | Add ClaimVersion, ClaimDocument types |
-| `src/data/claims.ts` | Add CRUD and version functions |
-| `src/data/bills.ts` | Add create/update functions |
-| `src/pages/billing/BillsListPage.tsx` | Add drawer, create bill |
-| `src/pages/billing/ClaimsListPage.tsx` | Add drawers, modals |
-| `src/pages/dashboards/BillingDashboard.tsx` | Add create bill action |
-| `src/components/billing/organisms/index.ts` | Export new organisms |
+| `src/data/patients.ts` | Add 3 test HMO patients |
+| `src/types/billing.types.ts` | Add diagnosis, withdrawal fields |
+| `src/data/claims.ts` | Add diagnosis data, withdrawal functions |
+| `src/components/billing/organisms/claim-details/ClaimDetailsDrawer.tsx` | Bill items, docs preview, new actions |
+| `src/components/billing/organisms/claim-submission/ClaimCreationModal.tsx` | Add diagnosis step |
+| `src/pages/billing/ClaimsListPage.tsx` | Wire up new modals |
+| `src/components/billing/organisms/tables/ClaimsTable.tsx` | Show diagnosis codes |
+| `src/data/hmo-providers.ts` | Add contact details for retraction |
 
 ---
 
-## Part 11: Implementation Order
+## Part 10: Implementation Order
 
-1. **Types & Data**: Update billing types, add claim version/document structures
-2. **Service Catalog**: Create bill-items.ts with service items
-3. **Bill Details Drawer**: Full drawer with all sections
-4. **Bill Creation Form**: Multi-step bill creation
-5. **Claim Creation Modal**: 5-step claim flow
-6. **Claim Details Drawer**: Full claim view with version history
-7. **Claim Edit Modal**: Edit and resubmit flows
-8. **Document Components**: Upload zone, claim form generator
-9. **Version History**: Timeline component
-10. **Page Integrations**: Wire up all pages
-11. **Dashboard Updates**: Add new quick actions
+1. **Data Layer First**:
+   - Add ICD-10 codes catalog
+   - Update billing types with new fields
+   - Add test HMO patients
+   - Update claims mock data with diagnoses
+
+2. **Diagnosis Selection**:
+   - Create DiagnosisSelector component
+   - Add to ClaimCreationModal
+
+3. **Document Preview**:
+   - Create DocumentPreviewModal
+   - Update ClaimDetailsDrawer
+
+4. **Enhanced Claim Details**:
+   - Show first 4 bill items
+   - Add bill navigation
+   - Wire up view bill action
+
+5. **Withdrawal Flow**:
+   - Create ClaimWithdrawalModal
+   - Handle different status scenarios
+   - Add to ClaimDetailsDrawer actions
+
+6. **Pay Out of Pocket**:
+   - Create PayOutOfPocketModal
+   - Wire to denied claim actions
+   - Connect to PaymentCollectionForm
+
+7. **Private Bill Conversion**:
+   - Create ConvertToPrivateBillModal
+   - Link withdrawal to bill creation
+
+8. **Integration Testing**:
+   - Test complete flow end-to-end
+   - Verify all status transitions
+   - Test with mock HMO patients
 
 ---
 
-## Part 12: UX Principles Applied
+## Part 11: User Flow Summary
+
+### Happy Path: Claim Approved & Paid
+
+```text
+Create Claim → Add Diagnoses → Attach Docs → Submit → Processing → Approved → Paid
+```
+
+### Denied → Self-Pay Path
+
+```text
+Claim Denied → View Details → "Pay Out of Pocket" → Select Payment Method → Process → Receipt
+```
+
+### Withdrawal Before Approval
+
+```text
+Claim Submitted → View Details → "Cancel Claim" → Select Reason → Confirm → Withdrawn
+→ Optional: "Generate Private Bill" → Collect Payment
+```
+
+### Retraction After Approval
+
+```text
+Claim Approved → View Details → "Request Retraction" → Enter Notes → Confirm Contact HMO
+→ Status: "Retraction Requested" → Manual HMO Contact → Status Updated → Generate Private Bill
+```
+
+---
+
+## Part 12: UI/UX Principles Applied
 
 | Principle | Implementation |
 |-----------|----------------|
-| Minimal Clicks | Pre-fill data from context (patient, bill) |
-| Progressive Disclosure | Multi-step flows reveal complexity gradually |
-| Contextual Actions | Status-based buttons (Edit only for Draft) |
-| Draft Recovery | Save draft anytime, resume later |
-| Visual Feedback | Status badges, progress indicators, success states |
-| Error Prevention | Validation before submit, confirmation dialogs |
-| Undo/Recovery | Version history, resubmit from denied |
-| Mobile Responsive | Drawer collapses, modals adapt |
-| Keyboard Navigation | Tab through forms, Enter to submit |
-| Loading States | Skeletons, spinners during operations |
-
----
-
-## Part 13: Testing Checklist
-
-After implementation:
-
-| Test | Expected |
-|------|----------|
-| Open bill from table | Drawer shows all details |
-| Collect from drawer | Opens PaymentCollectionForm |
-| Create claim from bill | Modal pre-fills bill data |
-| Create bill from dashboard | Patient search first |
-| Create bill from patient | Patient pre-selected |
-| Add items to bill | Updates totals live |
-| Save claim as draft | Status = draft, can edit later |
-| Submit claim | Status = submitted, timestamp set |
-| Edit draft claim | All fields editable |
-| Resubmit denied | Notes required, version incremented |
-| Upload document | Shows in document list |
-| Generate claim form | Opens printable PDF |
-| View version history | Shows all status changes |
-| Delete draft claim | Removed from list |
-| Mark approved as paid | Status = paid |
+| Clear Status Communication | Distinct badges and messaging for each claim state |
+| Guided Workflows | Step-by-step modals for complex actions |
+| Error Prevention | Confirmation dialogs before destructive actions |
+| Context Preservation | Drawer-based details keep list visible |
+| Progressive Disclosure | Show relevant actions based on status |
+| Help Text | Inline guidance for HMO contact procedures |
+| Audit Trail | Version history tracks all changes |
+| Quick Access | Bill navigation from claim details |

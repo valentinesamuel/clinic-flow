@@ -28,6 +28,10 @@ import AppointmentListPage from "./pages/appointments/AppointmentListPage";
 import CheckInQueuePage from "./pages/queue/CheckInQueuePage";
 import TriageQueuePage from "./pages/queue/TriageQueuePage";
 import DoctorQueuePage from "./pages/queue/DoctorQueuePage";
+import BillsListPage from "./pages/billing/BillsListPage";
+import ClaimsListPage from "./pages/billing/ClaimsListPage";
+import PaymentsListPage from "./pages/billing/PaymentsListPage";
+import BillingSettings from "./pages/billing/BillingSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -102,6 +106,10 @@ const App = () => (
                     
                     {/* Billing Routes */}
                     <Route path="/billing" element={<BillingDashboard />} />
+                    <Route path="/billing/bills" element={<BillsListPage />} />
+                    <Route path="/billing/claims" element={<ClaimsListPage />} />
+                    <Route path="/billing/payments" element={<PaymentsListPage />} />
+                    <Route path="/billing/settings" element={<BillingSettings />} />
                     <Route path="/billing/*" element={<BillingDashboard />} />
                     
                     {/* Pharmacist Routes */}

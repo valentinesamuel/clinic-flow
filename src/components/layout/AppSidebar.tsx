@@ -197,7 +197,7 @@ export function AppSidebar() {
       </nav>
       
       <div className="border-t border-sidebar-border p-3 space-y-1">
-        <Link to="/settings" className={cn('flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground', 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors')}>
+        <Link to={`${baseRoute}/settings`} className={cn('flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground', 'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors')}>
           <Settings className="h-5 w-5" />
           {!collapsed && <span>Settings</span>}
         </Link>

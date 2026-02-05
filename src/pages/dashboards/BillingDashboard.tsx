@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,19 +8,26 @@ import {
   Receipt,
   CreditCard,
   FileCheck,
-  AlertTriangle,
   DollarSign,
   TrendingUp,
   User,
 } from 'lucide-react';
+import { PaymentCollectionForm } from '@/components/billing/organisms/cashier-station/PaymentCollectionForm';
+import { PaymentItem, PaymentClearance } from '@/types/billing.types';
+import { Patient } from '@/types/patient.types';
+import { mockPatients } from '@/data/patients';
+import { mockBills, getPendingBills } from '@/data/bills';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock billing data
-const unpaidBills = [
-  { id: 1, patient: 'Chidinma Obi', amount: 45000, daysOverdue: 15 },
-  { id: 2, patient: 'Abdul Salam', amount: 127500, daysOverdue: 8 },
-  { id: 3, patient: 'Grace Okoro', amount: 32000, daysOverdue: 3 },
-  { id: 4, patient: 'Tunde Fashola', amount: 89000, daysOverdue: 0 },
-];
+const unpaidBills = getPendingBills().slice(0, 4).map((bill, index) => ({
+  id: bill.id,
+  patient: bill.patientName,
+  patientId: bill.patientId,
+  amount: bill.balance,
+  daysOverdue: [15, 8, 3, 0][index] || 0,
+  bill,
+}));
 
 const hmoClaimsStatus = {
   pending: 24,
@@ -43,7 +52,137 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
+// Mock patient for demo
+const mockPatient: Patient = mockPatients[0] || {
+  id: 'pt-demo',
+  mrn: 'PT-2026-00123',
+  firstName: 'Aisha',
+  lastName: 'Mohammed',
+  dateOfBirth: '1985-03-15',
+  gender: 'female',
+  bloodGroup: 'O+',
+  maritalStatus: 'married',
+  phone: '+234 803 123 4567',
+  address: '25 Marina Street, Lagos Island',
+  state: 'Lagos',
+  lga: 'Lagos Island',
+  nationality: 'Nigerian',
+  paymentType: 'cash',
+  nextOfKin: {
+    name: 'Ibrahim Mohammed',
+    relationship: 'Husband',
+    phone: '+234 803 987 6543',
+  },
+  allergies: [],
+  chronicConditions: [],
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
+  isActive: true,
+};
+
+const mockPaymentItems: PaymentItem[] = [
+  {
+    id: 'item-1',
+    description: 'General Consultation',
+    category: 'consultation',
+    quantity: 1,
+    unitPrice: 15000,
+    discount: 0,
+    total: 15000,
+  },
+  {
+    id: 'item-2',
+    description: 'Lab Tests',
+    category: 'lab',
+    quantity: 3,
+    unitPrice: 5833,
+    discount: 0,
+    total: 17500,
+    subItems: [
+      { id: 'sub-1', description: 'FBC', category: 'lab', quantity: 1, unitPrice: 5000, discount: 0, total: 5000 },
+      { id: 'sub-2', description: 'MP', category: 'lab', quantity: 1, unitPrice: 2500, discount: 0, total: 2500 },
+      { id: 'sub-3', description: 'LFT', category: 'lab', quantity: 1, unitPrice: 10000, discount: 0, total: 10000 },
+    ],
+  },
+];
+
 export default function BillingDashboard() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
+  const [selectedItems, setSelectedItems] = useState<PaymentItem[]>([]);
+
+  const handleRecordPayment = () => {
+    setSelectedPatient(mockPatient);
+    setSelectedItems(mockPaymentItems);
+    setShowPaymentModal(true);
+  };
+
+  const handleCollectBill = (billData: typeof unpaidBills[0]) => {
+    const patient = mockPatients.find((p) => p.id === billData.patientId);
+    if (!patient) {
+      toast({
+        title: 'Error',
+        description: 'Patient not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const items: PaymentItem[] = billData.bill.items.map((item) => ({
+      id: item.id,
+      description: item.description,
+      category: item.category,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      discount: item.discount,
+      total: item.total,
+    }));
+
+    setSelectedPatient(patient);
+    setSelectedItems(items);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentComplete = (clearance: PaymentClearance) => {
+    toast({
+      title: 'Payment Successful',
+      description: `Receipt ${clearance.receiptNumber} generated for ${formatCurrency(clearance.total)}`,
+    });
+    setShowPaymentModal(false);
+    setSelectedPatient(null);
+    setSelectedItems([]);
+  };
+
+  const handleSubmitClaim = () => {
+    navigate('/billing/claims?action=new');
+  };
+
+  const handleGenerateReceipt = () => {
+    toast({
+      title: 'Generate Receipt',
+      description: 'Please select a paid bill to generate a receipt',
+    });
+  };
+
+  const handleDailyReport = () => {
+    toast({
+      title: 'Daily Report',
+      description: 'Daily report generation - Coming Soon',
+    });
+  };
+
+  const handleRevenueCardClick = (method: 'cash' | 'card' | 'hmo' | 'all') => {
+    if (method === 'all') {
+      navigate('/billing/payments?date=today');
+    } else {
+      navigate(`/billing/payments?method=${method}`);
+    }
+  };
+
   return (
     <DashboardLayout allowedRoles={['billing']}>
       <div className="space-y-6">
@@ -54,20 +193,23 @@ export default function BillingDashboard() {
             <p className="text-muted-foreground">Payments, claims, and revenue tracking</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleSubmitClaim}>
               <FileCheck className="h-4 w-4 mr-2" />
               Submit Claim
             </Button>
-            <Button>
+            <Button onClick={handleRecordPayment}>
               <CreditCard className="h-4 w-4 mr-2" />
               Record Payment
             </Button>
           </div>
         </div>
 
-        {/* Daily Revenue */}
+        {/* Daily Revenue - Clickable Cards */}
         <div className="grid gap-4 md:grid-cols-4">
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-accent/50 transition-colors"
+            onClick={() => handleRevenueCardClick('cash')}
+          >
             <CardHeader className="pb-2">
               <CardDescription>Cash Payments</CardDescription>
               <CardTitle className="text-xl">{formatCurrency(dailyRevenue.cash)}</CardTitle>
@@ -79,7 +221,10 @@ export default function BillingDashboard() {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-accent/50 transition-colors"
+            onClick={() => handleRevenueCardClick('card')}
+          >
             <CardHeader className="pb-2">
               <CardDescription>Card Payments</CardDescription>
               <CardTitle className="text-xl">{formatCurrency(dailyRevenue.card)}</CardTitle>
@@ -88,7 +233,10 @@ export default function BillingDashboard() {
               <p className="text-sm text-muted-foreground">POS transactions</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card 
+            className="cursor-pointer hover:bg-accent/50 transition-colors"
+            onClick={() => handleRevenueCardClick('hmo')}
+          >
             <CardHeader className="pb-2">
               <CardDescription>HMO Payments</CardDescription>
               <CardTitle className="text-xl">{formatCurrency(dailyRevenue.hmo)}</CardTitle>
@@ -97,7 +245,10 @@ export default function BillingDashboard() {
               <p className="text-sm text-muted-foreground">Insurance claims</p>
             </CardContent>
           </Card>
-          <Card className="bg-primary text-primary-foreground">
+          <Card 
+            className="bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors"
+            onClick={() => handleRevenueCardClick('all')}
+          >
             <CardHeader className="pb-2">
               <CardDescription className="text-primary-foreground/80">Total Today</CardDescription>
               <CardTitle className="text-xl">{formatCurrency(dailyRevenue.total)}</CardTitle>
@@ -108,7 +259,7 @@ export default function BillingDashboard() {
           </Card>
         </div>
 
-        {/* HMO Claims Status */}
+        {/* HMO Claims Status - Non-clickable */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
@@ -150,7 +301,13 @@ export default function BillingDashboard() {
                 </CardTitle>
                 <CardDescription>{unpaidBills.length} outstanding invoices</CardDescription>
               </div>
-              <Button variant="outline" size="sm">View All</Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/billing/bills?status=pending')}
+              >
+                View All
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
@@ -178,7 +335,9 @@ export default function BillingDashboard() {
                       </Badge>
                     )}
                   </div>
-                  <Button size="sm" variant="outline">Collect</Button>
+                  <Button size="sm" variant="outline" onClick={() => handleCollectBill(bill)}>
+                    Collect
+                  </Button>
                 </div>
               ))}
             </div>
@@ -192,19 +351,19 @@ export default function BillingDashboard() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-              <Button variant="outline" className="h-auto py-4 flex-col">
+              <Button variant="outline" className="h-auto py-4 flex-col" onClick={handleRecordPayment}>
                 <CreditCard className="h-5 w-5 mb-2" />
                 <span className="text-xs">Record Payment</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col">
+              <Button variant="outline" className="h-auto py-4 flex-col" onClick={handleGenerateReceipt}>
                 <Receipt className="h-5 w-5 mb-2" />
                 <span className="text-xs">Generate Receipt</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col">
+              <Button variant="outline" className="h-auto py-4 flex-col" onClick={handleSubmitClaim}>
                 <FileCheck className="h-5 w-5 mb-2" />
                 <span className="text-xs">Submit Claim</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col">
+              <Button variant="outline" className="h-auto py-4 flex-col" onClick={handleDailyReport}>
                 <DollarSign className="h-5 w-5 mb-2" />
                 <span className="text-xs">Daily Report</span>
               </Button>
@@ -212,6 +371,21 @@ export default function BillingDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Payment Modal */}
+      {selectedPatient && (
+        <PaymentCollectionForm
+          open={showPaymentModal}
+          patient={selectedPatient}
+          items={selectedItems}
+          onComplete={handlePaymentComplete}
+          onCancel={() => {
+            setShowPaymentModal(false);
+            setSelectedPatient(null);
+            setSelectedItems([]);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }

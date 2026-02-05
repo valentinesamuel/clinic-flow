@@ -49,6 +49,38 @@ export interface Payment {
   notes?: string;
 }
 
+export interface ClaimVersion {
+  version: number;
+  status: ClaimStatus;
+  changedAt: string;
+  changedBy: string;
+  changedByName?: string;
+  notes?: string;
+  previousValues?: Partial<HMOClaim>;
+}
+
+export interface ClaimDocument {
+  id: string;
+  name: string;
+  type: 'auto' | 'manual' | 'generated';
+  source?: string; // consultation_id, lab_order_id, etc.
+  uploadedAt: string;
+  url?: string;
+  size?: number;
+  mimeType?: string;
+}
+
+export interface ClaimItem {
+  id: string;
+  description: string;
+  category: ServiceCategory;
+  quantity: number;
+  unitPrice: number;
+  claimedAmount: number;
+  isExcluded: boolean;
+  clinicalNotes?: string;
+}
+
 export interface HMOClaim {
   id: string;
   claimNumber: string;
@@ -57,14 +89,20 @@ export interface HMOClaim {
   hmoProviderId: string;
   hmoProviderName: string;
   enrollmentId: string;
+  policyNumber?: string;
+  preAuthCode?: string;
   billId: string;
+  items?: ClaimItem[];
   claimAmount: number;
   approvedAmount?: number;
   status: ClaimStatus;
   submittedAt?: string;
   processedAt?: string;
   denialReason?: string;
-  documents: string[];
+  resubmissionNotes?: string;
+  documents: ClaimDocument[];
+  versions: ClaimVersion[];
+  currentVersion: number;
   createdAt: string;
   createdBy: string;
 }

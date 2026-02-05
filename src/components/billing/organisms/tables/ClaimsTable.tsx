@@ -29,6 +29,7 @@ interface ClaimsTableProps {
   onEdit: (claim: HMOClaim) => void;
   onResubmit: (claim: HMOClaim) => void;
   onMarkPaid: (claim: HMOClaim) => void;
+  onRowClick?: (claim: HMOClaim) => void;
 }
 
 function formatCurrency(value: number): string {
@@ -64,6 +65,7 @@ export function ClaimsTable({
   onEdit,
   onResubmit,
   onMarkPaid,
+  onRowClick,
 }: ClaimsTableProps) {
   const allSelected = claims.length > 0 && claims.every((c) => selectedIds.includes(c.id));
   const someSelected = claims.some((c) => selectedIds.includes(c.id)) && !allSelected;
@@ -98,8 +100,12 @@ export function ClaimsTable({
             </TableRow>
           ) : (
             claims.map((claim) => (
-              <TableRow key={claim.id}>
-                <TableCell>
+              <TableRow 
+                key={claim.id}
+                className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
+                onClick={() => onRowClick?.(claim)}
+              >
+                <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
                     checked={selectedIds.includes(claim.id)}
                     onCheckedChange={(checked) => onSelectOne(claim.id, !!checked)}
@@ -107,7 +113,7 @@ export function ClaimsTable({
                 </TableCell>
                 <TableCell className="font-medium">
                   <button
-                    onClick={() => onView(claim)}
+                    onClick={(e) => { e.stopPropagation(); onView(claim); }}
                     className="text-primary hover:underline"
                   >
                     {claim.claimNumber}
@@ -138,7 +144,7 @@ export function ClaimsTable({
                 <TableCell>
                   {claim.submittedAt ? format(new Date(claim.submittedAt), 'dd MMM yyyy') : '—'}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">

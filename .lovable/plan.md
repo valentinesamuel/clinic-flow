@@ -1,163 +1,264 @@
 
-# Complete Billing Module: Dashboard + Full Sub-Pages
+# Comprehensive Billing Flows: Claims & Bills Management
 
 ## Overview
 
-This plan makes every button and interaction in the billing module fully functional by:
-1. Wiring up the BillingDashboard with interactive handlers
-2. Creating 3 full list pages (Bills, Claims, Payments/Transactions)
-3. Fixing the Settings link in the sidebar
-4. Adding revenue card navigation to transactions
+Build impeccable UI/UX for:
+1. **Bill Creation** - From patient profile and billing dashboard
+2. **Bill Details Drawer** - Full-height drawer with complete bill information
+3. **Claim Lifecycle** - Create, save draft, submit, edit, resubmit, view with version history
+4. **Auto-generation Integration** - Bills from clinical orders
+5. **Document Management** - Auto-attach, manual upload, claim form generation
 
 ---
 
-## Part 1: Fix Sidebar Settings Link
+## Part 1: Bill Details Drawer
 
-### File: `src/components/layout/AppSidebar.tsx`
+### New Component: `src/components/billing/organisms/bill-details/BillDetailsDrawer.tsx`
 
-**Issue**: Line 200 links to `/settings` which doesn't exist
+Full-height right-side drawer (Sheet) following PatientDrawer pattern.
 
-**Fix**: Change to role-based settings route or billing-specific settings
+### Layout Structure
 
 ```text
-Before: <Link to="/settings" ...>
-After:  <Link to={`/${user.role.replace('_', '-')}/settings`} ...>
++------------------------------------------+
+|  BILL DETAILS                      [X]   |
+|  INV-2024-0001                           |
+|------------------------------------------|
+|  PATIENT INFO                            |
+|  ├─ Name: Aisha Mohammed                 |
+|  ├─ MRN: PT-2024-00123                   |
+|  ├─ Phone: +234 803 123 4567             |
+|  └─ Payment Type: [HMO Badge]            |
+|------------------------------------------|
+|  BILL SUMMARY                            |
+|  ├─ Created: 05 Feb 2026, 10:30 AM       |
+|  ├─ Cashier: Blessing Okafor             |
+|  ├─ Status: [Pending Badge]              |
+|  └─ Visit: Check-up                      |
+|------------------------------------------|
+|  ITEMS                                   |
+|  ┌────────────────────────────────────┐  |
+|  │ Consultation Fee        ₦15,000   │  |
+|  │ Lab: FBC                 ₦5,000   │  |
+|  │ Lab: MP                  ₦2,500   │  |
+|  │ Pharmacy: Paracetamol      ₦800   │  |
+|  └────────────────────────────────────┘  |
+|------------------------------------------|
+|  AMOUNTS                                 |
+|  Subtotal:                   ₦23,300     |
+|  Discount:                       ₦0      |
+|  Tax:                            ₦0      |
+|  ──────────────────────────────────      |
+|  TOTAL:                      ₦23,300     |
+|  Paid:                        ₦5,000     |
+|  Balance:                    ₦18,300     |
+|------------------------------------------|
+|  PAYMENT HISTORY                         |
+|  ├─ ₦5,000 Cash - 05 Feb, 10:35 AM      |
+|  └─ RCP-2024-ABC123                      |
+|------------------------------------------|
+|  NOTES                                   |
+|  "Partial payment, balance next visit"   |
++------------------------------------------+
+|  [Print Invoice]  [Collect Payment]      |
+|  [Create Claim] (if HMO)                 |
++------------------------------------------+
 ```
 
-This creates dynamic settings routes per role.
+### Props
 
----
-
-## Part 2: Wire Up BillingDashboard
-
-### File: `src/pages/dashboards/BillingDashboard.tsx`
-
-Add full interactivity to all elements:
-
-### State to Add
-| State | Type | Purpose |
-|-------|------|---------|
-| `showPaymentModal` | boolean | Controls PaymentCollectionForm visibility |
-| `selectedPatient` | Patient | Patient for payment collection |
-| `selectedItems` | PaymentItem[] | Items being paid for |
-| `selectedBill` | Bill | Bill being collected |
-
-### Button Handlers
-
-| Element | Handler | Action |
-|---------|---------|--------|
-| "Record Payment" (header) | `handleRecordPayment` | Open modal with mock data |
-| "Submit Claim" (header) | `handleSubmitClaim` | Navigate to `/billing/claims?action=new` |
-| "View All" (unpaid bills) | Navigate | Go to `/billing/bills?status=pending` |
-| "Collect" (per bill row) | `handleCollectBill(bill)` | Open modal for that bill |
-| Quick: Record Payment | Same as header | Open modal |
-| Quick: Generate Receipt | `handleGenerateReceipt` | Toast "Select a paid bill first" |
-| Quick: Submit Claim | Same as header | Navigate to claims |
-| Quick: Daily Report | `handleDailyReport` | Toast "Coming Soon" |
-
-### Revenue Cards (Clickable)
-
-| Card | Navigation |
-|------|------------|
-| Cash Payments | `/billing/payments?method=cash` |
-| Card Payments | `/billing/payments?method=card` |
-| HMO Payments | `/billing/payments?method=hmo` |
-| Total Today | `/billing/payments?date=today` |
-
-### HMO Status Cards (Not Clickable)
-
-As per your preference, these remain display-only statistics.
-
----
-
-## Part 3: Bills List Page
-
-### New File: `src/pages/billing/BillsListPage.tsx`
-
-Professional table-based bill management following PatientListPage pattern.
+| Prop | Type | Description |
+|------|------|-------------|
+| `open` | boolean | Drawer visibility |
+| `onOpenChange` | (open: boolean) => void | Toggle handler |
+| `bill` | Bill | Bill data |
+| `onCollect` | () => void | Trigger payment collection |
+| `onCreateClaim` | () => void | Create HMO claim from bill |
+| `onPrint` | () => void | Print invoice |
 
 ### Features
 
-| Feature | Description |
-|---------|-------------|
-| Search | Search by patient name, MRN, or bill number |
-| Filters | Status: All, Pending, Partial, Paid |
-| Date Filter | Today, This Week, This Month, Custom Range |
-| Pagination | 10/25/50 per page with page size selector |
-| Actions | View, Collect Payment, Print, Email |
-
-### Table Columns
-
-| Column | Content |
-|--------|---------|
-| Bill # | INV-2024-0001 (link to details) |
-| Patient | Name + MRN |
-| Date | Created date formatted |
-| Items | Count of items (e.g., "3 items") |
-| Total | Formatted amount |
-| Paid | Amount paid |
-| Balance | Outstanding amount (highlighted if > 0) |
-| Status | Badge (Pending/Partial/Paid) |
-| Actions | Collect / View / Print dropdown |
-
-### Quick Stats Bar
-
-| Stat | Value |
-|------|-------|
-| Total Pending | Sum of all pending balances |
-| Bills Today | Count created today |
-| Awaiting Payment | Count with status pending/partial |
-
-### Components Used
-
-- BillsTable (new component)
-- PaymentCollectionForm (existing)
-- Pagination molecules
+- Patient quick info with insurance badge
+- Itemised list with category icons
+- Payment history timeline
+- Action buttons contextual to status
+- "Create Claim" only visible for HMO patients with pending balance
 
 ---
 
-## Part 4: Claims List Page
+## Part 2: Bill Creation Flow
 
-### New File: `src/pages/billing/ClaimsListPage.tsx`
+### New Component: `src/components/billing/organisms/bill-creation/BillCreationForm.tsx`
 
-HMO claims management with status workflow.
+Multi-step modal for creating bills.
 
-### Features
+### Step 1: Select/Confirm Patient
 
-| Feature | Description |
+| Field | Type | Notes |
+|-------|------|-------|
+| Patient Search | Combobox | Search by name/MRN |
+| Selected Patient | Display Card | Shows name, MRN, payment type |
+
+If opened from patient profile, patient is pre-selected.
+
+### Step 2: Add Items
+
+| Section | Description |
 |---------|-------------|
-| Search | Search by patient, claim number, HMO provider |
-| Status Tabs | All, Draft, Submitted, Processing, Approved, Denied, Paid |
-| Provider Filter | Dropdown to filter by HMO provider |
-| Batch Actions | Submit multiple claims at once |
-| Date Filter | Submitted date range |
+| Category Tabs | Consultation, Lab, Pharmacy, Procedure, Other |
+| Item Search | Filter items within category |
+| Selected Items | List with quantity, unit price, discount |
+| Quick Add | Common items as chips |
+| Custom Item | "Add Custom" for ad-hoc charges |
 
-### Table Columns
+### Item Row
 
-| Column | Content |
-|--------|---------|
-| Claim # | CLM-2024-0001 |
-| Patient | Name + MRN |
-| HMO Provider | Provider name with logo/icon |
-| Bill # | Link to original bill |
-| Claim Amount | Amount being claimed |
-| Approved | Amount approved (if applicable) |
-| Status | Coloured badge (Draft/Submitted/etc.) |
-| Submitted | Date submitted |
-| Actions | Submit / View / Edit / Resubmit |
+```text
++--------------------------------------------------+
+| [x] Consultation Fee     Qty: [1]   ₦15,000  [X] |
++--------------------------------------------------+
+```
 
-### Status Badge Colours
+### Step 3: Review & Notes
 
-| Status | Colour |
+| Field | Description |
+|-------|-------------|
+| Items Summary | Read-only list |
+| Subtotal/Discount/Tax/Total | Calculated |
+| Notes | Optional textarea |
+| Visit Reason | Optional input |
+
+### Actions
+
+| Button | Action |
 |--------|--------|
-| Draft | Gray |
-| Submitted | Blue |
-| Processing | Yellow |
-| Approved | Green |
-| Denied | Red |
-| Paid | Purple |
+| Save as Draft | Save bill with status 'pending' |
+| Generate Bill | Create bill, optionally trigger payment |
+| Cancel | Close without saving |
 
-### Claim Actions by Status
+### Flow Entry Points
+
+1. **From Patient Profile** (Billing Tab) - Patient pre-filled
+2. **From Billing Dashboard** (Quick Action) - Patient search first
+3. **Auto-generated** - From clinical orders (internal trigger)
+
+---
+
+## Part 3: Claim Creation Modal
+
+### New Component: `src/components/billing/organisms/claim-submission/ClaimCreationModal.tsx`
+
+### Entry Points
+
+1. **From Bill Details Drawer** - "Create Claim" button (bill pre-selected)
+2. **From Claims List** - "New Claim" button (search patient first)
+3. **From Billing Dashboard** - "Submit Claim" button
+
+### Step 1: Select Patient & Bill (if not pre-filled)
+
+| Field | Description |
+|-------|-------------|
+| Patient Search | Combobox with autocomplete |
+| Bills Dropdown | Filter: Pending/Partial bills for patient |
+| Selected Bill | Shows bill number, amount, items |
+
+### Step 2: HMO Details
+
+| Field | Description |
+|-------|-------------|
+| HMO Provider | Dropdown from HMO_PROVIDERS |
+| Policy Number | Text input |
+| Enrollment ID | Auto-generated or manual |
+| Pre-Auth Code | Optional (if already obtained) |
+
+### Step 3: Claim Items
+
+Pre-filled from selected bill, with ability to:
+- Adjust claimed amounts (within limits)
+- Add clinical notes per item
+- Mark items as "Not Covered" (excluded from claim)
+
+### Step 4: Documents
+
+| Section | Description |
+|---------|-------------|
+| Auto-attached | Consultation notes, lab results (checkbox to include) |
+| Manual Upload | Drag-drop zone for PDFs/images |
+| Generate Form | Button to generate pre-filled HMO claim form PDF |
+
+### Step 5: Review & Submit
+
+| Field | Description |
+|-------|-------------|
+| Claim Summary | All details read-only |
+| Total Claim Amount | Calculated |
+| Expected Patient Liability | Co-pay if pharmacy items |
+
+### Actions
+
+| Button | Action |
+|--------|--------|
+| Save as Draft | Status = 'draft' |
+| Submit Claim | Status = 'submitted', timestamp |
+| Cancel | Close without saving |
+
+---
+
+## Part 4: Claim Details Drawer
+
+### New Component: `src/components/billing/organisms/claim-details/ClaimDetailsDrawer.tsx`
+
+Full-height drawer for viewing claim details.
+
+### Layout
+
+```text
++------------------------------------------+
+|  CLAIM DETAILS                     [X]   |
+|  CLM-2024-0001                           |
+|------------------------------------------|
+|  STATUS: [Submitted - Blue Badge]        |
+|  Submitted: 05 Feb 2026, 11:00 AM        |
+|------------------------------------------|
+|  PATIENT                                 |
+|  Aisha Mohammed (PT-2024-00123)          |
+|------------------------------------------|
+|  HMO PROVIDER                            |
+|  ├─ Hygeia HMO                           |
+|  ├─ Policy: NHIA-12345-6789              |
+|  ├─ Enrollment: HYG-2024-ABC123          |
+|  └─ Pre-Auth: PA-2024-XYZ789             |
+|------------------------------------------|
+|  LINKED BILL                             |
+|  INV-2024-0001 - ₦23,300 [View]          |
+|------------------------------------------|
+|  CLAIMED ITEMS                           |
+|  ┌────────────────────────────────────┐  |
+|  │ Consultation Fee        ₦15,000   │  |
+|  │ Lab: FBC                 ₦5,000   │  |
+|  │ Lab: MP                  ₦2,500   │  |
+|  └────────────────────────────────────┘  |
+|  Total Claimed:              ₦22,500     |
+|------------------------------------------|
+|  DOCUMENTS (3)                           |
+|  ├─ consultation_note.pdf    [View]      |
+|  ├─ lab_results.pdf          [View]      |
+|  └─ claim_form.pdf           [View]      |
+|------------------------------------------|
+|  VERSION HISTORY                         |
+|  ├─ v3: Resubmitted (05 Feb 14:00)       |
+|  ├─ v2: Denied (05 Feb 12:00)            |
+|  └─ v1: Submitted (05 Feb 11:00)         |
+|------------------------------------------|
+|  (If Denied) DENIAL REASON               |
+|  "Service not covered under plan..."     |
++------------------------------------------+
+|  Actions based on status                 |
++------------------------------------------+
+```
+
+### Status-Based Actions
 
 | Status | Available Actions |
 |--------|-------------------|
@@ -165,235 +266,318 @@ HMO claims management with status workflow.
 | Submitted | View, Cancel |
 | Processing | View |
 | Approved | View, Mark as Paid |
-| Denied | View, Resubmit, Appeal |
+| Denied | View, Edit & Resubmit, Appeal |
 | Paid | View, Print |
-
-### New Claim Flow
-
-Button "New Claim" opens a modal/dialog:
-1. Select patient (with pending bills)
-2. Select bill to claim
-3. Auto-fill HMO details from patient record
-4. Attach documents
-5. Submit
 
 ---
 
-## Part 5: Payments/Transactions Page
+## Part 5: Claim Edit/Resubmit Modal
 
-### New File: `src/pages/billing/PaymentsListPage.tsx`
+### New Component: `src/components/billing/organisms/claim-submission/ClaimEditModal.tsx`
 
-Transaction history and payment records.
+Re-uses ClaimCreationModal structure with modifications:
 
-### Features
+### For Draft Claims
+
+- Full editing of all fields
+- Same as creation flow
+- Version incremented on save
+
+### For Denied Claims (Resubmission)
+
+- HMO details: Read-only (can request provider change)
+- Bill: Read-only (linked)
+- Items: Can adjust amounts, add notes
+- Documents: Can add new documents
+- **Required**: Resubmission Notes explaining changes
+
+### Resubmission Flow
+
+```text
++------------------------------------------+
+|  RESUBMIT CLAIM                          |
+|  CLM-2024-0001 (v2 → v3)                 |
+|------------------------------------------|
+|  DENIAL REASON                           |
+|  "Service not covered under plan..."     |
+|------------------------------------------|
+|  [Read-only sections]                    |
+|------------------------------------------|
+|  RESUBMISSION NOTES *                    |
+|  [Textarea: Explain corrections made]    |
+|------------------------------------------|
+|  ADDITIONAL DOCUMENTS                    |
+|  [Upload zone]                           |
+|------------------------------------------|
+|  [Cancel]  [Save Draft]  [Resubmit]      |
++------------------------------------------+
+```
+
+---
+
+## Part 6: Version History Component
+
+### New Component: `src/components/billing/molecules/claim/ClaimVersionHistory.tsx`
+
+Timeline display of claim changes.
+
+| Version | Display |
+|---------|---------|
+| Current | Badge + "Current Version" |
+| Previous | Status change, timestamp, notes |
+| Original | Initial submission details |
+
+### Version Comparison
+
+Click any version to see:
+- What changed (diff)
+- Who made the change
+- Timestamp
+
+---
+
+## Part 7: Document Management
+
+### Auto-Attach Logic
+
+When creating a claim from a bill:
+1. Query consultations for patient on bill date
+2. Query lab results for items in bill
+3. Present as checkboxes (default: checked)
+
+### Manual Upload Component
+
+### `src/components/billing/molecules/documents/DocumentUploadZone.tsx`
 
 | Feature | Description |
 |---------|-------------|
-| Search | Search by receipt number, patient, reference |
-| Method Filter | All, Cash, POS, Transfer, HMO |
-| Date Filter | Today, This Week, This Month, Custom |
-| Export | Export to CSV |
+| Drag & Drop | Visual drop zone |
+| File Types | PDF, JPG, PNG (max 5MB each) |
+| Upload Status | Progress indicator |
+| Preview | Thumbnail for images, icon for PDFs |
+| Delete | Remove uploaded file |
 
-### Table Columns
+### Claim Form Generation
 
-| Column | Content |
-|--------|---------|
-| Receipt # | RCP-2024-00123 (link to receipt) |
-| Patient | Name + MRN |
-| Date/Time | Payment timestamp |
-| Amount | Total paid |
-| Method | Payment method with icon |
-| Reference | Transaction reference (if applicable) |
-| Cashier | Staff who processed |
-| Actions | View Receipt / Reprint / Email |
+### `src/components/billing/molecules/documents/ClaimFormGenerator.tsx`
 
-### Summary Stats (Top of Page)
+| Field | Source |
+|-------|--------|
+| Patient Name | From patient record |
+| HMO Details | From claim |
+| Diagnosis | From consultation |
+| Items & Amounts | From claim items |
+| Doctor Signature | Placeholder |
+| Date | Current date |
 
-| Stat | Value |
-|------|-------|
-| Today's Total | Sum of today's payments |
-| Cash | Cash payments today |
-| POS | Card payments today |
-| Transfer | Bank transfers today |
-| HMO | HMO payments today |
-
-### View Receipt Action
-
-Opens ThermalReceipt in a modal for preview/print.
+Generates a print-friendly/downloadable PDF template.
 
 ---
 
-## Part 6: Shared Components
+## Part 8: Data Layer Updates
 
-### New File: `src/components/billing/organisms/tables/BillsTable.tsx`
+### Update: `src/types/billing.types.ts`
 
-Reusable table for bills with:
-- Sortable columns
-- Row actions
-- Status badges
-- Amount formatting
-
-### New File: `src/components/billing/organisms/tables/ClaimsTable.tsx`
-
-Reusable table for claims with:
-- Status workflow badges
-- Provider logos
-- Document indicators
-
-### New File: `src/components/billing/organisms/tables/PaymentsTable.tsx`
-
-Reusable table for payments/transactions with:
-- Method icons
-- Receipt links
-- Cashier info
-
----
-
-## Part 7: New Data Helpers
-
-### Update: `src/data/bills.ts`
-
-Add pagination and filtering functions:
+Add new types:
 
 ```text
-getBillsPaginated(page, limit, filters)
-getBillById(id)
-updateBillStatus(id, status)
+interface ClaimVersion {
+  version: number;
+  status: ClaimStatus;
+  changedAt: string;
+  changedBy: string;
+  notes?: string;
+  previousValues?: Partial<HMOClaim>;
+}
+
+interface ClaimDocument {
+  id: string;
+  name: string;
+  type: 'auto' | 'manual' | 'generated';
+  source?: string; // consultation_id, lab_order_id, etc.
+  uploadedAt: string;
+  url?: string;
+}
+
+// Add to HMOClaim interface
+versions: ClaimVersion[];
+documents: ClaimDocument[];
 ```
 
 ### Update: `src/data/claims.ts`
 
-Add pagination and filtering:
+Add functions:
 
 ```text
-getClaimsPaginated(page, limit, filters)
-getClaimById(id)
-submitClaim(id)
-updateClaimStatus(id, status)
+createClaim(data): HMOClaim
+updateClaim(id, data): HMOClaim
+saveClaimDraft(id, data): HMOClaim
+submitClaim(id): HMOClaim
+resubmitClaim(id, notes): HMOClaim
+addClaimDocument(id, doc): ClaimDocument
+getClaimVersions(id): ClaimVersion[]
 ```
 
-### New File: `src/data/payments.ts`
+### New: `src/data/bill-items.ts`
 
-Payment/transaction records:
+Service catalog for bill creation:
 
 ```text
-mockPayments: PaymentRecord[]
-getPaymentsPaginated(page, limit, filters)
-getPaymentById(id)
-getPaymentsByDateRange(start, end)
-getDailyRevenue(date)
+interface ServiceItem {
+  id: string;
+  name: string;
+  category: ServiceCategory;
+  defaultPrice: number;
+  isActive: boolean;
+}
+
+const CONSULTATION_ITEMS: ServiceItem[]
+const LAB_ITEMS: ServiceItem[]
+const PHARMACY_ITEMS: ServiceItem[]
+const PROCEDURE_ITEMS: ServiceItem[]
+```
+
+### Update: `src/data/bills.ts`
+
+Add functions:
+
+```text
+createBill(data): Bill
+updateBill(id, data): Bill
+addBillItem(billId, item): BillItem
+removeBillItem(billId, itemId): void
+getBillPaymentHistory(id): Payment[]
 ```
 
 ---
 
-## Part 8: Route Updates
+## Part 9: Integration Points
 
-### File: `src/App.tsx`
+### BillsListPage Updates
 
-Add specific routes for billing sub-pages:
+| Element | Action |
+|---------|--------|
+| Row click | Open BillDetailsDrawer |
+| "View" action | Open BillDetailsDrawer |
+| "Collect" action | Open PaymentCollectionForm |
+| Add "Create Bill" button | Open BillCreationForm |
 
-```text
-{/* Billing Routes */}
-<Route path="/billing" element={<BillingDashboard />} />
-<Route path="/billing/bills" element={<BillsListPage />} />
-<Route path="/billing/claims" element={<ClaimsListPage />} />
-<Route path="/billing/payments" element={<PaymentsListPage />} />
-<Route path="/billing/settings" element={<BillingSettings />} />
-<Route path="/billing/*" element={<BillingDashboard />} />
-```
+### ClaimsListPage Updates
+
+| Element | Action |
+|---------|--------|
+| Row click | Open ClaimDetailsDrawer |
+| "View" action | Open ClaimDetailsDrawer |
+| "Edit" action | Open ClaimEditModal |
+| "Resubmit" action | Open ClaimEditModal (resubmit mode) |
+| "New Claim" button | Open ClaimCreationModal |
+
+### BillingDashboard Updates
+
+| Element | Action |
+|---------|--------|
+| "Submit Claim" button | Open ClaimCreationModal |
+| Add "Create Bill" quick action | Open BillCreationForm |
+| Unpaid bills "Collect" | Already wired |
+| HMO stats cards | Remain non-clickable |
+
+### PatientProfile (Billing Tab)
+
+| Element | Action |
+|---------|--------|
+| "Create Bill" button | Open BillCreationForm (patient pre-filled) |
+| Bills list | Click opens BillDetailsDrawer |
+| Claims list | Click opens ClaimDetailsDrawer |
 
 ---
 
-## Part 9: File Structure Summary
+## Part 10: File Structure Summary
 
-### New Files (10)
+### New Files (15)
 
 | File | Purpose |
 |------|---------|
-| `src/pages/billing/BillsListPage.tsx` | Bills list with search, filters, actions |
-| `src/pages/billing/ClaimsListPage.tsx` | HMO claims management |
-| `src/pages/billing/PaymentsListPage.tsx` | Transaction history |
-| `src/pages/billing/BillingSettings.tsx` | Billing-specific settings (placeholder) |
-| `src/components/billing/organisms/tables/BillsTable.tsx` | Bills table component |
-| `src/components/billing/organisms/tables/ClaimsTable.tsx` | Claims table component |
-| `src/components/billing/organisms/tables/PaymentsTable.tsx` | Payments table component |
-| `src/components/billing/organisms/tables/index.ts` | Barrel export |
-| `src/data/payments.ts` | Payment/transaction mock data |
-| `src/components/billing/organisms/claim-submission/ClaimSubmissionModal.tsx` | New claim modal |
+| `src/components/billing/organisms/bill-details/BillDetailsDrawer.tsx` | Bill details drawer |
+| `src/components/billing/organisms/bill-details/index.ts` | Barrel export |
+| `src/components/billing/organisms/bill-creation/BillCreationForm.tsx` | Bill creation modal |
+| `src/components/billing/organisms/bill-creation/index.ts` | Barrel export |
+| `src/components/billing/organisms/claim-submission/ClaimCreationModal.tsx` | Claim creation flow |
+| `src/components/billing/organisms/claim-submission/ClaimEditModal.tsx` | Edit/resubmit claims |
+| `src/components/billing/organisms/claim-submission/index.ts` | Barrel export |
+| `src/components/billing/organisms/claim-details/ClaimDetailsDrawer.tsx` | Claim details drawer |
+| `src/components/billing/organisms/claim-details/index.ts` | Barrel export |
+| `src/components/billing/molecules/claim/ClaimVersionHistory.tsx` | Version timeline |
+| `src/components/billing/molecules/claim/index.ts` | Barrel export |
+| `src/components/billing/molecules/documents/DocumentUploadZone.tsx` | File upload |
+| `src/components/billing/molecules/documents/ClaimFormGenerator.tsx` | PDF generation |
+| `src/components/billing/molecules/documents/index.ts` | Barrel export |
+| `src/data/bill-items.ts` | Service catalog |
 
-### Modified Files (5)
+### Modified Files (7)
 
 | File | Changes |
 |------|---------|
-| `src/App.tsx` | Add billing sub-routes |
-| `src/components/layout/AppSidebar.tsx` | Fix Settings link |
-| `src/pages/dashboards/BillingDashboard.tsx` | Add all button handlers and PaymentCollectionForm |
-| `src/data/bills.ts` | Add pagination helpers |
-| `src/data/claims.ts` | Add pagination helpers |
+| `src/types/billing.types.ts` | Add ClaimVersion, ClaimDocument types |
+| `src/data/claims.ts` | Add CRUD and version functions |
+| `src/data/bills.ts` | Add create/update functions |
+| `src/pages/billing/BillsListPage.tsx` | Add drawer, create bill |
+| `src/pages/billing/ClaimsListPage.tsx` | Add drawers, modals |
+| `src/pages/dashboards/BillingDashboard.tsx` | Add create bill action |
+| `src/components/billing/organisms/index.ts` | Export new organisms |
 
 ---
 
-## Part 10: Implementation Order
+## Part 11: Implementation Order
 
-1. **Data Layer**: Add `payments.ts`, update `bills.ts` and `claims.ts` with pagination
-2. **Fix Sidebar**: Update Settings link in AppSidebar
-3. **Wire Dashboard**: Add all handlers to BillingDashboard
-4. **Table Components**: Create BillsTable, ClaimsTable, PaymentsTable
-5. **Bills Page**: Create BillsListPage with full functionality
-6. **Claims Page**: Create ClaimsListPage with status workflow
-7. **Payments Page**: Create PaymentsListPage with filters
-8. **Settings Page**: Create placeholder BillingSettings
-9. **Routes**: Update App.tsx with new routes
-10. **Integration**: Test all navigation and actions
-
----
-
-## Part 11: Interaction Summary
-
-After implementation, every element will be functional:
-
-### Dashboard Buttons
-| Button | Action |
-|--------|--------|
-| Record Payment | Opens PaymentCollectionForm modal |
-| Submit Claim | Navigates to Claims page with new claim dialog |
-| View All (bills) | Navigates to Bills page filtered to pending |
-| Collect (per bill) | Opens PaymentCollectionForm for that bill |
-| All Quick Actions | Functional navigation or modal |
-
-### Revenue Cards
-| Card | Action |
-|------|--------|
-| Cash/Card/HMO/Total | Navigate to Payments page with filter |
-
-### Sidebar Links
-| Link | Action |
-|------|--------|
-| Dashboard | `/billing` |
-| Bills | `/billing/bills` |
-| HMO Claims | `/billing/claims` |
-| Payments | `/billing/payments` |
-| Settings | `/billing/settings` |
-
-### Sub-Page Actions
-| Page | Actions |
-|------|---------|
-| Bills | Search, Filter, Collect, View, Print |
-| Claims | Search, Filter, Submit, Edit, Resubmit, View |
-| Payments | Search, Filter, View Receipt, Reprint, Export |
+1. **Types & Data**: Update billing types, add claim version/document structures
+2. **Service Catalog**: Create bill-items.ts with service items
+3. **Bill Details Drawer**: Full drawer with all sections
+4. **Bill Creation Form**: Multi-step bill creation
+5. **Claim Creation Modal**: 5-step claim flow
+6. **Claim Details Drawer**: Full claim view with version history
+7. **Claim Edit Modal**: Edit and resubmit flows
+8. **Document Components**: Upload zone, claim form generator
+9. **Version History**: Timeline component
+10. **Page Integrations**: Wire up all pages
+11. **Dashboard Updates**: Add new quick actions
 
 ---
 
-## Part 12: UX Design Principles Applied
-
-Following the project's established patterns:
+## Part 12: UX Principles Applied
 
 | Principle | Implementation |
 |-----------|----------------|
-| Minimal Clicks | Modal-based workflows, inline actions |
-| Professional Tables | Consistent with PatientTable, AppointmentTable |
-| Contextual Actions | Dropdown menus for row actions |
-| Visual Feedback | Toast notifications for all actions |
-| Mobile Responsive | Grid adapts, tables scroll horizontally |
-| Consistent Styling | Uses shadcn/ui components throughout |
-| Status Indicators | Coloured badges matching design system |
+| Minimal Clicks | Pre-fill data from context (patient, bill) |
+| Progressive Disclosure | Multi-step flows reveal complexity gradually |
+| Contextual Actions | Status-based buttons (Edit only for Draft) |
+| Draft Recovery | Save draft anytime, resume later |
+| Visual Feedback | Status badges, progress indicators, success states |
+| Error Prevention | Validation before submit, confirmation dialogs |
+| Undo/Recovery | Version history, resubmit from denied |
+| Mobile Responsive | Drawer collapses, modals adapt |
+| Keyboard Navigation | Tab through forms, Enter to submit |
+| Loading States | Skeletons, spinners during operations |
+
+---
+
+## Part 13: Testing Checklist
+
+After implementation:
+
+| Test | Expected |
+|------|----------|
+| Open bill from table | Drawer shows all details |
+| Collect from drawer | Opens PaymentCollectionForm |
+| Create claim from bill | Modal pre-fills bill data |
+| Create bill from dashboard | Patient search first |
+| Create bill from patient | Patient pre-selected |
+| Add items to bill | Updates totals live |
+| Save claim as draft | Status = draft, can edit later |
+| Submit claim | Status = submitted, timestamp set |
+| Edit draft claim | All fields editable |
+| Resubmit denied | Notes required, version incremented |
+| Upload document | Shows in document list |
+| Generate claim form | Opens printable PDF |
+| View version history | Shows all status changes |
+| Delete draft claim | Removed from list |
+| Mark approved as paid | Status = paid |

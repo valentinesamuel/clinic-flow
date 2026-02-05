@@ -15,11 +15,15 @@ import {
 } from '@/components/ui/select';
 import { ClaimsTable } from '@/components/billing/organisms/tables/ClaimsTable';
 import { ClaimDetailsDrawer } from '@/components/billing/organisms/claim-details/ClaimDetailsDrawer';
+import { ClaimWithdrawalModal } from '@/components/billing/organisms/claim-details/ClaimWithdrawalModal';
+import { PayOutOfPocketModal } from '@/components/billing/organisms/claim-details/PayOutOfPocketModal';
 import { ClaimCreationModal } from '@/components/billing/organisms/claim-submission/ClaimCreationModal';
 import { ClaimEditModal } from '@/components/billing/organisms/claim-submission/ClaimEditModal';
+import { BillDetailsDrawer } from '@/components/billing/organisms/bill-details/BillDetailsDrawer';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { HMOClaim, ClaimStatus } from '@/types/billing.types';
+import { HMOClaim, ClaimStatus, WithdrawalReason, PaymentMethod, Bill } from '@/types/billing.types';
 import { getClaimsPaginated, mockHMOProviders, submitClaim, updateClaimStatus } from '@/data/claims';
+import { getBillById } from '@/data/bills';
 import { Search, FileCheck, ArrowLeft, Send, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,6 +44,7 @@ const statusTabs: { value: ClaimStatus | 'all'; label: string }[] = [
   { value: 'approved', label: 'Approved' },
   { value: 'denied', label: 'Denied' },
   { value: 'paid', label: 'Paid' },
+  { value: 'withdrawn', label: 'Withdrawn' },
 ];
 
 export default function ClaimsListPage() {
@@ -60,6 +65,10 @@ export default function ClaimsListPage() {
   const [showClaimDetails, setShowClaimDetails] = useState(false);
   const [detailsClaim, setDetailsClaim] = useState<HMOClaim | null>(null);
 
+  // Bill details drawer state
+  const [showBillDetails, setShowBillDetails] = useState(false);
+  const [detailsBill, setDetailsBill] = useState<Bill | null>(null);
+
   // Claim creation modal state
   const [showClaimCreation, setShowClaimCreation] = useState(false);
 
@@ -67,6 +76,14 @@ export default function ClaimsListPage() {
   const [showClaimEdit, setShowClaimEdit] = useState(false);
   const [editClaim, setEditClaim] = useState<HMOClaim | null>(null);
   const [editMode, setEditMode] = useState<'edit' | 'resubmit'>('edit');
+
+  // Withdrawal modal state
+  const [showWithdrawal, setShowWithdrawal] = useState(false);
+  const [withdrawClaim, setWithdrawClaim] = useState<HMOClaim | null>(null);
+
+  // Pay out of pocket modal state
+  const [showPayOutOfPocket, setShowPayOutOfPocket] = useState(false);
+  const [payOutOfPocketClaim, setPayOutOfPocketClaim] = useState<HMOClaim | null>(null);
 
   // Fetch claims with filters
   const { data: claims, total, totalPages } = getClaimsPaginated(currentPage, pageSize, {
@@ -205,6 +222,61 @@ export default function ClaimsListPage() {
     }
   };
 
+  const handleDrawerViewBill = (billId: string) => {
+    const bill = getBillById(billId);
+    if (bill) {
+      setDetailsBill(bill);
+      setShowBillDetails(true);
+    }
+  };
+
+  const handleDrawerWithdraw = () => {
+    if (detailsClaim) {
+      setWithdrawClaim(detailsClaim);
+      setShowWithdrawal(true);
+    }
+  };
+
+  const handleDrawerPayOutOfPocket = () => {
+    if (detailsClaim) {
+      setPayOutOfPocketClaim(detailsClaim);
+      setShowPayOutOfPocket(true);
+    }
+  };
+
+  const handleWithdraw = (reason: WithdrawalReason, notes?: string) => {
+    if (withdrawClaim) {
+      updateClaimStatus(withdrawClaim.id, 'withdrawn');
+      toast({
+        title: 'Claim Withdrawn',
+        description: `${withdrawClaim.claimNumber} has been withdrawn`,
+      });
+      setShowClaimDetails(false);
+    }
+  };
+
+  const handleRequestRetraction = (reason: WithdrawalReason, notes: string) => {
+    if (withdrawClaim) {
+      updateClaimStatus(withdrawClaim.id, 'retracted');
+      toast({
+        title: 'Retraction Requested',
+        description: `${withdrawClaim.claimNumber} retraction request submitted. Please contact the HMO to complete.`,
+      });
+      setShowClaimDetails(false);
+    }
+  };
+
+  const handlePayOutOfPocketConfirm = (paymentMethod: PaymentMethod, referenceNumber?: string, bank?: string) => {
+    if (payOutOfPocketClaim) {
+      updateClaimStatus(payOutOfPocketClaim.id, 'withdrawn');
+      toast({
+        title: 'Converted to Private Pay',
+        description: `${payOutOfPocketClaim.claimNumber} has been withdrawn. Payment collected via ${paymentMethod}.`,
+      });
+      setShowClaimDetails(false);
+    }
+  };
+
   return (
     <DashboardLayout allowedRoles={['billing', 'hospital_admin', 'cmo']}>
       <div className="space-y-6">
@@ -238,7 +310,7 @@ export default function ClaimsListPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Pending Claims</CardDescription>
-              <CardTitle className="text-xl text-warning">
+              <CardTitle className="text-xl text-amber-600">
                 {claims.filter((c) => ['draft', 'submitted', 'processing'].includes(c.status)).length}
               </CardTitle>
             </CardHeader>
@@ -246,7 +318,7 @@ export default function ClaimsListPage() {
           <Card>
             <CardHeader className="pb-2">
               <CardDescription>Approved</CardDescription>
-              <CardTitle className="text-xl text-success">
+              <CardTitle className="text-xl text-green-600">
                 {claims.filter((c) => c.status === 'approved').length}
               </CardTitle>
             </CardHeader>
@@ -322,7 +394,7 @@ export default function ClaimsListPage() {
               }}
               className="mb-4"
             >
-              <TabsList>
+              <TabsList className="flex-wrap">
                 {statusTabs.map((tab) => (
                   <TabsTrigger key={tab.value} value={tab.value}>
                     {tab.label}
@@ -371,6 +443,18 @@ export default function ClaimsListPage() {
         onSubmit={handleDrawerSubmit}
         onResubmit={handleDrawerResubmit}
         onMarkPaid={handleDrawerMarkPaid}
+        onViewBill={handleDrawerViewBill}
+        onWithdraw={handleDrawerWithdraw}
+        onPayOutOfPocket={handleDrawerPayOutOfPocket}
+      />
+
+      {/* Bill Details Drawer */}
+      <BillDetailsDrawer
+        open={showBillDetails}
+        onOpenChange={setShowBillDetails}
+        bill={detailsBill}
+        onCollect={() => {}}
+        onPrint={() => {}}
       />
 
       {/* Claim Creation Modal */}
@@ -397,6 +481,23 @@ export default function ClaimsListPage() {
           }}
         />
       )}
+
+      {/* Withdrawal Modal */}
+      <ClaimWithdrawalModal
+        open={showWithdrawal}
+        onOpenChange={setShowWithdrawal}
+        claim={withdrawClaim}
+        onWithdraw={handleWithdraw}
+        onRequestRetraction={handleRequestRetraction}
+      />
+
+      {/* Pay Out of Pocket Modal */}
+      <PayOutOfPocketModal
+        open={showPayOutOfPocket}
+        onOpenChange={setShowPayOutOfPocket}
+        claim={payOutOfPocketClaim}
+        onConfirm={handlePayOutOfPocketConfirm}
+      />
     </DashboardLayout>
   );
 }

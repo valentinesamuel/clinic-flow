@@ -14,12 +14,15 @@ import {
 } from '@/components/ui/select';
 import { BillsTable } from '@/components/billing/organisms/tables/BillsTable';
 import { PaymentCollectionForm } from '@/components/billing/organisms/cashier-station/PaymentCollectionForm';
+import { BillDetailsDrawer } from '@/components/billing/organisms/bill-details/BillDetailsDrawer';
+import { BillCreationForm } from '@/components/billing/organisms/bill-creation/BillCreationForm';
+import { ClaimCreationModal } from '@/components/billing/organisms/claim-submission/ClaimCreationModal';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { Bill, BillStatus, PaymentItem, PaymentClearance } from '@/types/billing.types';
+import { Bill, BillStatus, PaymentItem, PaymentClearance, HMOClaim } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
 import { getBillsPaginated, getPendingBills, getTotalPendingAmount } from '@/data/bills';
-import { mockPatients } from '@/data/patients';
-import { Search, Receipt, ArrowLeft } from 'lucide-react';
+import { mockPatients, getPatientById } from '@/data/patients';
+import { Search, Receipt, ArrowLeft, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 function formatCurrency(value: number): string {
@@ -48,6 +51,18 @@ export default function BillsListPage() {
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [selectedItems, setSelectedItems] = useState<PaymentItem[]>([]);
+
+  // Bill details drawer state
+  const [showBillDetails, setShowBillDetails] = useState(false);
+  const [detailsBill, setDetailsBill] = useState<Bill | null>(null);
+  const [detailsPatient, setDetailsPatient] = useState<Patient | null>(null);
+
+  // Bill creation modal state
+  const [showBillCreation, setShowBillCreation] = useState(false);
+
+  // Claim creation modal state
+  const [showClaimCreation, setShowClaimCreation] = useState(false);
+  const [claimBill, setClaimBill] = useState<Bill | null>(null);
 
   // Fetch bills with filters
   const { data: bills, total, totalPages } = getBillsPaginated(currentPage, pageSize, {
@@ -88,10 +103,14 @@ export default function BillsListPage() {
   };
 
   const handleView = (bill: Bill) => {
-    toast({
-      title: 'Bill Details',
-      description: `Viewing ${bill.billNumber}`,
-    });
+    const patient = getPatientById(bill.patientId) || null;
+    setDetailsBill(bill);
+    setDetailsPatient(patient);
+    setShowBillDetails(true);
+  };
+
+  const handleRowClick = (bill: Bill) => {
+    handleView(bill);
   };
 
   const handlePrint = (bill: Bill) => {
@@ -112,6 +131,40 @@ export default function BillsListPage() {
     setSelectedItems([]);
   };
 
+  const handleBillCreated = (bill: Partial<Bill>) => {
+    toast({
+      title: 'Bill Created',
+      description: `Bill for ${bill.patientName} has been created`,
+    });
+    setShowBillCreation(false);
+  };
+
+  const handleCreateClaimFromBill = () => {
+    if (detailsBill) {
+      setClaimBill(detailsBill);
+      setShowBillDetails(false);
+      setShowClaimCreation(true);
+    }
+  };
+
+  const handleClaimComplete = (claim: Partial<HMOClaim>) => {
+    toast({
+      title: 'Claim Submitted',
+      description: `Claim for ${claim.patientName} has been submitted`,
+    });
+    setShowClaimCreation(false);
+    setClaimBill(null);
+  };
+
+  const handleClaimDraft = (claim: Partial<HMOClaim>) => {
+    toast({
+      title: 'Draft Saved',
+      description: `Claim draft for ${claim.patientName} has been saved`,
+    });
+    setShowClaimCreation(false);
+    setClaimBill(null);
+  };
+
   return (
     <DashboardLayout allowedRoles={['billing', 'hospital_admin', 'cmo']}>
       <div className="space-y-6">
@@ -126,6 +179,10 @@ export default function BillsListPage() {
               <p className="text-muted-foreground">Manage patient bills and payments</p>
             </div>
           </div>
+          <Button onClick={() => setShowBillCreation(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Bill
+          </Button>
         </div>
 
         {/* Stats */}
@@ -199,6 +256,7 @@ export default function BillsListPage() {
               onCollect={handleCollect}
               onView={handleView}
               onPrint={handlePrint}
+              onRowClick={handleRowClick}
             />
 
             {/* Pagination */}
@@ -218,6 +276,46 @@ export default function BillsListPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Bill Details Drawer */}
+      <BillDetailsDrawer
+        open={showBillDetails}
+        onOpenChange={setShowBillDetails}
+        bill={detailsBill}
+        patient={detailsPatient}
+        onCollect={() => {
+          if (detailsBill) {
+            setShowBillDetails(false);
+            handleCollect(detailsBill);
+          }
+        }}
+        onCreateClaim={handleCreateClaimFromBill}
+        onPrint={() => {
+          if (detailsBill) handlePrint(detailsBill);
+        }}
+      />
+
+      {/* Bill Creation Modal */}
+      <BillCreationForm
+        open={showBillCreation}
+        onOpenChange={setShowBillCreation}
+        onComplete={handleBillCreated}
+        onCancel={() => setShowBillCreation(false)}
+      />
+
+      {/* Claim Creation Modal */}
+      <ClaimCreationModal
+        open={showClaimCreation}
+        onOpenChange={setShowClaimCreation}
+        preselectedBill={claimBill}
+        preselectedPatient={claimBill ? getPatientById(claimBill.patientId) : null}
+        onComplete={handleClaimComplete}
+        onSaveDraft={handleClaimDraft}
+        onCancel={() => {
+          setShowClaimCreation(false);
+          setClaimBill(null);
+        }}
+      />
 
       {/* Payment Modal */}
       {selectedPatient && (

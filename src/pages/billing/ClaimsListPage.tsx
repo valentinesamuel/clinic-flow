@@ -14,6 +14,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { ClaimsTable } from '@/components/billing/organisms/tables/ClaimsTable';
+import { ClaimDetailsDrawer } from '@/components/billing/organisms/claim-details/ClaimDetailsDrawer';
+import { ClaimCreationModal } from '@/components/billing/organisms/claim-submission/ClaimCreationModal';
+import { ClaimEditModal } from '@/components/billing/organisms/claim-submission/ClaimEditModal';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { HMOClaim, ClaimStatus } from '@/types/billing.types';
 import { getClaimsPaginated, mockHMOProviders, submitClaim, updateClaimStatus } from '@/data/claims';
@@ -53,6 +56,18 @@ export default function ClaimsListPage() {
   const [pageSize, setPageSize] = useState(25);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+  // Claim details drawer state
+  const [showClaimDetails, setShowClaimDetails] = useState(false);
+  const [detailsClaim, setDetailsClaim] = useState<HMOClaim | null>(null);
+
+  // Claim creation modal state
+  const [showClaimCreation, setShowClaimCreation] = useState(false);
+
+  // Claim edit modal state
+  const [showClaimEdit, setShowClaimEdit] = useState(false);
+  const [editClaim, setEditClaim] = useState<HMOClaim | null>(null);
+  const [editMode, setEditMode] = useState<'edit' | 'resubmit'>('edit');
+
   // Fetch claims with filters
   const { data: claims, total, totalPages } = getClaimsPaginated(currentPage, pageSize, {
     status: statusFilter !== 'all' ? statusFilter : undefined,
@@ -85,25 +100,24 @@ export default function ClaimsListPage() {
   };
 
   const handleView = (claim: HMOClaim) => {
-    toast({
-      title: 'Claim Details',
-      description: `Viewing ${claim.claimNumber}`,
-    });
+    setDetailsClaim(claim);
+    setShowClaimDetails(true);
+  };
+
+  const handleRowClick = (claim: HMOClaim) => {
+    handleView(claim);
   };
 
   const handleEdit = (claim: HMOClaim) => {
-    toast({
-      title: 'Edit Claim',
-      description: `Editing ${claim.claimNumber}`,
-    });
+    setEditClaim(claim);
+    setEditMode('edit');
+    setShowClaimEdit(true);
   };
 
   const handleResubmit = (claim: HMOClaim) => {
-    updateClaimStatus(claim.id, 'submitted');
-    toast({
-      title: 'Claim Resubmitted',
-      description: `${claim.claimNumber} has been resubmitted`,
-    });
+    setEditClaim(claim);
+    setEditMode('resubmit');
+    setShowClaimEdit(true);
   };
 
   const handleMarkPaid = (claim: HMOClaim) => {
@@ -125,10 +139,70 @@ export default function ClaimsListPage() {
   };
 
   const handleNewClaim = () => {
+    setShowClaimCreation(true);
+  };
+
+  const handleClaimComplete = (claim: Partial<HMOClaim>) => {
     toast({
-      title: 'New Claim',
-      description: 'New claim dialog - Coming Soon',
+      title: 'Claim Submitted',
+      description: `Claim for ${claim.patientName} has been submitted`,
     });
+    setShowClaimCreation(false);
+  };
+
+  const handleClaimDraft = (claim: Partial<HMOClaim>) => {
+    toast({
+      title: 'Draft Saved',
+      description: `Claim draft for ${claim.patientName} has been saved`,
+    });
+    setShowClaimCreation(false);
+  };
+
+  const handleEditSave = (claim: Partial<HMOClaim>) => {
+    toast({
+      title: 'Draft Saved',
+      description: `Claim ${editClaim?.claimNumber} has been updated`,
+    });
+    setShowClaimEdit(false);
+    setEditClaim(null);
+  };
+
+  const handleEditSubmit = (claim: Partial<HMOClaim>) => {
+    toast({
+      title: editMode === 'resubmit' ? 'Claim Resubmitted' : 'Claim Submitted',
+      description: `${editClaim?.claimNumber} has been ${editMode === 'resubmit' ? 'resubmitted' : 'submitted'}`,
+    });
+    setShowClaimEdit(false);
+    setEditClaim(null);
+  };
+
+  // Actions from drawer
+  const handleDrawerEdit = () => {
+    if (detailsClaim) {
+      setShowClaimDetails(false);
+      handleEdit(detailsClaim);
+    }
+  };
+
+  const handleDrawerSubmit = () => {
+    if (detailsClaim) {
+      handleSubmit(detailsClaim);
+      setShowClaimDetails(false);
+    }
+  };
+
+  const handleDrawerResubmit = () => {
+    if (detailsClaim) {
+      setShowClaimDetails(false);
+      handleResubmit(detailsClaim);
+    }
+  };
+
+  const handleDrawerMarkPaid = () => {
+    if (detailsClaim) {
+      handleMarkPaid(detailsClaim);
+      setShowClaimDetails(false);
+    }
   };
 
   return (
@@ -267,6 +341,7 @@ export default function ClaimsListPage() {
               onEdit={handleEdit}
               onResubmit={handleResubmit}
               onMarkPaid={handleMarkPaid}
+              onRowClick={handleRowClick}
             />
 
             {/* Pagination */}
@@ -286,6 +361,42 @@ export default function ClaimsListPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Claim Details Drawer */}
+      <ClaimDetailsDrawer
+        open={showClaimDetails}
+        onOpenChange={setShowClaimDetails}
+        claim={detailsClaim}
+        onEdit={handleDrawerEdit}
+        onSubmit={handleDrawerSubmit}
+        onResubmit={handleDrawerResubmit}
+        onMarkPaid={handleDrawerMarkPaid}
+      />
+
+      {/* Claim Creation Modal */}
+      <ClaimCreationModal
+        open={showClaimCreation}
+        onOpenChange={setShowClaimCreation}
+        onComplete={handleClaimComplete}
+        onSaveDraft={handleClaimDraft}
+        onCancel={() => setShowClaimCreation(false)}
+      />
+
+      {/* Claim Edit Modal */}
+      {editClaim && (
+        <ClaimEditModal
+          open={showClaimEdit}
+          onOpenChange={setShowClaimEdit}
+          claim={editClaim}
+          mode={editMode}
+          onSave={handleEditSave}
+          onSubmit={handleEditSubmit}
+          onCancel={() => {
+            setShowClaimEdit(false);
+            setEditClaim(null);
+          }}
+        />
+      )}
     </DashboardLayout>
   );
 }

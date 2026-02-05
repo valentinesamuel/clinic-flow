@@ -23,6 +23,7 @@ interface BillsTableProps {
   onCollect: (bill: Bill) => void;
   onView: (bill: Bill) => void;
   onPrint: (bill: Bill) => void;
+  onRowClick?: (bill: Bill) => void;
 }
 
 function formatCurrency(value: number): string {
@@ -47,7 +48,7 @@ function getStatusBadge(status: Bill['status']) {
   return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
-export function BillsTable({ bills, onCollect, onView, onPrint }: BillsTableProps) {
+export function BillsTable({ bills, onCollect, onView, onPrint, onRowClick }: BillsTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -73,10 +74,14 @@ export function BillsTable({ bills, onCollect, onView, onPrint }: BillsTableProp
             </TableRow>
           ) : (
             bills.map((bill) => (
-              <TableRow key={bill.id}>
+              <TableRow 
+                key={bill.id} 
+                className={onRowClick ? "cursor-pointer hover:bg-muted/50" : ""}
+                onClick={() => onRowClick?.(bill)}
+              >
                 <TableCell className="font-medium">
                   <button
-                    onClick={() => onView(bill)}
+                    onClick={(e) => { e.stopPropagation(); onView(bill); }}
                     className="text-primary hover:underline"
                   >
                     {bill.billNumber}
@@ -104,7 +109,7 @@ export function BillsTable({ bills, onCollect, onView, onPrint }: BillsTableProp
                   </span>
                 </TableCell>
                 <TableCell className="text-center">{getStatusBadge(bill.status)}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon">

@@ -71,3 +71,5 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+// Integrate the claim creation flow into the BillDetailsDrawer so users can create claims directly from a bill. Also, let other roles like CMO and hospital admin also be able to see billings on their dashboard. Every button and interaction flow concerning billing should also be functional. Another very important and compulsory part of billing is that because of the nature of billing that cuts across diferent areas or departments, we have to find a ways to keep logic seperation between the departments such that billings created in the pharmacy does not show up on the front desk or in the lab and vice versa. Do you have any question?

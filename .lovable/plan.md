@@ -1,448 +1,399 @@
 
-# Billing Module: Payment Collection & HMO Verification
+# Complete Billing Module: Dashboard + Full Sub-Pages
 
 ## Overview
 
-Build payment collection molecules, HMO verification flow, receipt components, and the PaymentCollectionForm organism. This extends the foundation from the previous plan (types, hooks, context, atoms).
+This plan makes every button and interaction in the billing module fully functional by:
+1. Wiring up the BillingDashboard with interactive handlers
+2. Creating 3 full list pages (Bills, Claims, Payments/Transactions)
+3. Fixing the Settings link in the sidebar
+4. Adding revenue card navigation to transactions
 
 ---
 
-## Part 1: Payment Molecules
+## Part 1: Fix Sidebar Settings Link
 
-### Directory: `src/components/billing/molecules/payment/`
+### File: `src/components/layout/AppSidebar.tsx`
 
-### 1.1 PaymentMethodSelector.tsx
+**Issue**: Line 200 links to `/settings` which doesn't exist
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `selected` | PaymentMethod | Currently selected method |
-| `onChange` | (method: PaymentMethod) => void | Selection handler |
-| `disabled` | PaymentMethod[] | Methods to disable |
-
-Layout:
-- 4-column grid on desktop, 2x2 on mobile
-- Each button 80px height with icon above label
-- Uses PaymentMethodButton atom
-- Selected: Blue bg (#1e40af), white text, shadow
-- Unselected: White bg, gray border
-
-### 1.2 AmountBreakdown.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `subtotal` | number | Subtotal amount |
-| `discount` | number | Discount amount (optional) |
-| `tax` | number | Tax amount (optional, from clinic settings) |
-| `total` | number | Total due |
-| `showHMO` | boolean | Show HMO coverage section |
-| `hmoCoverage` | number | Amount covered by HMO |
-| `patientLiability` | number | Amount patient pays |
-
-Features:
-- Card with white bg, border, p-4
-- Each line uses CurrencyDisplay atom
-- Discount shows in red (negative)
-- Divider before total
-- Patient liability highlighted (blue bg)
-
-### 1.3 ChangeCalculator.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `totalDue` | number | Amount due |
-| `onAmountReceived` | (amount: number, change: number) => void | Callback with values |
-
-Features:
-- Uses AmountInput atom (large size)
-- Quick amount buttons: Generate based on totalDue
-  - Round up to nearest 5k, 10k, 20k increments
-  - Example: ₦16,500 → [₦20k] [₦25k] [₦30k] [Exact]
-- Change display: Large green text if valid
-- Error display: Red text if amount < totalDue
-
-### 1.4 PaymentSummaryCard.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `patient` | Patient | Patient information |
-| `items` | PaymentItem[] | Service items |
-| `total` | number | Total amount |
-
-Layout:
-- Header: "COLLECT PAYMENT"
-- Patient info: Name, MRN
-- Items list using ReceiptLineItem atoms
-- Embedded AmountBreakdown at bottom
-
----
-
-## Part 2: HMO Molecules
-
-### Directory: `src/components/billing/molecules/hmo/`
-
-### 2.1 HMOProviderSelector.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `selected` | string | Selected provider ID |
-| `onChange` | (providerId: string) => void | Selection handler |
-
-Features:
-- Uses shadcn Select component
-- Options from HMO_PROVIDERS data
-- Each option shows: Icon + Provider name
-- Shield icon as provider placeholder
-
-### 2.2 HMOVerificationCard.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `verification` | HMOVerification | Verification result |
-| `compact` | boolean | Show compact version |
-
-Full version:
-- Header: Green if active, red if expired
-- Provider name and policy number
-- Status with expiry date
-- Coverage list with checkmarks/warnings
-- Pre-auth code (copyable)
-
-Compact version:
-- Single line: "NHIA Verified | PA-2024-00456"
-
-### 2.3 HMOCoPayCalculator.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `total` | number | Total pharmacy amount |
-| `coPayPercentage` | number | Co-pay percentage (typically 10%) |
-| `onChange` | (coPayAmount: number) => void | Callback with calculated co-pay |
-
-Layout:
-- Header: "PHARMACY CO-PAYMENT" with pill emoji
-- Line: Total Pharmacy amount
-- Line: HMO Covers (90%) in purple
-- Highlighted box: Patient pays (10%) - large, bold
-
-### 2.4 HMOCoverageDisplay.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `verification` | HMOVerification | Verification data |
-| `service` | ServiceCategory | Service to check coverage |
-
-Display states:
-- **Covered (100%)**: Green background, checkmark
-- **Partial (co-pay)**: Yellow background, warning icon
-- **Not covered**: Red background, X icon
-
----
-
-## Part 3: Receipt Molecules
-
-### Directory: `src/components/billing/molecules/receipt/`
-
-### 3.1 ReceiptHeader.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `receiptNumber` | string | Receipt reference |
-| `date` | string | Receipt date/time |
-| `cashier` | string | Cashier name (optional) |
-
-Layout (80mm thermal format):
-- Clinic logo placeholder (48px centered)
-- Clinic name (bold, centered)
-- Address lines (centered)
-- Phone number
-- Divider
-- "RECEIPT" header
-- Divider
-- Receipt #, Date, Cashier
-
-### 3.2 ReceiptItemList.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `items` | PaymentItem[] | Payment items |
-
-Layout:
-- "SERVICES" section header
-- Each item using ReceiptLineItem atom
-- Quantity shown as (xN) if > 1
-- Sub-items indented with └─ prefix
-
-### 3.3 ReceiptTotals.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `subtotal` | number | Subtotal |
-| `discount` | number | Discount (optional) |
-| `tax` | number | Tax amount (optional) |
-| `total` | number | Total |
-| `amountPaid` | number | Amount received |
-| `change` | number | Change given (optional) |
-| `paymentMethod` | PaymentMethod | Payment method used |
-
-Layout:
-- Subtotal, Discount, Tax lines
-- Thick divider
-- TOTAL (bold, larger)
-- Amount Paid with method label
-- Change in green
-
-### 3.4 ReceiptFooter.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `showQRCode` | boolean | Whether to show QR code |
-| `receiptId` | string | Receipt ID for QR URL |
-| `paymentMethod` | PaymentMethod | Payment method |
-
-Layout:
-- Payment Method line
-- Status: "PAID" (green, bold)
-- QR Code (100px) linking to receipt URL
-- Thank you message
-- "Computer-generated receipt" note
-
-QR Code URL format: `{clinic_url}/receipts/{receiptId}`
-
----
-
-## Part 4: Bank Data
-
-### New File: `src/data/nigerian-banks.ts`
-
-Placeholder structure for Paystack integration:
+**Fix**: Change to role-based settings route or billing-specific settings
 
 ```text
-interface NigerianBank {
-  id: string;
-  name: string;
-  code: string;
-}
-
-// Placeholder - will be replaced with Paystack API
-const NIGERIAN_BANKS: NigerianBank[] = [
-  { id: 'gtb', name: 'GTBank', code: '058' },
-  { id: 'access', name: 'Access Bank', code: '044' },
-  { id: 'zenith', name: 'Zenith Bank', code: '057' },
-  { id: 'firstbank', name: 'First Bank', code: '011' },
-  { id: 'uba', name: 'UBA', code: '033' },
-  // ... more banks
-];
-
-// Hook for future Paystack integration
-export function useNigerianBanks() {
-  // TODO: Replace with Paystack API call
-  return { banks: NIGERIAN_BANKS, isLoading: false };
-}
+Before: <Link to="/settings" ...>
+After:  <Link to={`/${user.role.replace('_', '-')}/settings`} ...>
 ```
+
+This creates dynamic settings routes per role.
 
 ---
 
-## Part 5: Payment Collection Organism
+## Part 2: Wire Up BillingDashboard
 
-### Directory: `src/components/billing/organisms/cashier-station/`
+### File: `src/pages/dashboards/BillingDashboard.tsx`
 
-### PaymentCollectionForm.tsx
+Add full interactivity to all elements:
 
-| Prop | Type | Description |
-|------|------|-------------|
-| `patient` | Patient | Patient data |
-| `items` | PaymentItem[] | Items to pay for |
-| `onComplete` | (clearance: PaymentClearance) => void | Success callback |
-| `onCancel` | () => void | Cancel callback |
+### State to Add
+| State | Type | Purpose |
+|-------|------|---------|
+| `showPaymentModal` | boolean | Controls PaymentCollectionForm visibility |
+| `selectedPatient` | Patient | Patient for payment collection |
+| `selectedItems` | PaymentItem[] | Items being paid for |
+| `selectedBill` | Bill | Bill being collected |
 
-**Step 1: Review Items**
-- PaymentSummaryCard with patient and items
-- AmountBreakdown showing totals
-- [Cancel] [Continue] buttons
+### Button Handlers
 
-**Step 2: Payment Method**
-- PaymentMethodSelector (4 options)
-- Conditional content based on selection:
+| Element | Handler | Action |
+|---------|---------|--------|
+| "Record Payment" (header) | `handleRecordPayment` | Open modal with mock data |
+| "Submit Claim" (header) | `handleSubmitClaim` | Navigate to `/billing/claims?action=new` |
+| "View All" (unpaid bills) | Navigate | Go to `/billing/bills?status=pending` |
+| "Collect" (per bill row) | `handleCollectBill(bill)` | Open modal for that bill |
+| Quick: Record Payment | Same as header | Open modal |
+| Quick: Generate Receipt | `handleGenerateReceipt` | Toast "Select a paid bill first" |
+| Quick: Submit Claim | Same as header | Navigate to claims |
+| Quick: Daily Report | `handleDailyReport` | Toast "Coming Soon" |
 
-| Method | Fields |
+### Revenue Cards (Clickable)
+
+| Card | Navigation |
+|------|------------|
+| Cash Payments | `/billing/payments?method=cash` |
+| Card Payments | `/billing/payments?method=card` |
+| HMO Payments | `/billing/payments?method=hmo` |
+| Total Today | `/billing/payments?date=today` |
+
+### HMO Status Cards (Not Clickable)
+
+As per your preference, these remain display-only statistics.
+
+---
+
+## Part 3: Bills List Page
+
+### New File: `src/pages/billing/BillsListPage.tsx`
+
+Professional table-based bill management following PatientListPage pattern.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| Search | Search by patient name, MRN, or bill number |
+| Filters | Status: All, Pending, Partial, Paid |
+| Date Filter | Today, This Week, This Month, Custom Range |
+| Pagination | 10/25/50 per page with page size selector |
+| Actions | View, Collect Payment, Print, Email |
+
+### Table Columns
+
+| Column | Content |
+|--------|---------|
+| Bill # | INV-2024-0001 (link to details) |
+| Patient | Name + MRN |
+| Date | Created date formatted |
+| Items | Count of items (e.g., "3 items") |
+| Total | Formatted amount |
+| Paid | Amount paid |
+| Balance | Outstanding amount (highlighted if > 0) |
+| Status | Badge (Pending/Partial/Paid) |
+| Actions | Collect / View / Print dropdown |
+
+### Quick Stats Bar
+
+| Stat | Value |
+|------|-------|
+| Total Pending | Sum of all pending balances |
+| Bills Today | Count created today |
+| Awaiting Payment | Count with status pending/partial |
+
+### Components Used
+
+- BillsTable (new component)
+- PaymentCollectionForm (existing)
+- Pagination molecules
+
+---
+
+## Part 4: Claims List Page
+
+### New File: `src/pages/billing/ClaimsListPage.tsx`
+
+HMO claims management with status workflow.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| Search | Search by patient, claim number, HMO provider |
+| Status Tabs | All, Draft, Submitted, Processing, Approved, Denied, Paid |
+| Provider Filter | Dropdown to filter by HMO provider |
+| Batch Actions | Submit multiple claims at once |
+| Date Filter | Submitted date range |
+
+### Table Columns
+
+| Column | Content |
+|--------|---------|
+| Claim # | CLM-2024-0001 |
+| Patient | Name + MRN |
+| HMO Provider | Provider name with logo/icon |
+| Bill # | Link to original bill |
+| Claim Amount | Amount being claimed |
+| Approved | Amount approved (if applicable) |
+| Status | Coloured badge (Draft/Submitted/etc.) |
+| Submitted | Date submitted |
+| Actions | Submit / View / Edit / Resubmit |
+
+### Status Badge Colours
+
+| Status | Colour |
 |--------|--------|
-| Cash | ChangeCalculator |
-| POS | Reference number input |
-| Transfer | Bank selector (placeholder) + Reference number |
-| HMO | HMOProviderSelector + Policy number + Verify button + HMOVerificationCard |
+| Draft | Gray |
+| Submitted | Blue |
+| Processing | Yellow |
+| Approved | Green |
+| Denied | Red |
+| Paid | Purple |
 
-- [Back] [Process Payment] buttons
+### Claim Actions by Status
 
-**Step 3: Success**
-- Green success banner
-- Receipt number (large)
-- Amount, Method, Change details
-- [Print Receipt] [Done] buttons
+| Status | Available Actions |
+|--------|-------------------|
+| Draft | Edit, Submit, Delete |
+| Submitted | View, Cancel |
+| Processing | View |
+| Approved | View, Mark as Paid |
+| Denied | View, Resubmit, Appeal |
+| Paid | View, Print |
 
-**Validation Rules:**
-| Method | Required |
-|--------|----------|
-| Cash | amountReceived >= total |
-| POS | referenceNumber not empty |
-| Transfer | bank selected + referenceNumber |
-| HMO | verification successful |
+### New Claim Flow
 
-**State Management:**
+Button "New Claim" opens a modal/dialog:
+1. Select patient (with pending bills)
+2. Select bill to claim
+3. Auto-fill HMO details from patient record
+4. Attach documents
+5. Submit
+
+---
+
+## Part 5: Payments/Transactions Page
+
+### New File: `src/pages/billing/PaymentsListPage.tsx`
+
+Transaction history and payment records.
+
+### Features
+
+| Feature | Description |
+|---------|-------------|
+| Search | Search by receipt number, patient, reference |
+| Method Filter | All, Cash, POS, Transfer, HMO |
+| Date Filter | Today, This Week, This Month, Custom |
+| Export | Export to CSV |
+
+### Table Columns
+
+| Column | Content |
+|--------|---------|
+| Receipt # | RCP-2024-00123 (link to receipt) |
+| Patient | Name + MRN |
+| Date/Time | Payment timestamp |
+| Amount | Total paid |
+| Method | Payment method with icon |
+| Reference | Transaction reference (if applicable) |
+| Cashier | Staff who processed |
+| Actions | View Receipt / Reprint / Email |
+
+### Summary Stats (Top of Page)
+
+| Stat | Value |
+|------|-------|
+| Today's Total | Sum of today's payments |
+| Cash | Cash payments today |
+| POS | Card payments today |
+| Transfer | Bank transfers today |
+| HMO | HMO payments today |
+
+### View Receipt Action
+
+Opens ThermalReceipt in a modal for preview/print.
+
+---
+
+## Part 6: Shared Components
+
+### New File: `src/components/billing/organisms/tables/BillsTable.tsx`
+
+Reusable table for bills with:
+- Sortable columns
+- Row actions
+- Status badges
+- Amount formatting
+
+### New File: `src/components/billing/organisms/tables/ClaimsTable.tsx`
+
+Reusable table for claims with:
+- Status workflow badges
+- Provider logos
+- Document indicators
+
+### New File: `src/components/billing/organisms/tables/PaymentsTable.tsx`
+
+Reusable table for payments/transactions with:
+- Method icons
+- Receipt links
+- Cashier info
+
+---
+
+## Part 7: New Data Helpers
+
+### Update: `src/data/bills.ts`
+
+Add pagination and filtering functions:
+
 ```text
-currentStep: 1 | 2 | 3
-paymentMethod: PaymentMethod
-amountReceived: number
-referenceNumber: string
-selectedBank: string
-hmoProvider: string
-policyNumber: string
-verification: HMOVerification | null
-clearance: PaymentClearance | null
+getBillsPaginated(page, limit, filters)
+getBillById(id)
+updateBillStatus(id, status)
 ```
 
-### Step Components (Internal)
+### Update: `src/data/claims.ts`
 
-| Component | Purpose |
-|-----------|---------|
-| PaymentStepIndicator | Visual stepper (1 → 2 → 3) |
-| Step1ReviewItems | Item review and summary |
-| Step2PaymentMethod | Method selection and details |
-| Step3Success | Confirmation and actions |
+Add pagination and filtering:
 
----
-
-## Part 6: HMO Verification Organism
-
-### Directory: `src/components/billing/organisms/hmo-verification/`
-
-### HMOVerificationFlow.tsx
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `patient` | Patient | Patient data |
-| `service` | ServiceCategory | Service being verified |
-| `onVerified` | (verification: HMOVerification) => void | Success callback |
-| `onCancel` | () => void | Cancel callback |
-
-**States:**
-1. **Select Provider**: HMOProviderSelector + Policy input
-2. **Verifying**: Spinner with "Checking database..." message
-3. **Success**: HMOVerificationCard + HMOCoverageDisplay
-4. **Failed**: Error message with options (Proceed Cash / Cancel)
-
-Uses useHMOVerification hook with 500ms simulated delay.
-
----
-
-## Part 7: Thermal Receipt Component
-
-### New File: `src/components/billing/organisms/receipt/ThermalReceipt.tsx`
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `clearance` | PaymentClearance | Payment data |
-| `patient` | Patient | Patient data |
-| `onPrint` | () => void | Print handler |
-
-Layout optimised for 80mm thermal paper:
-- Fixed width: 80mm (approximately 302px at 96dpi)
-- Monospace font for alignment
-- Composed of: ReceiptHeader, ReceiptItemList, ReceiptTotals, ReceiptFooter
-- QR code centered at bottom
-- Print button triggers `window.print()` with print-specific CSS
-
-Print CSS:
 ```text
-@media print {
-  .thermal-receipt {
-    width: 80mm;
-    margin: 0;
-    padding: 0;
-  }
-  .no-print { display: none; }
-}
+getClaimsPaginated(page, limit, filters)
+getClaimById(id)
+submitClaim(id)
+updateClaimStatus(id, status)
+```
+
+### New File: `src/data/payments.ts`
+
+Payment/transaction records:
+
+```text
+mockPayments: PaymentRecord[]
+getPaymentsPaginated(page, limit, filters)
+getPaymentById(id)
+getPaymentsByDateRange(start, end)
+getDailyRevenue(date)
 ```
 
 ---
 
-## Part 8: File Structure Summary
+## Part 8: Route Updates
 
-### New Files (16)
+### File: `src/App.tsx`
+
+Add specific routes for billing sub-pages:
+
+```text
+{/* Billing Routes */}
+<Route path="/billing" element={<BillingDashboard />} />
+<Route path="/billing/bills" element={<BillsListPage />} />
+<Route path="/billing/claims" element={<ClaimsListPage />} />
+<Route path="/billing/payments" element={<PaymentsListPage />} />
+<Route path="/billing/settings" element={<BillingSettings />} />
+<Route path="/billing/*" element={<BillingDashboard />} />
+```
+
+---
+
+## Part 9: File Structure Summary
+
+### New Files (10)
 
 | File | Purpose |
 |------|---------|
-| `src/data/nigerian-banks.ts` | Bank list placeholder for Paystack |
-| `src/components/billing/molecules/payment/PaymentMethodSelector.tsx` | Payment method grid |
-| `src/components/billing/molecules/payment/AmountBreakdown.tsx` | Amount summary card |
-| `src/components/billing/molecules/payment/ChangeCalculator.tsx` | Change calculation |
-| `src/components/billing/molecules/payment/PaymentSummaryCard.tsx` | Pre-payment summary |
-| `src/components/billing/molecules/payment/index.ts` | Barrel export |
-| `src/components/billing/molecules/hmo/HMOProviderSelector.tsx` | HMO dropdown |
-| `src/components/billing/molecules/hmo/HMOVerificationCard.tsx` | Verification result |
-| `src/components/billing/molecules/hmo/HMOCoPayCalculator.tsx` | Co-pay breakdown |
-| `src/components/billing/molecules/hmo/HMOCoverageDisplay.tsx` | Coverage status |
-| `src/components/billing/molecules/hmo/index.ts` | Barrel export |
-| `src/components/billing/molecules/receipt/ReceiptHeader.tsx` | Receipt header |
-| `src/components/billing/molecules/receipt/ReceiptItemList.tsx` | Items list |
-| `src/components/billing/molecules/receipt/ReceiptTotals.tsx` | Totals section |
-| `src/components/billing/molecules/receipt/ReceiptFooter.tsx` | Footer with QR |
-| `src/components/billing/molecules/receipt/index.ts` | Barrel export |
-| `src/components/billing/organisms/cashier-station/PaymentCollectionForm.tsx` | 3-step payment flow |
-| `src/components/billing/organisms/cashier-station/index.ts` | Barrel export |
-| `src/components/billing/organisms/hmo-verification/HMOVerificationFlow.tsx` | HMO verification |
-| `src/components/billing/organisms/hmo-verification/index.ts` | Barrel export |
-| `src/components/billing/organisms/receipt/ThermalReceipt.tsx` | Printable receipt |
-| `src/components/billing/organisms/receipt/index.ts` | Barrel export |
-| `src/components/billing/molecules/index.ts` | Main molecules barrel |
-| `src/components/billing/organisms/index.ts` | Main organisms barrel |
+| `src/pages/billing/BillsListPage.tsx` | Bills list with search, filters, actions |
+| `src/pages/billing/ClaimsListPage.tsx` | HMO claims management |
+| `src/pages/billing/PaymentsListPage.tsx` | Transaction history |
+| `src/pages/billing/BillingSettings.tsx` | Billing-specific settings (placeholder) |
+| `src/components/billing/organisms/tables/BillsTable.tsx` | Bills table component |
+| `src/components/billing/organisms/tables/ClaimsTable.tsx` | Claims table component |
+| `src/components/billing/organisms/tables/PaymentsTable.tsx` | Payments table component |
+| `src/components/billing/organisms/tables/index.ts` | Barrel export |
+| `src/data/payments.ts` | Payment/transaction mock data |
+| `src/components/billing/organisms/claim-submission/ClaimSubmissionModal.tsx` | New claim modal |
+
+### Modified Files (5)
+
+| File | Changes |
+|------|---------|
+| `src/App.tsx` | Add billing sub-routes |
+| `src/components/layout/AppSidebar.tsx` | Fix Settings link |
+| `src/pages/dashboards/BillingDashboard.tsx` | Add all button handlers and PaymentCollectionForm |
+| `src/data/bills.ts` | Add pagination helpers |
+| `src/data/claims.ts` | Add pagination helpers |
 
 ---
 
-## Part 9: Implementation Order
+## Part 10: Implementation Order
 
-1. **Bank Data**: Create nigerian-banks.ts placeholder
-2. **Payment Molecules**: PaymentMethodSelector, AmountBreakdown, ChangeCalculator, PaymentSummaryCard
-3. **HMO Molecules**: HMOProviderSelector, HMOVerificationCard, HMOCoPayCalculator, HMOCoverageDisplay
-4. **Receipt Molecules**: ReceiptHeader, ReceiptItemList, ReceiptTotals, ReceiptFooter
-5. **HMO Organism**: HMOVerificationFlow
-6. **Receipt Organism**: ThermalReceipt with print CSS
-7. **Payment Organism**: PaymentCollectionForm (3-step flow)
-8. **Barrel Exports**: Create all index.ts files
-9. **Integration**: Wire up to BillingDashboard
-
----
-
-## Part 10: Testing Checklist
-
-After implementation:
-
-| Test | Expected |
-|------|----------|
-| Payment method switches | All 4 methods selectable |
-| Change calculator | Correct calculation, quick buttons work |
-| Insufficient amount | Red error message shown |
-| HMO provider selector | Shows 5 providers |
-| HMO verification | 500ms delay, shows result |
-| Co-pay calculator | Shows 10% for pharmacy |
-| Receipt header | Clinic info displayed |
-| Receipt items | Quantities and indentation correct |
-| Receipt totals | All amounts calculated |
-| PaymentCollectionForm Step 1→2 | Always allowed |
-| PaymentCollectionForm Step 2→3 | Validates per method |
-| Cash validation | Requires amount >= total |
-| POS validation | Requires reference number |
-| Transfer validation | Requires bank + reference |
-| HMO validation | Requires successful verification |
-| Print receipt | Opens print dialog, 80mm format |
-| Currency formatting | All use clinic currency |
+1. **Data Layer**: Add `payments.ts`, update `bills.ts` and `claims.ts` with pagination
+2. **Fix Sidebar**: Update Settings link in AppSidebar
+3. **Wire Dashboard**: Add all handlers to BillingDashboard
+4. **Table Components**: Create BillsTable, ClaimsTable, PaymentsTable
+5. **Bills Page**: Create BillsListPage with full functionality
+6. **Claims Page**: Create ClaimsListPage with status workflow
+7. **Payments Page**: Create PaymentsListPage with filters
+8. **Settings Page**: Create placeholder BillingSettings
+9. **Routes**: Update App.tsx with new routes
+10. **Integration**: Test all navigation and actions
 
 ---
 
-## Dependencies
+## Part 11: Interaction Summary
 
-This plan depends on:
-- Foundation plan (types, hooks, context, atoms) being implemented first
-- Existing shadcn/ui components (Dialog, Select, Button, Card, Input)
-- Existing atoms (CurrencyDisplay, AmountInput, PaymentMethodButton, etc.)
+After implementation, every element will be functional:
 
-No new npm packages required. QR code will use a simple placeholder until qrcode.react is added if needed.
+### Dashboard Buttons
+| Button | Action |
+|--------|--------|
+| Record Payment | Opens PaymentCollectionForm modal |
+| Submit Claim | Navigates to Claims page with new claim dialog |
+| View All (bills) | Navigates to Bills page filtered to pending |
+| Collect (per bill) | Opens PaymentCollectionForm for that bill |
+| All Quick Actions | Functional navigation or modal |
+
+### Revenue Cards
+| Card | Action |
+|------|--------|
+| Cash/Card/HMO/Total | Navigate to Payments page with filter |
+
+### Sidebar Links
+| Link | Action |
+|------|--------|
+| Dashboard | `/billing` |
+| Bills | `/billing/bills` |
+| HMO Claims | `/billing/claims` |
+| Payments | `/billing/payments` |
+| Settings | `/billing/settings` |
+
+### Sub-Page Actions
+| Page | Actions |
+|------|---------|
+| Bills | Search, Filter, Collect, View, Print |
+| Claims | Search, Filter, Submit, Edit, Resubmit, View |
+| Payments | Search, Filter, View Receipt, Reprint, Export |
+
+---
+
+## Part 12: UX Design Principles Applied
+
+Following the project's established patterns:
+
+| Principle | Implementation |
+|-----------|----------------|
+| Minimal Clicks | Modal-based workflows, inline actions |
+| Professional Tables | Consistent with PatientTable, AppointmentTable |
+| Contextual Actions | Dropdown menus for row actions |
+| Visual Feedback | Toast notifications for all actions |
+| Mobile Responsive | Grid adapts, tables scroll horizontally |
+| Consistent Styling | Uses shadcn/ui components throughout |
+| Status Indicators | Coloured badges matching design system |

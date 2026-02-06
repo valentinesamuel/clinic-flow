@@ -1,10 +1,13 @@
 // Billing and Financial Type Definitions
 
+import { UserRole } from './user.types';
+
 export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'hmo' | 'corporate';
 export type BillStatus = 'pending' | 'partial' | 'paid' | 'waived' | 'refunded';
 export type ClaimStatus = 'draft' | 'submitted' | 'processing' | 'approved' | 'denied' | 'paid' | 'withdrawn' | 'retracted';
 export type ServiceCategory = 'consultation' | 'lab' | 'pharmacy' | 'procedure' | 'admission' | 'other';
 export type WithdrawalReason = 'patient_self_pay' | 'hospital_cancelled' | 'claim_error' | 'treatment_changed';
+export type BillingDepartment = 'front_desk' | 'lab' | 'pharmacy' | 'nursing' | 'inpatient' | 'all';
 
 // Diagnosis codes for claims (ICD-10)
 export interface ClaimDiagnosis {
@@ -42,6 +45,10 @@ export interface Bill {
   hmoClaimId?: string;
   createdAt: string;
   createdBy: string;
+  createdByRole?: UserRole;
+  department: BillingDepartment;
+  billingCode?: string;
+  billingCodeExpiry?: string;
   paidAt?: string;
   notes?: string;
 }

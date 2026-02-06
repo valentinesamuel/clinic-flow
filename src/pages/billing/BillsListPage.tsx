@@ -18,12 +18,14 @@ import { BillDetailsDrawer } from '@/components/billing/organisms/bill-details/B
 import { BillCreationForm } from '@/components/billing/organisms/bill-creation/BillCreationForm';
 import { ClaimCreationModal } from '@/components/billing/organisms/claim-submission/ClaimCreationModal';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { Bill, BillStatus, PaymentItem, PaymentClearance, HMOClaim } from '@/types/billing.types';
+import { Bill, BillStatus, BillingDepartment, PaymentItem, PaymentClearance, HMOClaim } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
 import { getBillsPaginated, getPendingBills, getTotalPendingAmount } from '@/data/bills';
 import { mockPatients, getPatientById } from '@/data/patients';
-import { Search, Receipt, ArrowLeft, Plus } from 'lucide-react';
+import { Search, Receipt, ArrowLeft, Plus, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { getDepartmentForRole, getDepartmentLabel } from '@/utils/billingDepartment';
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat('en-NG', {
@@ -38,10 +40,18 @@ export default function BillsListPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Determine default department based on user role
+  const userDepartment = user ? getDepartmentForRole(user.role) : 'all';
+  const canViewAllDepartments = userDepartment === 'all';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<BillStatus | 'all'>(
     (searchParams.get('status') as BillStatus) || 'all'
+  );
+  const [departmentFilter, setDepartmentFilter] = useState<BillingDepartment>(
+    canViewAllDepartments ? 'all' : userDepartment
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -66,6 +76,7 @@ export default function BillsListPage() {
 
   // Fetch bills with filters
   const { data: bills, total, totalPages } = getBillsPaginated(currentPage, pageSize, {
+    department: departmentFilter,
     status: statusFilter !== 'all' ? statusFilter : undefined,
     search: searchQuery || undefined,
   });
@@ -247,6 +258,28 @@ export default function BillsListPage() {
                     <SelectItem value="refunded">Refunded</SelectItem>
                   </SelectContent>
                 </Select>
+                {canViewAllDepartments && (
+                  <Select
+                    value={departmentFilter}
+                    onValueChange={(value) => {
+                      setDepartmentFilter(value as BillingDepartment);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-40">
+                      <Building2 className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Department" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Departments</SelectItem>
+                      <SelectItem value="front_desk">Front Desk</SelectItem>
+                      <SelectItem value="lab">Laboratory</SelectItem>
+                      <SelectItem value="pharmacy">Pharmacy</SelectItem>
+                      <SelectItem value="nursing">Nursing</SelectItem>
+                      <SelectItem value="inpatient">Inpatient</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
           </CardHeader>

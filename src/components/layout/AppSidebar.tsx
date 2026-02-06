@@ -122,6 +122,7 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
     { label: 'Pharmacy', items: [
       { title: 'Dashboard', href: '/pharmacist', icon: LayoutDashboard },
       { title: 'Prescriptions', href: '/pharmacist/prescriptions', icon: Pill, badge: 5 },
+      { title: 'Billing', href: '/pharmacist/billing', icon: Receipt },
       { title: 'Stock', href: '/pharmacist/stock', icon: Package },
     ]},
   ],
@@ -129,6 +130,7 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
     { label: 'Laboratory', items: [
       { title: 'Dashboard', href: '/lab-tech', icon: LayoutDashboard },
       { title: 'Sample Queue', href: '/lab-tech/samples', icon: TestTube, badge: 6 },
+      { title: 'Billing', href: '/lab-tech/billing', icon: Receipt },
       { title: 'Results', href: '/lab-tech/results', icon: FileText },
     ]},
   ],

@@ -32,6 +32,8 @@ import BillsListPage from "./pages/billing/BillsListPage";
 import ClaimsListPage from "./pages/billing/ClaimsListPage";
 import PaymentsListPage from "./pages/billing/PaymentsListPage";
 import BillingSettings from "./pages/billing/BillingSettings";
+import PharmacyBillingPage from "./pages/pharmacy/PharmacyBillingPage";
+import LabBillingPage from "./pages/lab/LabBillingPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,11 +60,19 @@ const App = () => (
                     <Route path="/cmo/patients/:id" element={<PatientProfilePage />} />
                     <Route path="/cmo/patients/:id/edit" element={<PatientEditPage />} />
                     <Route path="/cmo/appointments" element={<AppointmentListPage />} />
+                    <Route path="/cmo/billing" element={<BillingDashboard />} />
+                    <Route path="/cmo/billing/bills" element={<BillsListPage />} />
+                    <Route path="/cmo/billing/claims" element={<ClaimsListPage />} />
+                    <Route path="/cmo/billing/payments" element={<PaymentsListPage />} />
                     <Route path="/cmo/settings/permissions" element={<PermissionSettings />} />
                     <Route path="/cmo/*" element={<CMODashboard />} />
                     
                     {/* Hospital Admin Routes */}
                     <Route path="/hospital-admin" element={<HospitalAdminDashboard />} />
+                    <Route path="/hospital-admin/billing" element={<BillingDashboard />} />
+                    <Route path="/hospital-admin/billing/bills" element={<BillsListPage />} />
+                    <Route path="/hospital-admin/billing/claims" element={<ClaimsListPage />} />
+                    <Route path="/hospital-admin/billing/payments" element={<PaymentsListPage />} />
                     <Route path="/hospital-admin/*" element={<HospitalAdminDashboard />} />
                     
                     {/* Clinical Lead Routes */}
@@ -114,10 +124,12 @@ const App = () => (
                     
                     {/* Pharmacist Routes */}
                     <Route path="/pharmacist" element={<PharmacistDashboard />} />
+                    <Route path="/pharmacist/billing" element={<PharmacyBillingPage />} />
                     <Route path="/pharmacist/*" element={<PharmacistDashboard />} />
                     
                     {/* Lab Tech Routes */}
                     <Route path="/lab-tech" element={<LabTechDashboard />} />
+                    <Route path="/lab-tech/billing" element={<LabBillingPage />} />
                     <Route path="/lab-tech/*" element={<LabTechDashboard />} />
                     
                     {/* Patient Routes */}

@@ -1,9 +1,11 @@
 // Lab Technician Dashboard - Hybrid Module with Coming Soon indicators
 
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { 
   TestTube,
   Clock,
@@ -11,15 +13,20 @@ import {
   AlertTriangle,
   Activity,
   Info,
+  Receipt,
+  ChevronRight,
 } from 'lucide-react';
 import { getPendingLabOrders, getLabOrdersByStatus, getUrgentLabOrders } from '@/data/lab-orders';
+import { getPendingBillsByDepartment } from '@/data/bills';
 
 export default function LabTechDashboard() {
+  const navigate = useNavigate();
   const pendingOrders = getPendingLabOrders();
   const orderedTests = getLabOrdersByStatus('ordered');
   const sampleCollected = getLabOrdersByStatus('sample_collected');
   const processing = getLabOrdersByStatus('processing');
   const urgentOrders = getUrgentLabOrders();
+  const pendingLabBills = getPendingBillsByDepartment('lab');
 
   return (
     <DashboardLayout allowedRoles={['lab_tech']}>
@@ -94,6 +101,34 @@ export default function LabTechDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Billing Quick Access */}
+        <Card 
+          className="border-primary/30 hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => navigate('/lab-tech/billing')}
+        >
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-primary/10">
+                  <Receipt className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">Laboratory Billing</p>
+                  <p className="text-sm text-muted-foreground">
+                    {pendingLabBills.length} pending bills
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate('/lab-tech/billing'); }}>
+                  Manage Bills
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Main Content */}
         <div className="grid md:grid-cols-2 gap-6">

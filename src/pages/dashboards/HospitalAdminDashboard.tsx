@@ -1,8 +1,11 @@
 // Hospital Administrator Dashboard - Operations & Finance
 
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { 
   TrendingUp, 
   TrendingDown,
@@ -12,15 +15,20 @@ import {
   Users,
   Receipt,
   Fuel,
+  CreditCard,
+  ChevronRight,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { getLowStockItems, getCriticalItems } from '@/data/inventory';
-import { getPendingBills, getTotalPendingAmount } from '@/data/bills';
+import { getPendingBills, getTotalPendingAmount, getRecentBills, getTodaysRevenue } from '@/data/bills';
 import { getPendingClaims, getTotalPendingClaims } from '@/data/claims';
 import { getNonMedicalStaff, getOnDutyStaff } from '@/data/staff';
+import { BillingOverviewCard } from '@/components/billing/BillingOverviewCard';
+import { RevenueStatsCards } from '@/components/billing/RevenueStatsCards';
 
 export default function HospitalAdminDashboard() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { canViewClinicalData } = usePermissions({ userRole: user?.role });
 
@@ -30,6 +38,9 @@ export default function HospitalAdminDashboard() {
   const pendingClaims = getPendingClaims();
   const nonMedicalStaff = getNonMedicalStaff();
   const onDutyStaff = getOnDutyStaff();
+  const recentBills = getRecentBills(5);
+  const totalPendingAmount = getTotalPendingAmount();
+  const todaysRevenue = getTodaysRevenue();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-NG', {
@@ -42,11 +53,19 @@ export default function HospitalAdminDashboard() {
   return (
     <DashboardLayout allowedRoles={['hospital_admin']}>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-2xl font-bold">Hospital Administrator Dashboard</h1>
-          <p className="text-muted-foreground">Operations, finance & logistics overview</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Hospital Administrator Dashboard</h1>
+            <p className="text-muted-foreground">Operations, finance & logistics overview</p>
+          </div>
+          <Button onClick={() => navigate('/hospital-admin/billing')}>
+            <Receipt className="h-4 w-4 mr-2" />
+            Billing
+          </Button>
         </div>
+
+        {/* Revenue Stats Cards */}
+        <RevenueStatsCards revenue={todaysRevenue} routePrefix="/hospital-admin" />
 
         {/* Financial Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -177,22 +196,39 @@ export default function HospitalAdminDashboard() {
             </CardContent>
           </Card>
 
-          {/* HMO Claims Summary */}
+          {/* HMO Claims Summary - with click actions */}
           <Card>
             <CardHeader>
-              <CardTitle>HMO Claims Overview</CardTitle>
-              <CardDescription>Pending claims and status</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>HMO Claims Overview</CardTitle>
+                  <CardDescription>Pending claims and status</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/hospital-admin/billing/claims')}>
+                  Manage
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-between items-center">
+              <div 
+                className="flex justify-between items-center cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
+                onClick={() => navigate('/hospital-admin/billing/claims?status=draft')}
+              >
                 <span className="text-sm">Draft Claims</span>
                 <Badge variant="outline">{pendingClaims.filter(c => c.status === 'draft').length}</Badge>
               </div>
-              <div className="flex justify-between items-center">
+              <div 
+                className="flex justify-between items-center cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
+                onClick={() => navigate('/hospital-admin/billing/claims?status=submitted')}
+              >
                 <span className="text-sm">Submitted</span>
                 <Badge variant="secondary">{pendingClaims.filter(c => c.status === 'submitted').length}</Badge>
               </div>
-              <div className="flex justify-between items-center">
+              <div 
+                className="flex justify-between items-center cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
+                onClick={() => navigate('/hospital-admin/billing/claims?status=processing')}
+              >
                 <span className="text-sm">Processing</span>
                 <Badge>{pendingClaims.filter(c => c.status === 'processing').length}</Badge>
               </div>
@@ -204,6 +240,15 @@ export default function HospitalAdminDashboard() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Billing Overview */}
+          <BillingOverviewCard
+            bills={recentBills}
+            pendingClaimsCount={pendingClaims.length}
+            totalPendingAmount={totalPendingAmount}
+            routePrefix="/hospital-admin"
+            showDepartmentBadge={true}
+          />
 
           {/* Conditional Clinical Access */}
           {canViewClinicalData && (

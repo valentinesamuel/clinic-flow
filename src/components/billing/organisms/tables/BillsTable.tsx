@@ -15,15 +15,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, CreditCard, Eye, Printer, FileText } from 'lucide-react';
+import { MoreHorizontal, CreditCard, Eye, Printer, FileText, QrCode } from 'lucide-react';
 import { format } from 'date-fns';
+import { getDepartmentLabel, getDepartmentVariant } from '@/utils/billingDepartment';
 
 interface BillsTableProps {
   bills: Bill[];
-  onCollect: (bill: Bill) => void;
+  onCollect?: (bill: Bill) => void;
   onView: (bill: Bill) => void;
   onPrint: (bill: Bill) => void;
   onRowClick?: (bill: Bill) => void;
+  showGenerateCode?: boolean;
+  onGenerateCode?: (bill: Bill) => void;
+  showDepartment?: boolean;
 }
 
 function formatCurrency(value: number): string {
@@ -48,7 +52,16 @@ function getStatusBadge(status: Bill['status']) {
   return <Badge variant={config.variant}>{config.label}</Badge>;
 }
 
-export function BillsTable({ bills, onCollect, onView, onPrint, onRowClick }: BillsTableProps) {
+export function BillsTable({ 
+  bills, 
+  onCollect, 
+  onView, 
+  onPrint, 
+  onRowClick,
+  showGenerateCode = false,
+  onGenerateCode,
+  showDepartment = false,
+}: BillsTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -117,10 +130,16 @@ export function BillsTable({ bills, onCollect, onView, onPrint, onRowClick }: Bi
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      {bill.status !== 'paid' && (
+                      {bill.status !== 'paid' && onCollect && (
                         <DropdownMenuItem onClick={() => onCollect(bill)}>
                           <CreditCard className="h-4 w-4 mr-2" />
                           Collect Payment
+                        </DropdownMenuItem>
+                      )}
+                      {showGenerateCode && bill.status !== 'paid' && onGenerateCode && (
+                        <DropdownMenuItem onClick={() => onGenerateCode(bill)}>
+                          <QrCode className="h-4 w-4 mr-2" />
+                          Generate Billing Code
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuItem onClick={() => onView(bill)}>

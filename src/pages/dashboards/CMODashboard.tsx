@@ -20,12 +20,18 @@ import {
   Calendar,
   ChevronRight,
   UserPlus,
+  Receipt,
+  FileCheck,
 } from 'lucide-react';
 import { usePermissionContext } from '@/contexts/PermissionContext';
 import { Link } from 'react-router-dom';
 import { searchPatients } from '@/data/patients';
+import { getRecentBills, getPendingBills, getTotalPendingAmount, getTodaysRevenue } from '@/data/bills';
+import { getPendingClaims } from '@/data/claims';
 import { AppointmentBookingModal } from '@/components/appointments/AppointmentBookingModal';
 import { useDashboardActions } from '@/hooks/useDashboardActions';
+import { BillingOverviewCard } from '@/components/billing/BillingOverviewCard';
+import { RevenueStatsCards } from '@/components/billing/RevenueStatsCards';
 
 export default function CMODashboard() {
   const navigate = useNavigate();
@@ -37,6 +43,13 @@ export default function CMODashboard() {
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   
   const searchResults = searchQuery.length >= 2 ? searchPatients(searchQuery).slice(0, 5) : [];
+  
+  // Billing data
+  const recentBills = getRecentBills(5);
+  const pendingBills = getPendingBills();
+  const totalPendingAmount = getTotalPendingAmount();
+  const pendingClaims = getPendingClaims();
+  const todaysRevenue = getTodaysRevenue();
 
   const handleBookAppointment = (patientId: string) => {
     setSelectedPatientId(patientId);
@@ -217,34 +230,57 @@ export default function CMODashboard() {
             </CardContent>
           </Card>
 
-          {/* Financial Summary */}
+          {/* Financial Summary - Now with real data */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                Financial Summary
-              </CardTitle>
-              <CardDescription>Revenue and collections</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Financial Summary
+                  </CardTitle>
+                  <CardDescription>Revenue and collections</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/cmo/billing')}>
+                  <Receipt className="h-4 w-4 mr-1" />
+                  View All
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-sm">Cash Collected</span>
-                <span className="font-medium">₦850,000</span>
+                <span className="font-medium">₦{(todaysRevenue.cash / 1000).toFixed(0)}K</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm">HMO Receivables</span>
-                <span className="font-medium">₦1,250,000</span>
+                <span className="font-medium">₦{(todaysRevenue.hmo / 1000).toFixed(0)}K</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div 
+                className="flex justify-between items-center cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
+                onClick={() => navigate('/cmo/billing/bills?status=pending')}
+              >
                 <span className="text-sm">Pending Bills</span>
-                <Badge variant="secondary">23</Badge>
+                <Badge variant="secondary">{pendingBills.length}</Badge>
               </div>
-              <div className="flex justify-between items-center">
+              <div 
+                className="flex justify-between items-center cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
+                onClick={() => navigate('/cmo/billing/claims')}
+              >
                 <span className="text-sm">Pending Claims</span>
-                <Badge variant="outline">15</Badge>
+                <Badge variant="outline">{pendingClaims.length}</Badge>
               </div>
             </CardContent>
           </Card>
+
+          {/* Billing Overview Card */}
+          <BillingOverviewCard
+            bills={recentBills}
+            pendingClaimsCount={pendingClaims.length}
+            totalPendingAmount={totalPendingAmount}
+            routePrefix="/cmo"
+            showDepartmentBadge={true}
+          />
 
           {/* Alerts */}
           <Card>

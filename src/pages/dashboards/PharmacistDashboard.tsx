@@ -1,9 +1,11 @@
 // Pharmacist Dashboard - Hybrid Module with Coming Soon indicators
 
+import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { 
   Pill,
   Package,
@@ -11,15 +13,20 @@ import {
   Clock,
   CheckCircle,
   Info,
+  Receipt,
+  ChevronRight,
 } from 'lucide-react';
 import { getPendingPrescriptions, getTodaysPrescriptions } from '@/data/prescriptions';
 import { getItemsByCategory, getLowStockItems } from '@/data/inventory';
+import { getPendingBillsByDepartment } from '@/data/bills';
 
 export default function PharmacistDashboard() {
+  const navigate = useNavigate();
   const pendingPrescriptions = getPendingPrescriptions();
   const todaysPrescriptions = getTodaysPrescriptions();
   const medicines = getItemsByCategory('medicine');
   const lowStockMedicines = getLowStockItems().filter(i => i.category === 'medicine');
+  const pendingPharmacyBills = getPendingBillsByDepartment('pharmacy');
 
   return (
     <DashboardLayout allowedRoles={['pharmacist']}>
@@ -96,6 +103,34 @@ export default function PharmacistDashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Billing Quick Access */}
+        <Card 
+          className="border-primary/30 hover:shadow-md transition-shadow cursor-pointer"
+          onClick={() => navigate('/pharmacist/billing')}
+        >
+          <CardContent className="py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-lg bg-primary/10">
+                  <Receipt className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium">Pharmacy Billing</p>
+                  <p className="text-sm text-muted-foreground">
+                    {pendingPharmacyBills.length} pending bills
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate('/pharmacist/billing'); }}>
+                  Manage Bills
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Main Content */}
         <div className="grid md:grid-cols-2 gap-6">

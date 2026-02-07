@@ -32,6 +32,9 @@ import BillsListPage from "./pages/billing/BillsListPage";
 import ClaimsListPage from "./pages/billing/ClaimsListPage";
 import PaymentsListPage from "./pages/billing/PaymentsListPage";
 import BillingSettings from "./pages/billing/BillingSettings";
+import CashierDashboardPage from "./pages/billing/CashierDashboardPage";
+import ServicePricingPage from "./pages/billing/ServicePricingPage";
+import PriceApprovalPage from "./pages/billing/PriceApprovalPage";
 import PharmacyBillingPage from "./pages/pharmacy/PharmacyBillingPage";
 import LabBillingPage from "./pages/lab/LabBillingPage";
 import NotFound from "./pages/NotFound";
@@ -65,6 +68,7 @@ const App = () => (
                     <Route path="/cmo/billing/claims" element={<ClaimsListPage />} />
                     <Route path="/cmo/billing/payments" element={<PaymentsListPage />} />
                     <Route path="/cmo/settings/permissions" element={<PermissionSettings />} />
+                    <Route path="/cmo/approvals/pricing" element={<PriceApprovalPage />} />
                     <Route path="/cmo/*" element={<CMODashboard />} />
                     
                     {/* Hospital Admin Routes */}
@@ -73,6 +77,7 @@ const App = () => (
                     <Route path="/hospital-admin/billing/bills" element={<BillsListPage />} />
                     <Route path="/hospital-admin/billing/claims" element={<ClaimsListPage />} />
                     <Route path="/hospital-admin/billing/payments" element={<PaymentsListPage />} />
+                    <Route path="/hospital-admin/settings/pricing" element={<ServicePricingPage />} />
                     <Route path="/hospital-admin/*" element={<HospitalAdminDashboard />} />
                     
                     {/* Clinical Lead Routes */}
@@ -120,6 +125,9 @@ const App = () => (
                     <Route path="/billing/claims" element={<ClaimsListPage />} />
                     <Route path="/billing/payments" element={<PaymentsListPage />} />
                     <Route path="/billing/settings" element={<BillingSettings />} />
+                    <Route path="/billing/cashier" element={<CashierDashboardPage station="main" />} />
+                    <Route path="/billing/cashier/lab" element={<CashierDashboardPage station="lab" />} />
+                    <Route path="/billing/cashier/pharmacy" element={<CashierDashboardPage station="pharmacy" />} />
                     <Route path="/billing/*" element={<BillingDashboard />} />
                     
                     {/* Pharmacist Routes */}

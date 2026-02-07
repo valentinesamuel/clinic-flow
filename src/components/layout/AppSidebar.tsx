@@ -53,6 +53,9 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
       { title: 'Reports', href: '/cmo/reports', icon: FileText },
       { title: 'Billing', href: '/cmo/billing', icon: Receipt },
     ]},
+    { label: 'Approvals', items: [
+      { title: 'Price Approvals', href: '/cmo/approvals/pricing', icon: FileCheck, badge: 2 },
+    ]},
     { label: 'Settings', items: [
       { title: 'Permissions', href: '/cmo/settings/permissions', icon: Shield },
     ]},
@@ -67,6 +70,9 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
       { title: 'Inventory', href: '/hospital-admin/inventory', icon: Package },
       { title: 'Staff', href: '/hospital-admin/staff', icon: UserCog },
       { title: 'Reports', href: '/hospital-admin/reports', icon: FileText },
+    ]},
+    { label: 'Settings', items: [
+      { title: 'Pricing', href: '/hospital-admin/settings/pricing', icon: CreditCard },
     ]},
   ],
   clinical_lead: [
@@ -113,6 +119,7 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
   billing: [
     { label: 'Finance', items: [
       { title: 'Dashboard', href: '/billing', icon: LayoutDashboard },
+      { title: 'Cashier', href: '/billing/cashier', icon: CreditCard },
       { title: 'Bills', href: '/billing/bills', icon: Receipt, badge: 12 },
       { title: 'HMO Claims', href: '/billing/claims', icon: FileCheck, badge: 7 },
       { title: 'Payments', href: '/billing/payments', icon: CreditCard },

@@ -1,396 +1,435 @@
 
-# Billing Integration & Department Separation Plan
+# Billing Module - Cashier Dashboard, Billing Codes & Service Pricing
 
 ## Overview
 
-This plan addresses three key requirements:
-1. **Integrate claim creation into BillDetailsDrawer** - Already partially implemented, needs wiring
-2. **Add billing visibility to CMO and Hospital Admin dashboards** - Extend dashboard with billing sections
-3. **Department-based billing separation** - Logical separation so pharmacy bills don't show at front desk/lab and vice versa
+This plan implements a comprehensive billing module with:
+1. **Cashier Dashboard** - Main cashier interface with shift management and payment queue
+2. **Pharmacy Billing Code Flow** - Enhanced workflow with code generation and payment processing
+3. **Service Pricing Management** - Hospital Admin pricing table with CMO approval workflow
+4. **Emergency Override System** - Authorized bypass for life-threatening cases
+5. **Receipt Print Template** - A5-sized print-friendly receipt
 
 ---
 
-## Part 1: Department-Based Billing Separation
+## Part 1: Data Layer & Types
 
-### Core Concept
+### New Types in `src/types/billing.types.ts`
 
-Bills will have a `department` field that indicates where the bill originated:
-- **front_desk** - Reception/Check-in (Consultation fees, registration)
-- **lab** - Laboratory (Lab tests, imaging)
-- **pharmacy** - Pharmacy (Medications, consumables)
-- **nursing** - Nursing station (Procedures, vitals)
-- **inpatient** - Ward/Admission (Bed charges, admission fees)
+Add new interfaces for shift management, service pricing, and emergency override:
 
-### Data Model Updates
+| Type | Purpose |
+|------|---------|
+| `CashierShift` | Track shift start/end, transactions, cash reconciliation |
+| `ServicePrice` | Service catalog with pricing and approval status |
+| `PriceApproval` | Pending price changes awaiting CMO approval |
+| `EmergencyOverride` | Logged bypass of payment requirement |
+| `BillingCodeEntry` | Enhanced billing code with status tracking |
 
-**Update: `src/types/billing.types.ts`**
-
-| New Field | Type | Description |
-|-----------|------|-------------|
-| `department` | BillingDepartment | Origin department for the bill |
-| `createdByRole` | UserRole | Role of user who created the bill |
-
-```text
-export type BillingDepartment = 
-  | 'front_desk' 
-  | 'lab' 
-  | 'pharmacy' 
-  | 'nursing' 
-  | 'inpatient'
-  | 'all';  // For aggregated views (CMO/Admin)
-
-interface Bill {
-  // ... existing fields ...
-  department: BillingDepartment;
-  createdByRole: UserRole;
-}
-```
-
-### Department Mapping
-
-| User Role | Default Department | Can View |
-|-----------|-------------------|----------|
-| Receptionist | front_desk | front_desk only |
-| Lab Tech | lab | lab only |
-| Pharmacist | pharmacy | pharmacy only |
-| Nurse | nursing | nursing only |
-| Doctor | all (creates via orders) | all related to their orders |
-| Billing Officer | all | all (primary billing role) |
-| Hospital Admin | all | all (read-only financial view) |
-| CMO | all | all (executive oversight) |
-
-### Data Layer Updates
-
-**Update: `src/data/bills.ts`**
-
-Add department field to existing bills and create filtering functions:
-
-```text
-// Add to each mock bill:
-department: 'front_desk' | 'lab' | 'pharmacy' | ...
-
-// New functions:
-getBillsByDepartment(department: BillingDepartment): Bill[]
-getBillsPaginatedByDepartment(
-  page: number, 
-  limit: number, 
-  department: BillingDepartment,
-  filters?: BillFilters
-): { data: Bill[]; total: number; totalPages: number }
-```
-
-**New: `src/utils/billingDepartment.ts`**
-
-Utility functions for department logic:
-
-```text
-getDepartmentForRole(role: UserRole): BillingDepartment | 'all'
-getDepartmentLabel(department: BillingDepartment): string
-canViewDepartment(userRole: UserRole, department: BillingDepartment): boolean
-getCategoryToDepartment(category: ServiceCategory): BillingDepartment
-```
-
----
-
-## Part 2: Update BillDetailsDrawer with Claim Creation
-
-The drawer already has an `onCreateClaim` prop. Need to ensure:
-1. The button is visible for HMO patients with balance
-2. The callback is properly wired in all contexts
-
-### Current State (Already Working)
-
-- `BillDetailsDrawer.tsx` has `canCreateClaim` logic
-- `BillsListPage.tsx` wires up `handleCreateClaimFromBill`
-
-### Required Fixes
-
-**Verify in `BillDetailsDrawer.tsx`:**
-- Button shows when: `bill.paymentMethod === 'hmo' && bill.balance > 0 && !bill.hmoClaimId`
-- Already implemented correctly
-
-**Ensure all usages pass the callback:**
-- CMO Dashboard (new)
-- Hospital Admin Dashboard (new)
-- Billing Dashboard - need to add drawer
-
----
-
-## Part 3: CMO Dashboard Billing Section
-
-### Update: `src/pages/dashboards/CMODashboard.tsx`
-
-Add a new billing section with:
-
-**Quick Stats Card Row:**
-| Stat | Value | Action |
-|------|-------|--------|
-| Today's Revenue | ₦1.2M | Click → Payments list |
-| Pending Bills | 23 | Click → Bills list (pending) |
-| Pending Claims | 15 | Click → Claims list (pending) |
-| Outstanding | ₦450K | Non-clickable |
-
-**Recent Bills Card:**
-- Shows last 5 bills across all departments
-- Each row: Patient, Amount, Status, Department badge, "View" button
-- "View All" link → `/cmo/billing/bills`
-
-**HMO Claims Summary Card:**
-- Draft: X
-- Submitted: Y
-- Approved: Z
-- Denied: W
-- "Manage Claims" button → `/cmo/billing/claims`
-
-### Add CMO Billing Routes
-
-**Update: `src/App.tsx`**
-
-```text
-<Route path="/cmo/billing" element={<BillingDashboard />} />
-<Route path="/cmo/billing/bills" element={<BillsListPage />} />
-<Route path="/cmo/billing/claims" element={<ClaimsListPage />} />
-<Route path="/cmo/billing/payments" element={<PaymentsListPage />} />
-```
-
----
-
-## Part 4: Hospital Admin Dashboard Billing Section
-
-### Update: `src/pages/dashboards/HospitalAdminDashboard.tsx`
-
-Add billing section similar to CMO but with operational focus:
-
-**Revenue Cards Row:**
-| Card | Value | Click Action |
-|------|-------|--------------|
-| Cash Collected | ₦850K | → Payments (cash filter) |
-| Card/POS | ₦127K | → Payments (card filter) |
-| HMO Pending | ₦245K | → Claims list |
-| Total Today | ₦1.2M | → Payments (today) |
-
-**Pending Bills Card:**
-- List of unpaid bills
-- Each with "Collect" button → Opens PaymentCollectionForm
-- "View All" link → `/hospital-admin/billing/bills`
-
-**Claims Overview Card:**
-- Already exists, just add click actions
-- Draft claims → `/hospital-admin/billing/claims?status=draft`
-- Submitted → `/hospital-admin/billing/claims?status=submitted`
-
-### Add Hospital Admin Billing Routes
-
-**Update: `src/App.tsx`**
-
-```text
-<Route path="/hospital-admin/billing" element={<BillingDashboard />} />
-<Route path="/hospital-admin/billing/bills" element={<BillsListPage />} />
-<Route path="/hospital-admin/billing/claims" element={<ClaimsListPage />} />
-<Route path="/hospital-admin/billing/payments" element={<PaymentsListPage />} />
-```
-
----
-
-## Part 5: Department-Filtered Views for Other Roles
-
-### Pharmacist Billing View
-
-**New: `src/pages/pharmacy/PharmacyBillingPage.tsx`**
-
-Shows only pharmacy department bills:
-- Auto-filtered to `department: 'pharmacy'`
-- Can create bills for dispensed medications
-- Generate billing codes for pending payments
-
-### Lab Tech Billing View
-
-**New: `src/pages/lab/LabBillingPage.tsx`**
-
-Shows only lab department bills:
-- Auto-filtered to `department: 'lab'`
-- Generate billing codes for ordered tests
-- Track which tests are paid/unpaid
-
-### Reception Billing View
-
-**Update existing receptionist routes:**
-
-When receptionist views bills, auto-filter to `department: 'front_desk'`:
-- Only sees consultation fees, registration, procedures done at front desk
-
----
-
-## Part 6: BillCreationForm Department Integration
-
-### Update: `src/components/billing/organisms/bill-creation/BillCreationForm.tsx`
-
-Add department awareness:
-
-| When Created By | Department Set To | Items Available |
-|-----------------|-------------------|-----------------|
-| Receptionist | front_desk | Consultation, Procedures, Other |
-| Pharmacist | pharmacy | Pharmacy items only |
-| Lab Tech | lab | Lab items only |
-| Nurse | nursing | Procedures, Vitals |
-| Billing Officer | Selected | All (can choose department) |
-| Doctor | Based on items | Auto-detect from item categories |
-| CMO/Admin | Selected | All (can choose department) |
-
-### Props Update
-
-```text
-interface BillCreationFormProps {
-  // ... existing props ...
-  defaultDepartment?: BillingDepartment;
-  restrictDepartment?: boolean; // If true, department cannot be changed
-}
-```
-
----
-
-## Part 7: Sidebar Navigation Updates
-
-### Update: `src/components/layout/AppSidebar.tsx`
-
-**Pharmacist Navigation:**
-Add billing link:
-```text
-{ title: 'Billing', href: '/pharmacist/billing', icon: Receipt }
-```
-
-**Lab Tech Navigation:**
-Add billing link:
-```text
-{ title: 'Billing', href: '/lab-tech/billing', icon: Receipt }
-```
-
-**CMO Navigation:**
-Already has billing, ensure routes work
-
-**Hospital Admin Navigation:**
-Already has billing, ensure routes work
-
----
-
-## Part 8: Quick Actions Wiring
-
-### BillingDashboard Quick Actions
-
-Ensure all buttons trigger appropriate flows:
-
-| Button | Current State | Action Needed |
-|--------|---------------|---------------|
-| Record Payment | Opens mock data | Wire to select patient/bill |
-| Generate Receipt | Toast only | Wire to open receipt generator |
-| Submit Claim | Navigates | ✅ Working |
-| Daily Report | Toast only | Generate summary report |
-| Create Bill | Missing | Add button, open BillCreationForm |
-
-### PatientProfile Billing Tab
-
-Ensure these actions work:
-- "Create Bill" → Opens BillCreationForm with patient pre-filled
-- Bill list items → Click opens BillDetailsDrawer
-- From drawer → "Create Claim" opens ClaimCreationModal
-
----
-
-## Part 9: File Structure Summary
-
-### New Files (5)
+### New Data Files
 
 | File | Purpose |
 |------|---------|
-| `src/utils/billingDepartment.ts` | Department utility functions |
-| `src/pages/pharmacy/PharmacyBillingPage.tsx` | Pharmacy-filtered billing |
-| `src/pages/lab/LabBillingPage.tsx` | Lab-filtered billing |
-| `src/components/billing/BillingOverviewCard.tsx` | Reusable billing stats card |
-| `src/components/billing/DepartmentBillsList.tsx` | Department-filtered bills list |
+| `src/data/service-pricing.ts` | Service catalog with consultation, lab, pharmacy items |
+| `src/data/cashier-shifts.ts` | Mock shift data and transaction tracking |
 
-### Modified Files (10)
+---
+
+## Part 2: Cashier Dashboard Components
+
+### CashierDashboard.tsx (`src/components/billing/organisms/cashier-station/`)
+
+Main cashier interface with three sections:
+
+**Layout Structure:**
+- Header with station name and shift controls
+- Stats row (Transactions, Total, Cash, POS)
+- Payment Queue list with patient cards and "Collect" buttons
+- Recent Transactions table with receipt links
+
+**Props:**
+```text
+interface CashierDashboardProps {
+  station: 'main' | 'lab' | 'pharmacy';
+}
+```
+
+**Features:**
+- Payment queue filtered by station
+- Real-time stats update
+- Opens PaymentCollectionForm on "Collect" click
+- Links to shift report on end shift
+
+### TransactionHistory.tsx
+
+Full transaction history table with filters:
+- Search by receipt number, patient name, MRN
+- Filter by date range, payment method
+- Sort and pagination
+- Click row to view receipt
+- Export CSV option
+
+### CashierShiftReport.tsx
+
+End-of-shift report modal:
+- Shift summary (start/end time, duration)
+- Transaction breakdown by payment method
+- Cash reconciliation with variance calculation
+- Closing balance input
+- Variance indicator (green/yellow/red based on amount)
+
+---
+
+## Part 3: Pharmacy Billing Code Enhancement
+
+### PharmacyBillingCodeFlow.tsx (`src/components/billing/organisms/billing-codes/`)
+
+**Pharmacist side - Generate Code:**
+
+Step 1: Review selected drugs from prescription
+- Patient and prescription info
+- Drug list with prices
+- HMO co-pay calculation (10% for HMO patients)
+- Subtotal and patient liability
+
+Step 2: Code generated display
+- Large, bold 8-character code
+- Expiry date (3 days)
+- Print option for patient slip
+- Instructions for billing desk
+
+### CodePaymentProcessor.tsx
+
+**Cashier side - Process payment by code:**
+
+Step 1: Code entry
+- 8-character input field
+- Lookup button
+
+Step 2: Code found - show details
+- Patient info
+- Items and prices
+- HMO coverage if applicable
+- Patient pays amount (large, bold)
+- Payment method selection (Cash/POS/Transfer only)
+- Change calculator for cash
+
+Step 3: Payment success
+- Receipt number
+- Code marked as PAID
+- Patient can collect drugs
+- Print receipt option
+
+---
+
+## Part 4: Service Pricing Management
+
+### ServicePricingTable.tsx (`src/components/billing/organisms/service-pricing/`)
+
+**Hospital Admin pricing management:**
+
+Table with columns:
+- Service code
+- Service name
+- Category
+- Current price
+- Status (Approved/Pending/Rejected)
+- Actions menu
+
+Filters:
+- Category dropdown (All, Consultation, Lab, Pharmacy, Procedure)
+- Search
+- Status filter
+- Pagination
+
+Actions:
+- Add new service
+- Edit existing (price change)
+- Archive
+- View price history
+
+### AddServiceModal.tsx
+
+New service creation form:
+- Category selector (auto-prefixes code)
+- Service code input
+- Service name
+- Description
+- Standard price
+- HMO price (optional)
+- Taxable checkbox
+- Warning: "Requires CMO approval"
+
+### EditServiceModal.tsx
+
+Price change form:
+- Read-only service info
+- Current price display
+- New price input
+- Auto-calculated change percentage
+- Reason for change (required)
+- Submit for approval
+
+---
+
+## Part 5: CMO Price Approval Queue
+
+### PriceApprovalQueue.tsx (`src/pages/settings/`)
+
+CMO approval interface:
+- List of pending price changes
+- Each card shows:
+  - Service name and category
+  - Price change (old arrow new with percentage)
+  - Requested by (name + role)
+  - Date and time
+  - Reason for change
+- Approve and Reject buttons
+
+### PriceApprovalModal.tsx
+
+Approve: Optional notes input
+Reject: Required rejection reason
+
+On approve: Update service price, notify admin
+On reject: Keep old price, notify admin with reason
+
+---
+
+## Part 6: Emergency Override System
+
+### EmergencyOverrideModal.tsx (`src/components/billing/organisms/emergency-override/`)
+
+Emergency payment bypass (Doctor/CMO only):
+
+Form fields:
+- Patient info display
+- Warning message about audit logging
+- Reason for override (required, min 20 chars)
+- Override scope selection:
+  - Consultation only
+  - Consultation + Emergency
+  - Full visit (all services)
+- Confirmation checkbox
+- Authorizing staff name
+
+On authorize:
+- Create payment clearance with emergency status
+- Add patient to queue immediately
+- Create audit log entry
+- Flag patient profile with red banner
+- Track outstanding amount
+- Notify billing department
+
+### Patient Profile Emergency Banner
+
+When emergency override is active:
+- Red banner at top of profile
+- Shows outstanding amount
+- Authorized by name and date
+- Link to clear/pay
+
+---
+
+## Part 7: Receipt Print Template
+
+### ReceiptPrintTemplate.tsx (`src/components/billing/templates/`)
+
+A5-sized (148x210mm) print-friendly receipt:
+
+Sections:
+- Clinic logo and header
+- Receipt number and date
+- Patient information
+- Services list with prices
+- Subtotal, tax, discount, total
+- Amount paid and change
+- Payment method and status
+- QR code for digital verification
+- Footer with thank you message
+
+CSS:
+- @media print styles
+- 80mm thermal printer option
+- "PAID" watermark
+- window.print() trigger
+
+---
+
+## Part 8: Routes & Navigation
+
+### New Routes in `src/App.tsx`
+
+```text
+// Cashier routes
+/billing/cashier          - Main cashier dashboard
+/billing/cashier/lab      - Lab station cashier
+/billing/cashier/pharmacy - Pharmacy station cashier
+/billing/shift-report     - Current shift report
+/billing/receipt/:id      - Receipt viewer
+
+// Hospital Admin routes
+/hospital-admin/settings/pricing - Service pricing management
+
+// CMO routes
+/cmo/approvals/pricing    - Price approval queue
+```
+
+### Sidebar Updates
+
+Add navigation items for:
+- Billing Officer: Cashier Dashboard link
+- Hospital Admin: Settings > Pricing
+- CMO: Approvals > Pricing
+
+---
+
+## Part 9: Mock Data for Testing
+
+### Ensure Searchable Patients
+
+Update mock data to ensure patient searches return results:
+- Add more diverse names that match common search terms
+- Include patients with pending bills for queue testing
+- Add patients with billing codes for code lookup testing
+
+### Sample Billing Codes
+
+Pre-populate bills with codes:
+- `PH3K7M2Q` - Pharmacy, pending
+- `LB7K2M4P` - Lab, pending
+- `PH5N8R3T` - Pharmacy, paid
+
+---
+
+## Part 10: File Structure Summary
+
+### New Files (16)
+
+| File | Purpose |
+|------|---------|
+| `src/types/cashier.types.ts` | Shift and transaction types |
+| `src/data/service-pricing.ts` | Service catalog data |
+| `src/data/cashier-shifts.ts` | Shift mock data |
+| `src/components/billing/organisms/cashier-station/CashierDashboard.tsx` | Main cashier UI |
+| `src/components/billing/organisms/cashier-station/TransactionHistory.tsx` | Transaction table |
+| `src/components/billing/organisms/cashier-station/CashierShiftReport.tsx` | Shift report modal |
+| `src/components/billing/organisms/billing-codes/PharmacyBillingCodeFlow.tsx` | Code generation |
+| `src/components/billing/organisms/billing-codes/CodePaymentProcessor.tsx` | Code payment |
+| `src/components/billing/organisms/billing-codes/index.ts` | Barrel export |
+| `src/components/billing/organisms/service-pricing/ServicePricingTable.tsx` | Pricing table |
+| `src/components/billing/organisms/service-pricing/AddServiceModal.tsx` | Add service |
+| `src/components/billing/organisms/service-pricing/EditServiceModal.tsx` | Edit price |
+| `src/components/billing/organisms/service-pricing/PriceApprovalQueue.tsx` | CMO approvals |
+| `src/components/billing/organisms/service-pricing/index.ts` | Barrel export |
+| `src/components/billing/organisms/emergency-override/EmergencyOverrideModal.tsx` | Override modal |
+| `src/components/billing/templates/ReceiptPrintTemplate.tsx` | A5 receipt |
+
+### New Pages (3)
+
+| File | Purpose |
+|------|---------|
+| `src/pages/billing/CashierDashboardPage.tsx` | Cashier dashboard page |
+| `src/pages/billing/ServicePricingPage.tsx` | Admin pricing page |
+| `src/pages/billing/PriceApprovalPage.tsx` | CMO approval page |
+
+### Modified Files (8)
 
 | File | Changes |
 |------|---------|
-| `src/types/billing.types.ts` | Add BillingDepartment, department field |
-| `src/data/bills.ts` | Add department to bills, filtering functions |
-| `src/pages/dashboards/CMODashboard.tsx` | Add billing section with quick actions |
-| `src/pages/dashboards/HospitalAdminDashboard.tsx` | Add billing section with payment collection |
-| `src/pages/dashboards/PharmacistDashboard.tsx` | Add billing link/section |
-| `src/pages/dashboards/LabTechDashboard.tsx` | Add billing link/section |
-| `src/components/layout/AppSidebar.tsx` | Add billing nav items for pharmacy/lab |
-| `src/components/billing/organisms/bill-creation/BillCreationForm.tsx` | Department awareness |
-| `src/App.tsx` | Add new billing routes for all roles |
-| `src/pages/billing/BillsListPage.tsx` | Department filter support |
+| `src/types/billing.types.ts` | Add new types |
+| `src/data/bills.ts` | Ensure billing codes work |
+| `src/data/patients.ts` | Add searchable test patients |
+| `src/App.tsx` | Add new routes |
+| `src/components/layout/AppSidebar.tsx` | Add nav items |
+| `src/pages/pharmacy/PharmacyBillingPage.tsx` | Integrate code flow |
+| `src/pages/lab/LabBillingPage.tsx` | Integrate code flow |
+| `src/components/billing/organisms/index.ts` | Export new organisms |
 
 ---
 
-## Part 10: Implementation Order
+## Part 11: Implementation Order
 
-1. **Data Model First**
-   - Update billing types with department
-   - Add department to existing mock bills
-   - Create utility functions
+1. **Types & Data Layer**
+   - Add new types to billing.types.ts
+   - Create service-pricing.ts data
+   - Create cashier-shifts.ts data
 
-2. **Bill Filtering**
-   - Implement department filtering in bills.ts
-   - Update BillsListPage with department filter
+2. **Cashier Dashboard**
+   - CashierDashboard component
+   - TransactionHistory component
+   - CashierShiftReport modal
+   - Shift management hook
 
-3. **CMO Dashboard**
-   - Add billing section
-   - Wire up all quick actions
-   - Add routes
+3. **Billing Code Enhancement**
+   - PharmacyBillingCodeFlow component
+   - CodePaymentProcessor component
+   - Update pharmacy/lab pages
 
-4. **Hospital Admin Dashboard**
-   - Add billing section with payment collection
-   - Wire up "Collect" buttons
-   - Add routes
+4. **Service Pricing**
+   - ServicePricingTable component
+   - AddServiceModal component
+   - EditServiceModal component
+   - ServicePricingPage
 
-5. **Department-Specific Views**
-   - Create PharmacyBillingPage
-   - Create LabBillingPage
+5. **Price Approval**
+   - PriceApprovalQueue component
+   - PriceApprovalPage
+   - CMO sidebar link
+
+6. **Emergency Override**
+   - EmergencyOverrideModal component
+   - Patient profile banner
+   - Integration with queue
+
+7. **Receipt Template**
+   - ReceiptPrintTemplate for A5
+   - Print CSS styles
+
+8. **Routes & Navigation**
+   - Add all new routes
    - Update sidebar navigation
 
-6. **Bill Creation Enhancement**
-   - Add department awareness to BillCreationForm
-   - Auto-detect department from user role
+---
 
-7. **Integration Testing**
-   - Test flow from each role
-   - Verify department isolation
-   - Test claim creation from drawers
+## Part 12: Testing Scenarios
+
+| Test | Expected |
+|------|----------|
+| Search "Aisha" in cashier | Finds Aisha Mohammed |
+| Generate billing code | 8-char alphanumeric shown |
+| Lookup code PH3K7M2Q | Finds pharmacy bill |
+| Add new service as Admin | Creates pending approval |
+| CMO approves price | Price updated, status approved |
+| CMO rejects price | Original price kept, reason shown |
+| Emergency override as Doctor | Patient added to queue, audit logged |
+| Print receipt | A5 format opens in print dialog |
+| End shift | Report shows variance calculation |
 
 ---
 
-## Part 11: Access Control Summary
+## Part 13: Integration Points
 
-| Role | Can Create Bills | Can View | Can Collect | Can Submit Claims |
-|------|-----------------|----------|-------------|-------------------|
-| CMO | ✅ All | ✅ All | ✅ | ✅ |
-| Hospital Admin | ✅ All | ✅ All | ✅ | ✅ |
-| Billing Officer | ✅ All | ✅ All | ✅ | ✅ |
-| Pharmacist | ✅ Pharmacy | Pharmacy | ❌ (generates code) | ❌ |
-| Lab Tech | ✅ Lab | Lab | ❌ (generates code) | ❌ |
-| Receptionist | ✅ Front Desk | Front Desk | ✅ (basic) | ❌ |
-| Nurse | ✅ Nursing | Nursing | ❌ | ❌ |
-| Doctor | Via orders | Related | ❌ | ❌ |
-| Patient | ❌ | Own bills | ❌ | ❌ |
+### Queue Integration
+
+After payment collected:
+- Update queue entry paymentStatus to 'cleared'
+- Add paymentClearanceId and timestamp
+- If station-specific, add to next queue (lab/pharmacy)
+
+### Notification Integration
+
+- Notify billing when emergency override used
+- Notify admin when price approved/rejected
+- Notify pharmacist when billing code is paid
 
 ---
 
-## Part 12: Billing Code Generation for Non-Billing Roles
+## Technical Notes
 
-Pharmacy and Lab staff cannot collect payments directly. Instead:
-
-1. They **generate a billing code** (e.g., `PH3K7M2Q`)
-2. Patient takes code to billing desk
-3. Billing officer scans/enters code
-4. Payment collected, service unlocked
-
-This maintains the "pay-before-service" policy while keeping department separation.
-
-### Components Needed
-
-- `BillingCodeGenerator` - Generates 8-char alphanumeric code
-- `BillingCodeScanner` - For billing desk to lookup by code
-- `BillingCodeStatus` - Shows if code is paid/pending
+- Use existing PaymentCollectionForm for payment flows
+- Leverage QueueContext for queue updates
+- Use existing receipt molecules (ReceiptHeader, ReceiptItemList, etc.)
+- Currency formatting: ₦ with Intl.NumberFormat('en-NG')
+- Billing codes: 8-char alphanumeric, uppercase, no ambiguous chars (0/O, 1/I/l)
+- Code expiry: 3 days from generation

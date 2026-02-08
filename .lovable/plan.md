@@ -1,435 +1,746 @@
 
-# Billing Module - Cashier Dashboard, Billing Codes & Service Pricing
+# Comprehensive Pharmacy Module Implementation Plan
 
-## Overview
+## Executive Summary
 
-This plan implements a comprehensive billing module with:
-1. **Cashier Dashboard** - Main cashier interface with shift management and payment queue
-2. **Pharmacy Billing Code Flow** - Enhanced workflow with code generation and payment processing
-3. **Service Pricing Management** - Hospital Admin pricing table with CMO approval workflow
-4. **Emergency Override System** - Authorized bypass for life-threatening cases
-5. **Receipt Print Template** - A5-sized print-friendly receipt
+This plan implements a full-featured Pharmacy Module that serves as a clinical control point, financial firewall, and theft-resistant revenue engine. The module encompasses prescription queue management, multi-tariff dispensing, inventory fortress controls, clinical safety automation, HMO justification enforcement, retail POS functionality, and intelligent reporting.
 
 ---
 
-## Part 1: Data Layer & Types
+## Part 1: Data Layer & Type Definitions
 
-### New Types in `src/types/billing.types.ts`
+### New Types in `src/types/pharmacy.types.ts`
 
-Add new interfaces for shift management, service pricing, and emergency override:
+Create a dedicated pharmacy types file with the following interfaces:
 
 | Type | Purpose |
 |------|---------|
-| `CashierShift` | Track shift start/end, transactions, cash reconciliation |
-| `ServicePrice` | Service catalog with pricing and approval status |
-| `PriceApproval` | Pending price changes awaiting CMO approval |
-| `EmergencyOverride` | Logged bypass of payment requirement |
-| `BillingCodeEntry` | Enhanced billing code with status tracking |
+| `PrescriptionQueueEntry` | Enhanced prescription with payment status, PA codes, source type |
+| `DispensingItem` | Individual drug with brand selection, batch tracking, FEFO |
+| `DispensingRecord` | Complete dispensing transaction with stock deductions |
+| `DrugFormulary` | Drug catalog with generic/brand, HMO approval status |
+| `DrugBatch` | Batch tracking with expiry, quantity, location |
+| `StockRequisition` | Internal requisition from pharmacy to main store |
+| `DrugInteraction` | Drug-drug interaction alert data |
+| `RetailItem` | Non-prescription retail items (barcode, VAT, fixed price) |
+| `RetailSale` | POS transaction for walk-in retail |
+| `ShrinkageLog` | Damage/expiry/missing stock logging |
+| `DispensingAudit` | Audit trail for reversed/cancelled dispenses |
+
+### Key Type Definitions
+
+```text
+// Prescription Queue Entry
+interface PrescriptionQueueEntry {
+  id: string;
+  prescriptionId: string;
+  patientId: string;
+  patientName: string;
+  patientMrn: string;
+  sourceType: 'in_patient' | 'out_patient' | 'walk_in';
+  payerStatus: 'hmo' | 'retainership' | 'private';
+  paymentStatus: 'paid' | 'unpaid' | 'pending_pa';
+  paCode?: string;
+  diagnosisCode: string; // ICD-10 required
+  diagnosisDescription: string;
+  prescriberId: string;
+  prescriberName: string;
+  prescriberLevel: 'gp' | 'consultant' | 'specialist';
+  items: PrescriptionItemWithStock[];
+  priority: 'normal' | 'urgent' | 'stat';
+  queuedAt: string;
+  dispensedAt?: string;
+  dispensedBy?: string;
+  notes?: string;
+}
+
+// Drug with Batch Tracking
+interface DrugBatch {
+  id: string;
+  drugId: string;
+  batchNumber: string;
+  expiryDate: string;
+  quantity: number;
+  location: string;
+  receivedDate: string;
+  costPrice: number;
+}
+
+// Retail Item for POS
+interface RetailItem {
+  id: string;
+  barcode: string;
+  name: string;
+  category: 'otc' | 'cosmetic' | 'supplement' | 'baby_care' | 'first_aid';
+  unitPrice: number;
+  vatApplicable: boolean;
+  currentStock: number;
+  reorderLevel: number;
+}
+```
 
 ### New Data Files
 
 | File | Purpose |
 |------|---------|
-| `src/data/service-pricing.ts` | Service catalog with consultation, lab, pharmacy items |
-| `src/data/cashier-shifts.ts` | Mock shift data and transaction tracking |
+| `src/data/drug-formulary.ts` | Nigerian essential drugs with brands, generics, HMO lists |
+| `src/data/drug-batches.ts` | Batch/expiry tracking mock data |
+| `src/data/drug-interactions.ts` | Common drug-drug interactions database |
+| `src/data/retail-catalog.ts` | Retail items with barcodes |
+| `src/data/requisitions.ts` | Stock requisition history |
 
 ---
 
-## Part 2: Cashier Dashboard Components
+## Part 2: Prescription Queue (Digital Handshake)
 
-### CashierDashboard.tsx (`src/components/billing/organisms/cashier-station/`)
+### PrescriptionQueuePage.tsx (`src/pages/pharmacy/PrescriptionQueuePage.tsx`)
 
-Main cashier interface with three sections:
+Main prescription queue interface visible only after Doctor commits prescription with ICD-10 diagnosis.
 
-**Layout Structure:**
-- Header with station name and shift controls
-- Stats row (Transactions, Total, Cash, POS)
-- Payment Queue list with patient cards and "Collect" buttons
-- Recent Transactions table with receipt links
-
-**Props:**
+**Layout:**
 ```text
-interface CashierDashboardProps {
-  station: 'main' | 'lab' | 'pharmacy';
-}
++--------------------------------------------------+
+| PRESCRIPTION QUEUE           [Filters ▼] [Stats] |
++--------------------------------------------------+
+| SOURCE: [All] [In-Patient] [Out-Patient] [Walk-In]|
+| PAYER:  [All] [HMO] [Retainer] [Private-Paid]     |
+|         [Private-Unpaid]                          |
++--------------------------------------------------+
+| [🔴] Aisha Mohammed - PT-2026-00123              |
+|     In-Patient | HMO: Hygeia | PA: PA-2026-XXXX  |
+|     Dx: J45.20 - Mild asthma                     |
+|     3 items | Dr. Nwosu (Consultant)             |
+|     [View Rx] [DISPENSE ✓]                       |
+|--------------------------------------------------+
+| [🟡] Emmanuel Adeleke - PT-2026-0002             |
+|     Out-Patient | PRIVATE: UNPAID                 |
+|     Dx: E11.9 - Type 2 diabetes                  |
+|     1 item | Dr. Adeyemi (GP)                    |
+|     [View Rx] [DISPENSE 🔒] ← Disabled           |
++--------------------------------------------------+
 ```
 
 **Features:**
-- Payment queue filtered by station
-- Real-time stats update
-- Opens PaymentCollectionForm on "Collect" click
-- Links to shift report on end shift
+- Real-time queue from doctor prescriptions
+- Color-coded payment status (Green=Paid, Red=Unpaid, Yellow=Pending PA)
+- Source type filtering (In-Patient, Out-Patient, Walk-In)
+- Payer filtering (HMO/Retainer/Private)
+- Patient context bar with allergies visible
+- Queue priority sorting
 
-### TransactionHistory.tsx
+**Hard Guardrail - No-Voucher, No-Drug Rule:**
+- "Dispense" button disabled unless:
+  - Private → Payment confirmed (green badge)
+  - HMO → PA Code attached OR drug on auto-approved list
 
-Full transaction history table with filters:
-- Search by receipt number, patient name, MRN
-- Filter by date range, payment method
-- Sort and pagination
-- Click row to view receipt
-- Export CSV option
+### PrescriptionQueueCard.tsx (`src/components/pharmacy/PrescriptionQueueCard.tsx`)
 
-### CashierShiftReport.tsx
-
-End-of-shift report modal:
-- Shift summary (start/end time, duration)
-- Transaction breakdown by payment method
-- Cash reconciliation with variance calculation
-- Closing balance input
-- Variance indicator (green/yellow/red based on amount)
-
----
-
-## Part 3: Pharmacy Billing Code Enhancement
-
-### PharmacyBillingCodeFlow.tsx (`src/components/billing/organisms/billing-codes/`)
-
-**Pharmacist side - Generate Code:**
-
-Step 1: Review selected drugs from prescription
-- Patient and prescription info
-- Drug list with prices
-- HMO co-pay calculation (10% for HMO patients)
-- Subtotal and patient liability
-
-Step 2: Code generated display
-- Large, bold 8-character code
-- Expiry date (3 days)
-- Print option for patient slip
-- Instructions for billing desk
-
-### CodePaymentProcessor.tsx
-
-**Cashier side - Process payment by code:**
-
-Step 1: Code entry
-- 8-character input field
-- Lookup button
-
-Step 2: Code found - show details
-- Patient info
-- Items and prices
-- HMO coverage if applicable
-- Patient pays amount (large, bold)
-- Payment method selection (Cash/POS/Transfer only)
-- Change calculator for cash
-
-Step 3: Payment success
-- Receipt number
-- Code marked as PAID
-- Patient can collect drugs
-- Print receipt option
+Individual queue entry card showing:
+- Patient name, MRN, photo
+- Source type badge (In-Patient/Out-Patient/Walk-In)
+- Payer status with color coding
+- PA Code if HMO
+- Diagnosis (ICD-10 code + description)
+- Prescriber name and level
+- Item count
+- Action buttons (View, Dispense)
 
 ---
 
-## Part 4: Service Pricing Management
+## Part 3: Multi-Tariff Dispensing Engine
 
-### ServicePricingTable.tsx (`src/components/billing/organisms/service-pricing/`)
+### DispensingWorkflow.tsx (`src/pages/pharmacy/DispensingWorkflow.tsx`)
 
-**Hospital Admin pricing management:**
+Multi-step dispensing workflow:
 
-Table with columns:
-- Service code
-- Service name
-- Category
-- Current price
-- Status (Approved/Pending/Rejected)
-- Actions menu
-
-Filters:
-- Category dropdown (All, Consultation, Lab, Pharmacy, Procedure)
-- Search
-- Status filter
-- Pagination
-
-Actions:
-- Add new service
-- Edit existing (price change)
-- Archive
-- View price history
-
-### AddServiceModal.tsx
-
-New service creation form:
-- Category selector (auto-prefixes code)
-- Service code input
-- Service name
-- Description
-- Standard price
-- HMO price (optional)
-- Taxable checkbox
-- Warning: "Requires CMO approval"
-
-### EditServiceModal.tsx
-
-Price change form:
-- Read-only service info
-- Current price display
-- New price input
-- Auto-calculated change percentage
-- Reason for change (required)
-- Submit for approval
-
----
-
-## Part 5: CMO Price Approval Queue
-
-### PriceApprovalQueue.tsx (`src/pages/settings/`)
-
-CMO approval interface:
-- List of pending price changes
-- Each card shows:
-  - Service name and category
-  - Price change (old arrow new with percentage)
-  - Requested by (name + role)
-  - Date and time
-  - Reason for change
-- Approve and Reject buttons
-
-### PriceApprovalModal.tsx
-
-Approve: Optional notes input
-Reject: Required rejection reason
-
-On approve: Update service price, notify admin
-On reject: Keep old price, notify admin with reason
-
----
-
-## Part 6: Emergency Override System
-
-### EmergencyOverrideModal.tsx (`src/components/billing/organisms/emergency-override/`)
-
-Emergency payment bypass (Doctor/CMO only):
-
-Form fields:
-- Patient info display
-- Warning message about audit logging
-- Reason for override (required, min 20 chars)
-- Override scope selection:
-  - Consultation only
-  - Consultation + Emergency
-  - Full visit (all services)
-- Confirmation checkbox
-- Authorizing staff name
-
-On authorize:
-- Create payment clearance with emergency status
-- Add patient to queue immediately
-- Create audit log entry
-- Flag patient profile with red banner
-- Track outstanding amount
-- Notify billing department
-
-### Patient Profile Emergency Banner
-
-When emergency override is active:
-- Red banner at top of profile
-- Shows outstanding amount
-- Authorized by name and date
-- Link to clear/pay
-
----
-
-## Part 7: Receipt Print Template
-
-### ReceiptPrintTemplate.tsx (`src/components/billing/templates/`)
-
-A5-sized (148x210mm) print-friendly receipt:
-
-Sections:
-- Clinic logo and header
-- Receipt number and date
-- Patient information
-- Services list with prices
-- Subtotal, tax, discount, total
-- Amount paid and change
-- Payment method and status
-- QR code for digital verification
-- Footer with thank you message
-
-CSS:
-- @media print styles
-- 80mm thermal printer option
-- "PAID" watermark
-- window.print() trigger
-
----
-
-## Part 8: Routes & Navigation
-
-### New Routes in `src/App.tsx`
-
+**Step 1: Verify Prescription**
 ```text
-// Cashier routes
-/billing/cashier          - Main cashier dashboard
-/billing/cashier/lab      - Lab station cashier
-/billing/cashier/pharmacy - Pharmacy station cashier
-/billing/shift-report     - Current shift report
-/billing/receipt/:id      - Receipt viewer
-
-// Hospital Admin routes
-/hospital-admin/settings/pricing - Service pricing management
-
-// CMO routes
-/cmo/approvals/pricing    - Price approval queue
++------------------------------------------+
+| VERIFY PRESCRIPTION                      |
++------------------------------------------+
+| Patient: Aisha Mohammed (PT-2026-00123)  |
+| Allergies: [⚠️ Penicillin]               |
+|                                          |
+| Prescriber: Dr. Chukwuemeka Nwosu        |
+| Diagnosis: J45.20 - Mild asthma          |
+| Justification: [Doctor's clinical notes] |
+|                                          |
+| ✓ Diagnosis attached                     |
+| ✓ Prescriber verified                    |
+| ✓ Payment status: CLEARED                |
++------------------------------------------+
 ```
 
-### Sidebar Updates
+**Step 2: Drug Selection & Substitution**
+```text
++------------------------------------------+
+| SELECT DRUGS                             |
++------------------------------------------+
+| 1. Ventolin Inhaler                      |
+|    Prescribed: Ventolin (Brand)          |
+|    ┌─────────────────────────────────┐   |
+|    │ ○ Ventolin (GlaxoSmithKline)   │   |
+|    │   ₦4,500 | Stock: 50           │   |
+|    │ ● Salbutamol Generic            │   | ← Auto-suggested
+|    │   ₦2,800 | Stock: 120          │   |
+|    │   [HMO Approved ✓]             │   |
+|    └─────────────────────────────────┘   |
+|    Selected: Salbutamol Generic          |
+|                                          |
+|    ⚠️ DRUG INTERACTION WARNING          |
+|    [Minor] with Propranolol              |
+|    [Acknowledge & Continue]              |
++------------------------------------------+
+```
 
-Add navigation items for:
-- Billing Officer: Cashier Dashboard link
-- Hospital Admin: Settings > Pricing
-- CMO: Approvals > Pricing
+**Step 3: Batch Selection (FEFO)**
+```text
++------------------------------------------+
+| SELECT BATCH (FEFO)                      |
++------------------------------------------+
+| Salbutamol Inhaler                       |
+| Qty Required: 1                          |
+|                                          |
+| Available Batches:                       |
+| ┌─────────────────────────────────────┐  |
+| │ ● Batch: SAL-2024-001              │  | ← First expiring
+| │   Expiry: 15 Mar 2026 (38 days)    │  |
+| │   Stock: 45 | Location: Shelf A1   │  |
+| ├─────────────────────────────────────┤  |
+| │ ○ Batch: SAL-2024-002              │  |
+| │   Expiry: 30 Jun 2026 (145 days)   │  |
+| │   Stock: 75 | Location: Shelf A1   │  |
+| └─────────────────────────────────────┘  |
+|                                          |
+| FEFO: First-Expiring-First-Out enforced  |
++------------------------------------------+
+```
+
+**Step 4: Partial Dispensing (if needed)**
+```text
++------------------------------------------+
+| PARTIAL DISPENSING                       |
++------------------------------------------+
+| Paracetamol 500mg                        |
+| Prescribed: 60 tablets                   |
+| Available: 25 tablets                    |
+|                                          |
+| Dispense: [25] of 60                     |
+|                                          |
+| ⚠️ Partial fill - 35 tablets outstanding|
+| Patient will need to return              |
+|                                          |
+| [Create Outstanding Balance Record]      |
++------------------------------------------+
+```
+
+**Step 5: Auto-Label & Finalize**
+```text
++------------------------------------------+
+| FINALIZE DISPENSING                      |
++------------------------------------------+
+| ┌─────────────────────────────────────┐  |
+| │ LABEL PREVIEW                       │  |
+| │ ─────────────────────────────────── │  |
+| │ Salbutamol Inhaler 100mcg          │  |
+| │ Patient: Aisha Mohammed            │  |
+| │ Dose: 2 puffs when needed          │  |
+| │ Max: 8 puffs in 24 hours           │  |
+| │ Batch: SAL-2024-001                │  |
+| │ Exp: 15-Mar-2026                   │  |
+| └─────────────────────────────────────┘  |
+|                                          |
+| [Print Labels] [Complete Dispensing]     |
++------------------------------------------+
+```
+
+### Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `DrugSelector.tsx` | Drug search with brand/generic alternatives |
+| `GenericSubstitutionEngine.tsx` | Suggest in-stock generics for prescribed brands |
+| `BatchSelector.tsx` | FEFO-enforced batch selection |
+| `PartialDispensingModal.tsx` | Handle partial fills with outstanding tracking |
+| `DrugLabelGenerator.tsx` | Auto-generate labels from dosage instructions |
+| `DrugInteractionAlert.tsx` | Display drug-drug interaction warnings |
+| `AllergyWarningBanner.tsx` | Red banner for allergy conflicts |
 
 ---
 
-## Part 9: Mock Data for Testing
+## Part 4: Inventory Fortress (Anti-Theft Core)
 
-### Ensure Searchable Patients
+### DrugInventoryPage.tsx (`src/pages/pharmacy/DrugInventoryPage.tsx`)
 
-Update mock data to ensure patient searches return results:
-- Add more diverse names that match common search terms
-- Include patients with pending bills for queue testing
-- Add patients with billing codes for code lookup testing
+Comprehensive inventory management with anti-theft controls:
 
-### Sample Billing Codes
+**Features:**
+- Batch + Expiry tracking for all drugs
+- FEFO enforcement (cannot dispense newer batch if older exists)
+- Real-time stock sync (dispense = immediate deduction)
+- No manual override for stock adjustments (requires approval)
+- Expiry alerts (30, 60, 90 days)
+- Low stock alerts
+- Location tracking (Shelf A1, Pharmacy Store B, etc.)
 
-Pre-populate bills with codes:
-- `PH3K7M2Q` - Pharmacy, pending
-- `LB7K2M4P` - Lab, pending
-- `PH5N8R3T` - Pharmacy, paid
+### StockRequisitionFlow.tsx (`src/pages/pharmacy/StockRequisitionFlow.tsx`)
+
+Internal requisition from Pharmacy to Main Store:
+
+```text
++------------------------------------------+
+| NEW REQUISITION                          |
++------------------------------------------+
+| Requesting: Pharmacy                     |
+| From: Main Store                         |
+|                                          |
+| Items:                                   |
+| + Paracetamol 500mg    | Qty: 500       |
+| + Amoxicillin 500mg    | Qty: 200       |
+| + Metformin 500mg      | Qty: 300       |
+|                                          |
+| Reason: Low stock replenishment          |
+|                                          |
+| [Submit Request]                         |
++------------------------------------------+
+| APPROVAL WORKFLOW                        |
+| 1. Pharmacist submits                    |
+| 2. Storekeeper reviews & approves        |
+| 3. Pharmacist acknowledges receipt       |
+| Both digital signatures required         |
++------------------------------------------+
+```
+
+### ShrinkageLogPage.tsx (`src/pages/pharmacy/ShrinkageLogPage.tsx`)
+
+Mandatory logging for stock discrepancies:
+
+```text
++------------------------------------------+
+| LOG SHRINKAGE / DAMAGE                   |
++------------------------------------------+
+| Type: [Expired] [Damaged] [Missing]      |
+|                                          |
+| Drug: Amoxicillin 500mg                  |
+| Batch: AMX-2024-003                      |
+| Quantity Affected: [___]                 |
+| Reason: [________________________]       |
+|                                          |
+| Evidence Photo: [Upload]                 |
+|                                          |
+| ⚠️ Admin approval required for write-off |
+|                                          |
+| [Submit for Approval]                    |
++------------------------------------------+
+```
+
+### Theft Detection Alerts
+
+System flags for review:
+- Cancelled bills with "Returned to Stock"
+- Repeated reversals by same staff
+- Stock count vs system mismatch
+- Unusual dispensing patterns
+
+---
+
+## Part 5: Clinical Safety & Evidence Layer
+
+### Clinical Safety Components
+
+**PatientContextBar.tsx** (Sticky header during dispensing):
+```text
++--------------------------------------------------+
+| 👤 Aisha Mohammed | PT-2026-00123 | 39F          |
+| [🔴 Allergies: Penicillin, Sulfa]                |
+| [🟡 Conditions: Hypertension, Asthma]            |
+| Current Meds: Lisinopril 10mg, Amlodipine 5mg    |
++--------------------------------------------------+
+```
+
+**DrugInteractionChecker.tsx**:
+- Checks prescribed drugs against:
+  - Current medications
+  - Other prescribed items in same prescription
+- Severity levels: Minor, Moderate, Severe
+- Severe interactions require "Prescribe Anyway" confirmation
+
+**AllergyBlocker.tsx**:
+- Hard block on drugs containing allergens
+- Cannot proceed without override by prescriber
+
+### Chain of Evidence
+
+Pharmacist can view (read-only):
+- Diagnosis (ICD-10) from consultation
+- Prescriber details and credentials
+- Clinical justification written by doctor
+- All attached to dispensing record for HMO audit
+
+---
+
+## Part 6: HMO Justification & Policy Enforcement
+
+### HMO Rules Engine
+
+**Prescriber Level Validation:**
+```text
+Drug: Specialist Antibiotic XYZ
+Rule: Consultant-only authorization required
+
+Prescribed by: Dr. Adeyemi (GP)
+Status: ❌ BLOCKED
+
+Options:
+[Escalate to Consultant] [Request Override]
+```
+
+**Clinical Justification Display:**
+```text
++------------------------------------------+
+| HMO JUSTIFICATION                        |
++------------------------------------------+
+| Drug: Expensive Brand Medication         |
+|                                          |
+| Doctor's Justification:                  |
+| "Patient has documented intolerance to   |
+| generic alternatives. Brand medication   |
+| required for therapeutic efficacy."      |
+|                                          |
+| ✓ Attached to claim for HMO review       |
++------------------------------------------+
+```
+
+### PACodeVerifier.tsx
+
+Verify Pre-Authorization codes for HMO drugs:
+- Check PA code validity
+- Verify covered amount
+- Flag expired/invalid codes
+
+---
+
+## Part 7: Walk-In Retail Flow (POS Mode)
+
+### RetailPOSPage.tsx (`src/pages/pharmacy/RetailPOSPage.tsx`)
+
+Direct retail sales without clinical workflow:
+
+```text
++--------------------------------------------------+
+| RETAIL POS                      [New Sale]       |
++--------------------------------------------------+
+| Scan Barcode: [____________________] 📷          |
+|                                                  |
+| CART                                             |
+| ┌──────────────────────────────────────────────┐ |
+| │ Multivitamin (120 caps)        ₦3,500   x1  │ |
+| │ Hand Sanitizer 500ml           ₦1,200   x2  │ |
+| │ Baby Wipes (80 sheets)         ₦1,800   x1  │ |
+| └──────────────────────────────────────────────┘ |
+|                                                  |
+| Subtotal:                            ₦7,700     |
+| VAT (7.5%):                            ₦578     |
+| ─────────────────────────────────────────────── |
+| TOTAL:                               ₦8,278     |
+|                                                  |
+| Payment: [Cash] [POS] [Transfer]                 |
+|                                                  |
+| [Cancel Sale]              [Complete Sale]       |
++--------------------------------------------------+
+```
+
+**Features:**
+- Barcode scanning (camera or manual entry)
+- No manual price entry (prevents fraud)
+- VAT auto-applied to applicable items
+- Bundle/kit support (e.g., Maternity Kit)
+- Separate inventory from clinical stock
+- Walk-in customers (no patient registration required)
+
+### RetailInventoryPage.tsx
+
+Separate catalog for retail items:
+- OTC medications
+- Cosmetics
+- Supplements
+- Baby care
+- First aid supplies
+
+---
+
+## Part 8: One-Receipt Experience
+
+### UnifiedReceipt.tsx (`src/components/pharmacy/UnifiedReceipt.tsx`)
+
+Single receipt with clear sections:
+
+```text
++------------------------------------------+
+|        LIFECARE MEDICAL CENTRE           |
+|        Pharmacy Receipt                   |
++------------------------------------------+
+| Receipt: RX-2026-00123                   |
+| Date: 04 Feb 2026, 2:45 PM              |
+| Patient: Aisha Mohammed                  |
+| MRN: PT-2026-00123                      |
++------------------------------------------+
+| HMO COVERED ITEMS (Hygeia HMO)           |
+| PA Code: PA-2026-XXXX                   |
+|------------------------------------------|
+| Salbutamol Inhaler        ₦2,800        |
+| Montelukast 10mg x30      ₦4,500        |
+| ---------------------------------------- |
+| HMO Covers (90%):        -₦6,570        |
+| Patient Co-pay (10%):     ₦730          |
++------------------------------------------+
+| PRIVATE / NON-COVERED ITEMS              |
+|------------------------------------------|
+| Vitamin C 1000mg x30      ₦2,500        |
+| ---------------------------------------- |
+| Subtotal:                 ₦2,500        |
++------------------------------------------+
+| TOTAL PATIENT PAYS:       ₦3,230        |
++------------------------------------------+
+| Dispensed by: Pharm. Blessing Okafor     |
++------------------------------------------+
+```
+
+---
+
+## Part 9: Pharmacy Admin & Intelligence Reports
+
+### PharmacyReportsPage.tsx (`src/pages/pharmacy/PharmacyReportsPage.tsx`)
+
+**Report Types:**
+
+| Report | Content |
+|--------|---------|
+| Fast/Slow Movers | Drug turnover analysis |
+| Expiry Risk | Items expiring in 30/60/90 days |
+| Revenue vs Cost | Margin analysis per drug |
+| HMO Margin | Revenue after HMO discounts |
+| Theft Detection | Flagged suspicious activities |
+| Stock Reconciliation | System vs physical count |
+| Prescription Analysis | Top prescribers, common drugs |
+| Outstanding Balances | Partial dispenses pending |
+
+### Dashboard Widgets
+
+```text
++------------------------------------------+
+| PHARMACY INTELLIGENCE                    |
++------------------------------------------+
+| ┌──────────┬──────────┬──────────┐       |
+| │ Revenue  │ Margin   │ HMO Rec. │       |
+| │ ₦2.5M    │ 32%      │ ₦890K    │       |
+| │ This Week│          │ Pending  │       |
+| └──────────┴──────────┴──────────┘       |
+|                                          |
+| ⚠️ 3 items expiring in 30 days          |
+| ⚠️ 5 items below reorder level          |
+| 🔴 2 flagged reversals for review       |
++------------------------------------------+
+```
 
 ---
 
 ## Part 10: File Structure Summary
 
-### New Files (16)
+### New Files (28+)
 
+**Types:**
 | File | Purpose |
 |------|---------|
-| `src/types/cashier.types.ts` | Shift and transaction types |
-| `src/data/service-pricing.ts` | Service catalog data |
-| `src/data/cashier-shifts.ts` | Shift mock data |
-| `src/components/billing/organisms/cashier-station/CashierDashboard.tsx` | Main cashier UI |
-| `src/components/billing/organisms/cashier-station/TransactionHistory.tsx` | Transaction table |
-| `src/components/billing/organisms/cashier-station/CashierShiftReport.tsx` | Shift report modal |
-| `src/components/billing/organisms/billing-codes/PharmacyBillingCodeFlow.tsx` | Code generation |
-| `src/components/billing/organisms/billing-codes/CodePaymentProcessor.tsx` | Code payment |
-| `src/components/billing/organisms/billing-codes/index.ts` | Barrel export |
-| `src/components/billing/organisms/service-pricing/ServicePricingTable.tsx` | Pricing table |
-| `src/components/billing/organisms/service-pricing/AddServiceModal.tsx` | Add service |
-| `src/components/billing/organisms/service-pricing/EditServiceModal.tsx` | Edit price |
-| `src/components/billing/organisms/service-pricing/PriceApprovalQueue.tsx` | CMO approvals |
-| `src/components/billing/organisms/service-pricing/index.ts` | Barrel export |
-| `src/components/billing/organisms/emergency-override/EmergencyOverrideModal.tsx` | Override modal |
-| `src/components/billing/templates/ReceiptPrintTemplate.tsx` | A5 receipt |
+| `src/types/pharmacy.types.ts` | All pharmacy-specific types |
 
-### New Pages (3)
-
+**Data:**
 | File | Purpose |
 |------|---------|
-| `src/pages/billing/CashierDashboardPage.tsx` | Cashier dashboard page |
-| `src/pages/billing/ServicePricingPage.tsx` | Admin pricing page |
-| `src/pages/billing/PriceApprovalPage.tsx` | CMO approval page |
+| `src/data/drug-formulary.ts` | Drug catalog with generics/brands |
+| `src/data/drug-batches.ts` | Batch tracking data |
+| `src/data/drug-interactions.ts` | Interaction database |
+| `src/data/retail-catalog.ts` | Retail items |
+| `src/data/requisitions.ts` | Stock requisitions |
 
-### Modified Files (8)
+**Pages:**
+| File | Purpose |
+|------|---------|
+| `src/pages/pharmacy/PrescriptionQueuePage.tsx` | Main queue |
+| `src/pages/pharmacy/DispensingWorkflow.tsx` | Multi-step dispense |
+| `src/pages/pharmacy/DrugInventoryPage.tsx` | Inventory management |
+| `src/pages/pharmacy/StockRequisitionFlow.tsx` | Internal requisitions |
+| `src/pages/pharmacy/ShrinkageLogPage.tsx` | Damage/loss logging |
+| `src/pages/pharmacy/RetailPOSPage.tsx` | Walk-in retail |
+| `src/pages/pharmacy/RetailInventoryPage.tsx` | Retail stock |
+| `src/pages/pharmacy/PharmacyReportsPage.tsx` | Intelligence reports |
+
+**Components:**
+| File | Purpose |
+|------|---------|
+| `src/components/pharmacy/PrescriptionQueueCard.tsx` | Queue entry card |
+| `src/components/pharmacy/DrugSelector.tsx` | Drug search |
+| `src/components/pharmacy/GenericSubstitutionEngine.tsx` | Generic suggestions |
+| `src/components/pharmacy/BatchSelector.tsx` | FEFO batch picker |
+| `src/components/pharmacy/PartialDispensingModal.tsx` | Partial fills |
+| `src/components/pharmacy/DrugLabelGenerator.tsx` | Label printing |
+| `src/components/pharmacy/DrugInteractionAlert.tsx` | Interaction warnings |
+| `src/components/pharmacy/AllergyWarningBanner.tsx` | Allergy blocks |
+| `src/components/pharmacy/PACodeVerifier.tsx` | HMO PA verification |
+| `src/components/pharmacy/UnifiedReceipt.tsx` | Combined receipt |
+| `src/components/pharmacy/RetailCartItem.tsx` | POS cart item |
+| `src/components/pharmacy/BarcodeScanner.tsx` | Camera barcode scan |
+| `src/components/pharmacy/ShrinkageForm.tsx` | Loss logging form |
+| `src/components/pharmacy/RequisitionCard.tsx` | Requisition display |
+
+### Modified Files
 
 | File | Changes |
 |------|---------|
-| `src/types/billing.types.ts` | Add new types |
-| `src/data/bills.ts` | Ensure billing codes work |
-| `src/data/patients.ts` | Add searchable test patients |
-| `src/App.tsx` | Add new routes |
-| `src/components/layout/AppSidebar.tsx` | Add nav items |
-| `src/pages/pharmacy/PharmacyBillingPage.tsx` | Integrate code flow |
-| `src/pages/lab/LabBillingPage.tsx` | Integrate code flow |
-| `src/components/billing/organisms/index.ts` | Export new organisms |
+| `src/pages/dashboards/PharmacistDashboard.tsx` | Remove "Coming Soon", add live queue |
+| `src/data/prescriptions.ts` | Add diagnosis, payment status fields |
+| `src/data/inventory.ts` | Add batch tracking, FEFO logic |
+| `src/App.tsx` | Add new pharmacy routes |
+| `src/components/layout/AppSidebar.tsx` | Add pharmacy navigation items |
+| `src/types/clinical.types.ts` | Extend Prescription interface |
 
 ---
 
-## Part 11: Implementation Order
+## Part 11: Routes & Navigation
 
-1. **Types & Data Layer**
-   - Add new types to billing.types.ts
-   - Create service-pricing.ts data
-   - Create cashier-shifts.ts data
+### New Routes in `src/App.tsx`
 
-2. **Cashier Dashboard**
-   - CashierDashboard component
-   - TransactionHistory component
-   - CashierShiftReport modal
-   - Shift management hook
+```text
+// Pharmacist Routes
+/pharmacist/queue              - Prescription queue
+/pharmacist/dispense/:rxId     - Dispensing workflow
+/pharmacist/inventory          - Drug inventory
+/pharmacist/inventory/batches  - Batch management
+/pharmacist/requisitions       - Stock requisitions
+/pharmacist/shrinkage          - Shrinkage logging
+/pharmacist/retail             - Retail POS
+/pharmacist/retail/inventory   - Retail stock
+/pharmacist/reports            - Intelligence reports
+/pharmacist/billing            - (existing) Pharmacy billing
+```
 
-3. **Billing Code Enhancement**
-   - PharmacyBillingCodeFlow component
-   - CodePaymentProcessor component
-   - Update pharmacy/lab pages
+### Sidebar Navigation Updates
 
-4. **Service Pricing**
-   - ServicePricingTable component
-   - AddServiceModal component
-   - EditServiceModal component
-   - ServicePricingPage
+```text
+Pharmacist Menu:
+├── Dashboard
+├── Prescription Queue ← NEW
+├── Dispensing Log
+├── Inventory
+│   ├── Drug Stock
+│   ├── Batch Tracking
+│   └── Requisitions
+├── Retail POS ← NEW
+├── Shrinkage Log ← NEW
+├── Reports ← NEW
+└── Billing
+```
 
-5. **Price Approval**
-   - PriceApprovalQueue component
-   - PriceApprovalPage
-   - CMO sidebar link
+---
 
-6. **Emergency Override**
-   - EmergencyOverrideModal component
-   - Patient profile banner
-   - Integration with queue
+## Part 12: Implementation Order
 
-7. **Receipt Template**
-   - ReceiptPrintTemplate for A5
-   - Print CSS styles
+1. **Phase 1: Types & Data Layer**
+   - Create pharmacy.types.ts
+   - Create drug-formulary.ts with Nigerian essential drugs
+   - Create drug-batches.ts with FEFO logic
+   - Create drug-interactions.ts
 
-8. **Routes & Navigation**
-   - Add all new routes
+2. **Phase 2: Prescription Queue**
+   - PrescriptionQueuePage
+   - PrescriptionQueueCard
+   - Payment status indicators
+   - PA code verification
+
+3. **Phase 3: Dispensing Workflow**
+   - DrugSelector with brand/generic
+   - GenericSubstitutionEngine
+   - BatchSelector with FEFO
+   - PartialDispensingModal
+   - DrugLabelGenerator
+
+4. **Phase 4: Clinical Safety**
+   - DrugInteractionAlert
+   - AllergyWarningBanner
+   - PatientContextBar enhancement
+   - Chain of evidence display
+
+5. **Phase 5: Inventory Fortress**
+   - DrugInventoryPage
+   - BatchManagement
+   - StockRequisitionFlow
+   - ShrinkageLogPage
+   - Dual signature workflow
+
+6. **Phase 6: Retail POS**
+   - RetailPOSPage
+   - BarcodeScanner
+   - RetailInventoryPage
+   - VAT calculation
+
+7. **Phase 7: Receipts & Reports**
+   - UnifiedReceipt
+   - PharmacyReportsPage
+   - Dashboard widgets
+
+8. **Phase 8: Dashboard & Navigation**
+   - Update PharmacistDashboard
+   - Add routes to App.tsx
    - Update sidebar navigation
 
 ---
 
-## Part 12: Testing Scenarios
+## Part 13: Workflow Guardrails Summary
 
-| Test | Expected |
-|------|----------|
-| Search "Aisha" in cashier | Finds Aisha Mohammed |
-| Generate billing code | 8-char alphanumeric shown |
-| Lookup code PH3K7M2Q | Finds pharmacy bill |
-| Add new service as Admin | Creates pending approval |
-| CMO approves price | Price updated, status approved |
-| CMO rejects price | Original price kept, reason shown |
-| Emergency override as Doctor | Patient added to queue, audit logged |
-| Print receipt | A5 format opens in print dialog |
-| End shift | Report shows variance calculation |
+| Step | Action | Non-Negotiable Rule |
+|------|--------|---------------------|
+| 1 | View Prescription | Diagnosis (ICD-10) must exist |
+| 2 | Verify Payer | No payment/PA → No dispense button |
+| 3 | Check Safety | Drug interactions + allergies acknowledged |
+| 4 | Pick Stock | FEFO batch enforced (cannot skip) |
+| 5 | Label | Auto-generated from dosage |
+| 6 | Finalize | Stock deducts instantly + audit logged |
 
 ---
 
-## Part 13: Integration Points
+## Part 14: Testing Scenarios
 
-### Queue Integration
-
-After payment collected:
-- Update queue entry paymentStatus to 'cleared'
-- Add paymentClearanceId and timestamp
-- If station-specific, add to next queue (lab/pharmacy)
-
-### Notification Integration
-
-- Notify billing when emergency override used
-- Notify admin when price approved/rejected
-- Notify pharmacist when billing code is paid
+| Test | Expected Result |
+|------|-----------------|
+| Prescription without diagnosis | Cannot enter queue |
+| Private patient, unpaid | Dispense button disabled |
+| HMO patient, no PA code | Dispense disabled unless auto-approved |
+| Drug with allergy | Hard block, cannot proceed |
+| Severe drug interaction | Must acknowledge before continue |
+| Select non-FEFO batch | System prevents selection |
+| Partial dispense | Outstanding balance created |
+| Retail barcode scan | Item added to cart instantly |
+| Manual price entry retail | Not possible (no input field) |
+| Stock requisition | Requires dual signatures |
+| Shrinkage logging | Admin approval required |
 
 ---
 
-## Technical Notes
+## Part 15: Security & Audit Considerations
 
-- Use existing PaymentCollectionForm for payment flows
-- Leverage QueueContext for queue updates
-- Use existing receipt molecules (ReceiptHeader, ReceiptItemList, etc.)
-- Currency formatting: ₦ with Intl.NumberFormat('en-NG')
-- Billing codes: 8-char alphanumeric, uppercase, no ambiguous chars (0/O, 1/I/l)
-- Code expiry: 3 days from generation
+**Audit Trail Captures:**
+- Every dispensing transaction
+- Stock movements (in/out)
+- Requisition approvals
+- Shrinkage write-offs
+- Reversed/cancelled dispenses
+- Price changes
+- User who performed each action
+- Timestamp for all events
+
+**Theft Prevention:**
+- No manual stock adjustments
+- FEFO cannot be bypassed
+- Reversed dispenses flagged
+- Physical count vs system reconciliation
+- Barcode-only retail (no manual prices)

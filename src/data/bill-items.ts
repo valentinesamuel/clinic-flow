@@ -9,6 +9,9 @@ export interface ServiceItem {
   defaultPrice: number;
   isActive: boolean;
   description?: string;
+  isPremium?: boolean;
+  isRestricted?: boolean;
+  restrictionReason?: string;
 }
 
 export const CONSULTATION_ITEMS: ServiceItem[] = [
@@ -37,10 +40,10 @@ export const LAB_ITEMS: ServiceItem[] = [
   { id: 'lab-014', name: 'Blood Group & Genotype', category: 'lab', defaultPrice: 4000, isActive: true },
   { id: 'lab-015', name: 'X-Ray - Chest', category: 'lab', defaultPrice: 10000, isActive: true },
   { id: 'lab-016', name: 'X-Ray - Limbs', category: 'lab', defaultPrice: 12000, isActive: true },
-  { id: 'lab-017', name: 'Ultrasound - Abdominal', category: 'lab', defaultPrice: 15000, isActive: true },
-  { id: 'lab-018', name: 'Ultrasound - Pelvic', category: 'lab', defaultPrice: 15000, isActive: true },
+  { id: 'lab-017', name: 'Ultrasound - Abdominal', category: 'lab', defaultPrice: 15000, isActive: true, isPremium: true },
+  { id: 'lab-018', name: 'Ultrasound - Pelvic', category: 'lab', defaultPrice: 15000, isActive: true, isPremium: true },
   { id: 'lab-019', name: 'ECG', category: 'lab', defaultPrice: 8000, isActive: true },
-  { id: 'lab-020', name: 'Echocardiography', category: 'lab', defaultPrice: 25000, isActive: true },
+  { id: 'lab-020', name: 'Echocardiography', category: 'lab', defaultPrice: 25000, isActive: true, isPremium: true },
 ];
 
 export const PHARMACY_ITEMS: ServiceItem[] = [
@@ -58,7 +61,7 @@ export const PHARMACY_ITEMS: ServiceItem[] = [
   { id: 'pha-012', name: 'Artemether/Lumefantrine', category: 'pharmacy', defaultPrice: 3500, isActive: true },
   { id: 'pha-013', name: 'Diclofenac 50mg x 20', category: 'pharmacy', defaultPrice: 1500, isActive: true },
   { id: 'pha-014', name: 'Ventolin Inhaler', category: 'pharmacy', defaultPrice: 4500, isActive: true },
-  { id: 'pha-015', name: 'Insulin Mixtard', category: 'pharmacy', defaultPrice: 8000, isActive: true },
+  { id: 'pha-015', name: 'Insulin Mixtard', category: 'pharmacy', defaultPrice: 8000, isActive: true, isRestricted: true, restrictionReason: 'Requires confirmed diabetes diagnosis and HbA1c result' },
 ];
 
 export const PROCEDURE_ITEMS: ServiceItem[] = [

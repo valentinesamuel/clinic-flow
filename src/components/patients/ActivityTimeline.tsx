@@ -2,17 +2,20 @@ import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Stethoscope, 
-  Pill, 
-  FlaskConical, 
-  Receipt, 
+import {
+  Stethoscope,
+  Pill,
+  FlaskConical,
+  Receipt,
   Activity,
-  Calendar,
   Clock,
-  ArrowRight
+  ArrowRight,
+  CheckCircle,
+  Edit,
+  Save,
+  Package,
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 // Import mock data
@@ -22,8 +25,9 @@ import { mockPrescriptions } from '@/data/prescriptions';
 import { mockLabOrders } from '@/data/lab-orders';
 import { mockBills } from '@/data/bills';
 import { mockStaff } from '@/data/staff';
+import { getAuditLogByPatient, AuditAction } from '@/data/audit-log';
 
-type ActivityType = 'consultation' | 'vitals' | 'prescription' | 'lab' | 'payment';
+type ActivityType = 'consultation' | 'vitals' | 'prescription' | 'lab' | 'payment' | 'audit';
 
 interface ActivityItem {
   id: string;
@@ -42,11 +46,42 @@ interface ActivityTimelineProps {
   onActivityClick?: (type: ActivityType, id: string) => void;
 }
 
-export function ActivityTimeline({ 
-  patientId, 
-  limit = 5, 
+// Only surface high-level audit events in the timeline
+const TIMELINE_AUDIT_ACTIONS: AuditAction[] = [
+  'consultation_started',
+  'consultation_saved_draft',
+  'consultation_finalized',
+  'consultation_amended',
+  'bundle_applied',
+];
+
+function getAuditTitle(action: AuditAction): string {
+  switch (action) {
+    case 'consultation_started': return 'Consultation Started';
+    case 'consultation_finalized': return 'Consultation Finalized';
+    case 'consultation_amended': return 'Consultation Amended';
+    case 'consultation_saved_draft': return 'Draft Saved';
+    case 'bundle_applied': return 'Bundle Applied';
+    default: return action;
+  }
+}
+
+function getAuditIcon(action: AuditAction): React.ReactNode {
+  switch (action) {
+    case 'consultation_started': return <Stethoscope className="h-4 w-4" />;
+    case 'consultation_finalized': return <CheckCircle className="h-4 w-4" />;
+    case 'consultation_amended': return <Edit className="h-4 w-4" />;
+    case 'consultation_saved_draft': return <Save className="h-4 w-4" />;
+    case 'bundle_applied': return <Package className="h-4 w-4" />;
+    default: return <Activity className="h-4 w-4" />;
+  }
+}
+
+export function ActivityTimeline({
+  patientId,
+  limit = 5,
   onViewAll,
-  onActivityClick 
+  onActivityClick
 }: ActivityTimelineProps) {
   const activities = useMemo(() => {
     const items: ActivityItem[] = [];
@@ -98,7 +133,7 @@ export function ActivityTimeline({
     // Lab Orders
     const labOrders = mockLabOrders.filter(l => l.patientId === patientId);
     labOrders.forEach(l => {
-      const statusText = l.status === 'completed' ? 'Lab Results Ready' : 
+      const statusText = l.status === 'completed' ? 'Lab Results Ready' :
         l.status === 'sample_collected' ? 'Sample Collected' : 'Lab Ordered';
       items.push({
         id: l.id,
@@ -125,6 +160,22 @@ export function ActivityTimeline({
       }
     });
 
+    // Audit log entries (only high-level events)
+    const auditEntries = getAuditLogByPatient(patientId);
+    auditEntries
+      .filter(entry => TIMELINE_AUDIT_ACTIONS.includes(entry.action))
+      .forEach(entry => {
+        items.push({
+          id: entry.id,
+          type: 'audit',
+          title: getAuditTitle(entry.action),
+          description: entry.performedByName,
+          timestamp: new Date(entry.timestamp),
+          icon: getAuditIcon(entry.action),
+          meta: entry.performedByName,
+        });
+      });
+
     // Sort by timestamp descending and limit
     return items
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
@@ -138,6 +189,7 @@ export function ActivityTimeline({
       case 'prescription': return 'bg-purple-500';
       case 'lab': return 'bg-orange-500';
       case 'payment': return 'bg-emerald-500';
+      case 'audit': return 'bg-slate-500';
       default: return 'bg-primary';
     }
   };
@@ -183,7 +235,7 @@ export function ActivityTimeline({
 
           <div className="space-y-4">
             {activities.map((activity, index) => (
-              <div 
+              <div
                 key={`${activity.type}-${activity.id}`}
                 className={cn(
                   "relative pl-6 cursor-pointer group",

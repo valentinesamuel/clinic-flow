@@ -137,12 +137,8 @@ export default function DoctorQueuePage() {
     if (selectedEntry && selectedPatient) {
       if (selectedEntry.status === 'waiting') {
         handleStart(selectedEntry);
-      } else {
-        toast({
-          title: 'Starting Consultation',
-          description: 'Consultation feature will be implemented in the next module.',
-        });
       }
+      navigate(`/doctor/consultation?patientId=${selectedPatient.id}&queueEntryId=${selectedEntry.id}`);
     }
   };
 

@@ -121,5 +121,15 @@ export const getUrgentLabOrders = (): LabOrder[] =>
 export const getLabOrdersByPatient = (patientId: string): LabOrder[] => 
   mockLabOrders.filter(o => o.patientId === patientId);
 
-export const getLabResultsForReview = (): LabOrder[] => 
+export const getLabResultsForReview = (): LabOrder[] =>
   mockLabOrders.filter(o => o.status === 'completed' && o.tests.some(t => t.isAbnormal));
+
+export const createLabOrder = (data: Omit<LabOrder, 'id' | 'orderedAt'>): LabOrder => {
+  const labOrder: LabOrder = {
+    ...data,
+    id: `lab-${String(mockLabOrders.length + 1).padStart(3, '0')}`,
+    orderedAt: new Date().toISOString(),
+  };
+  mockLabOrders.push(labOrder);
+  return labOrder;
+};

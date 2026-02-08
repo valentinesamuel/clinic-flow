@@ -38,6 +38,8 @@ import PriceApprovalPage from "./pages/billing/PriceApprovalPage";
 import PharmacyBillingPage from "./pages/pharmacy/PharmacyBillingPage";
 import LabBillingPage from "./pages/lab/LabBillingPage";
 import CashierCombinedDashboard from "./pages/dashboards/CashierCombinedDashboard";
+import ConsultationPage from "./pages/consultation/ConsultationPage";
+import ConsultationViewPage from "./pages/consultation/ConsultationViewPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -158,6 +160,10 @@ const App = () => (
                       element={<TriageQueuePage />}
                     />
                     <Route
+                      path="/clinical-lead/consultations/:id"
+                      element={<ConsultationViewPage />}
+                    />
+                    <Route
                       path="/clinical-lead/*"
                       element={<ClinicalLeadDashboard />}
                     />
@@ -215,6 +221,18 @@ const App = () => (
                       element={<PatientEditPage />}
                     />
                     <Route path="/doctor/queue" element={<DoctorQueuePage />} />
+                    <Route
+                      path="/doctor/consultation"
+                      element={<ConsultationPage />}
+                    />
+                    <Route
+                      path="/doctor/consultation/new"
+                      element={<ConsultationPage />}
+                    />
+                    <Route
+                      path="/doctor/consultations/:id"
+                      element={<ConsultationViewPage />}
+                    />
                     <Route
                       path="/doctor/appointments"
                       element={<AppointmentListPage />}

@@ -32,7 +32,12 @@ export function useDashboardActions(role: UserRole) {
     viewAppointments: () => navigate(`${basePath}/appointments`),
     
     // Doctor-specific actions
-    startConsultation: () => navigate(`${basePath}/queue`),
+    startConsultation: () => navigate(`${basePath}/consultation/new`),
+    openConsultation: (patientId: string, queueEntryId?: string) => {
+      const params = new URLSearchParams({ patientId });
+      if (queueEntryId) params.set('queueEntryId', queueEntryId);
+      navigate(`${basePath}/consultation?${params.toString()}`);
+    },
     viewQueue: () => {
       if (role === 'nurse') {
         navigate('/nurse/triage');

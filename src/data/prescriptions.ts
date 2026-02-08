@@ -168,3 +168,13 @@ export const getTodaysPrescriptions = (): Prescription[] => {
   const today = new Date().toISOString().split('T')[0];
   return mockPrescriptions.filter(p => p.prescribedAt.startsWith(today));
 };
+
+export const createPrescription = (data: Omit<Prescription, 'id' | 'prescribedAt'>): Prescription => {
+  const prescription: Prescription = {
+    ...data,
+    id: `rx-${String(mockPrescriptions.length + 1).padStart(3, '0')}`,
+    prescribedAt: new Date().toISOString(),
+  };
+  mockPrescriptions.push(prescription);
+  return prescription;
+};

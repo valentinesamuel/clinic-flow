@@ -1,6 +1,7 @@
 // Mock Consultations Data
 
 import { Consultation } from '@/types/clinical.types';
+import { AmendmentReason, ConsultationFormData } from '@/types/consultation.types';
 
 export const mockConsultations: Consultation[] = [
   {
@@ -17,8 +18,11 @@ export const mockConsultations: Consultation[] = [
     prescriptionId: 'rx-001',
     labOrderIds: ['lab-001'],
     followUpDate: '2024-03-01',
+    status: 'finalized',
     createdAt: '2024-02-01T10:00:00Z',
     updatedAt: '2024-02-01T10:00:00Z',
+    versions: [],
+    currentVersion: 1,
   },
   {
     id: 'con-002',
@@ -33,8 +37,11 @@ export const mockConsultations: Consultation[] = [
     treatmentPlan: 'Order fasting blood glucose and HbA1c. Diet and exercise counseling provided. Weight loss goal: 5kg over 6 months.',
     labOrderIds: ['lab-002'],
     followUpDate: '2024-01-20',
+    status: 'finalized',
     createdAt: '2024-01-05T11:30:00Z',
     updatedAt: '2024-01-05T11:30:00Z',
+    versions: [],
+    currentVersion: 1,
   },
   {
     id: 'con-003',
@@ -50,8 +57,11 @@ export const mockConsultations: Consultation[] = [
     prescriptionId: 'rx-002',
     labOrderIds: ['lab-003'],
     followUpDate: '2024-02-28',
+    status: 'finalized',
     createdAt: '2024-01-28T14:00:00Z',
     updatedAt: '2024-01-28T14:00:00Z',
+    versions: [],
+    currentVersion: 1,
   },
   {
     id: 'con-004',
@@ -66,8 +76,11 @@ export const mockConsultations: Consultation[] = [
     treatmentPlan: 'Symptomatic treatment. Paracetamol PRN for throat pain. Increase fluid intake. Return if symptoms worsen or fever develops.',
     prescriptionId: 'rx-003',
     labOrderIds: [],
+    status: 'finalized',
     createdAt: '2024-02-01T14:30:00Z',
     updatedAt: '2024-02-01T14:30:00Z',
+    versions: [],
+    currentVersion: 1,
   },
   {
     id: 'con-005',
@@ -83,8 +96,11 @@ export const mockConsultations: Consultation[] = [
     prescriptionId: 'rx-004',
     labOrderIds: ['lab-004'],
     followUpDate: '2024-02-15',
+    status: 'finalized',
     createdAt: '2024-02-01T15:30:00Z',
     updatedAt: '2024-02-01T15:30:00Z',
+    versions: [],
+    currentVersion: 1,
   },
   {
     id: 'con-006',
@@ -99,8 +115,11 @@ export const mockConsultations: Consultation[] = [
     treatmentPlan: 'URGENT: Nebulized salbutamol + ipratropium started. Prednisolone 40mg given. O2 via nasal cannula. Monitor closely. If no improvement in 1 hour, consider IV magnesium and ICU referral.',
     prescriptionId: 'rx-005',
     labOrderIds: [],
+    status: 'finalized',
     createdAt: '2024-02-02T08:45:00Z',
     updatedAt: '2024-02-02T08:45:00Z',
+    versions: [],
+    currentVersion: 1,
   },
 ];
 
@@ -122,12 +141,98 @@ export const getConsultationById = (id: string): Consultation | undefined =>
 export const getConsultationsByDoctor = (doctorId: string): Consultation[] => 
   mockConsultations.filter(c => c.doctorId === doctorId);
 
+// Create a new consultation
+export const createConsultation = (data: Omit<Consultation, 'id' | 'createdAt' | 'updatedAt' | 'versions' | 'currentVersion'>): Consultation => {
+  const consultation: Consultation = {
+    ...data,
+    id: `con-${String(mockConsultations.length + 1).padStart(3, '0')}`,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    versions: [],
+    currentVersion: 1,
+  };
+  mockConsultations.push(consultation);
+  return consultation;
+};
+
+// Update an existing consultation
+export const updateConsultation = (id: string, updates: Partial<Consultation>): Consultation | undefined => {
+  const index = mockConsultations.findIndex(c => c.id === id);
+  if (index === -1) return undefined;
+  mockConsultations[index] = {
+    ...mockConsultations[index],
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  return mockConsultations[index];
+};
+
+// Amend a finalized consultation — snapshots current state, applies new data
+export const amendConsultation = (
+  id: string,
+  newFormData: ConsultationFormData,
+  reason: AmendmentReason,
+  reasonDetail: string | undefined,
+  amendedBy: string,
+  amendedByName: string,
+): Consultation | undefined => {
+  const index = mockConsultations.findIndex(c => c.id === id);
+  if (index === -1) return undefined;
+
+  const current = mockConsultations[index];
+
+  // Snapshot current state
+  const snapshot: ConsultationFormData = {
+    chiefComplaint: current.chiefComplaint,
+    historyOfPresentIllness: current.historyOfPresentIllness,
+    physicalExamination: current.physicalExamination,
+    selectedDiagnoses: current.diagnosis.map((desc, i) => ({
+      code: current.icdCodes[i] || '',
+      description: desc,
+      isPrimary: i === 0,
+    })),
+    treatmentPlan: current.treatmentPlan,
+    prescriptionItems: [],
+    labOrders: [],
+    followUpDate: current.followUpDate || null,
+    notes: '',
+    bundleDeselections: [],
+    justifications: [],
+  };
+
+  const version = {
+    version: current.currentVersion,
+    amendedAt: new Date().toISOString(),
+    amendedBy,
+    amendedByName,
+    reason,
+    reasonDetail,
+    snapshot,
+  };
+
+  mockConsultations[index] = {
+    ...current,
+    chiefComplaint: newFormData.chiefComplaint,
+    historyOfPresentIllness: newFormData.historyOfPresentIllness,
+    physicalExamination: newFormData.physicalExamination,
+    diagnosis: newFormData.selectedDiagnoses.map(d => d.description),
+    icdCodes: newFormData.selectedDiagnoses.map(d => d.code),
+    treatmentPlan: newFormData.treatmentPlan,
+    followUpDate: newFormData.followUpDate || undefined,
+    versions: [...current.versions, version],
+    currentVersion: current.currentVersion + 1,
+    updatedAt: new Date().toISOString(),
+  };
+
+  return mockConsultations[index];
+};
+
 // Get consultations within date range
 export const getConsultationsInRange = (
-  patientId: string, 
-  startDate: Date, 
+  patientId: string,
+  startDate: Date,
   endDate: Date
-): Consultation[] => 
+): Consultation[] =>
   mockConsultations.filter(c => {
     const date = new Date(c.createdAt);
     return c.patientId === patientId && date >= startDate && date <= endDate;

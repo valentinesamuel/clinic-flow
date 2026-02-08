@@ -1,5 +1,7 @@
 // Clinical Data Type Definitions
 
+import { OrderMetadata, ConsultationVersion } from './consultation.types';
+
 export interface VitalSigns {
   id: string;
   patientId: string;
@@ -54,6 +56,7 @@ export interface PrescriptionItem {
   duration: string;
   quantity: number;
   instructions?: string;
+  metadata?: Partial<OrderMetadata>;
 }
 
 export interface Prescription {
@@ -81,6 +84,7 @@ export interface LabTest {
   normalRange?: string;
   unit?: string;
   isAbnormal?: boolean;
+  metadata?: Partial<OrderMetadata>;
 }
 
 export interface LabOrder {
@@ -115,8 +119,11 @@ export interface Consultation {
   prescriptionId?: string;
   labOrderIds: string[];
   followUpDate?: string;
+  status?: 'draft' | 'in_progress' | 'finalized';
   createdAt: string;
   updatedAt: string;
+  versions: ConsultationVersion[];
+  currentVersion: number;
 }
 
 export interface StaffMember {

@@ -10,9 +10,16 @@ import {
   Clock,
   User,
   ChevronRight,
+  ChevronDown,
   AlertCircle,
   Play,
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { getTodaysAppointments } from '@/data/appointments';
 import { getQueueByType } from '@/data/queue';
 import { useDashboardActions } from '@/hooks/useDashboardActions';
@@ -67,10 +74,38 @@ export default function DoctorDashboard() {
             <h1 className="text-2xl font-bold text-foreground">Doctor Dashboard</h1>
             <p className="text-muted-foreground">Today's schedule and pending tasks</p>
           </div>
-          <Button onClick={actions.startConsultation}>
-            <Stethoscope className="h-4 w-4 mr-2" />
-            Start Consultation
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={actions.startConsultation}>
+              <Stethoscope className="h-4 w-4 mr-2" />
+              Start Consultation
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  Quick Actions
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={actions.startConsultation}>
+                  <Stethoscope className="h-4 w-4 mr-2" />
+                  Start Consultation
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={actions.orderLabTest}>
+                  <TestTube className="h-4 w-4 mr-2" />
+                  Order Lab Test
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={actions.writePrescription}>
+                  <Pill className="h-4 w-4 mr-2" />
+                  Write Prescription
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={actions.patientHistory}>
+                  <User className="h-4 w-4 mr-2" />
+                  Patient History
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         {/* Quick Stats */}
@@ -254,48 +289,6 @@ export default function DoctorDashboard() {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-              <Button 
-                variant="outline" 
-                className="h-auto py-4 flex-col"
-                onClick={actions.startConsultation}
-              >
-                <Stethoscope className="h-5 w-5 mb-2" />
-                <span className="text-xs">Start Consultation</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-auto py-4 flex-col"
-                onClick={actions.orderLabTest}
-              >
-                <TestTube className="h-5 w-5 mb-2" />
-                <span className="text-xs">Order Lab Test</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-auto py-4 flex-col"
-                onClick={actions.writePrescription}
-              >
-                <Pill className="h-5 w-5 mb-2" />
-                <span className="text-xs">Write Prescription</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                className="h-auto py-4 flex-col"
-                onClick={actions.patientHistory}
-              >
-                <User className="h-5 w-5 mb-2" />
-                <span className="text-xs">Patient History</span>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </DashboardLayout>
   );

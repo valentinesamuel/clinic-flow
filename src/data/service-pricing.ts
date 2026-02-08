@@ -170,6 +170,7 @@ export const mockServicePrices: ServicePrice[] = [
     createdAt: '2024-01-01T00:00:00Z',
     createdBy: 'usr-admin',
     updatedAt: '2024-01-01T00:00:00Z',
+    isPremium: true,
   },
 
   // Pharmacy Items

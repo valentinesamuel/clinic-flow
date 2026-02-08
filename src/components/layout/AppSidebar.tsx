@@ -156,6 +156,7 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           icon: ClipboardList,
           badge: 8,
         },
+        { title: "Consultations", href: "/clinical-lead/consultations", icon: Stethoscope },
         {
           title: "Lab Results",
           href: "/clinical-lead/lab-results",
@@ -184,6 +185,7 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           badge: 8,
         },
         { title: "Patients", href: "/doctor/patients", icon: Users },
+        { title: "Consultations", href: "/doctor/consultation/new", icon: Stethoscope },
         { title: "Prescriptions", href: "/doctor/prescriptions", icon: Pill },
       ],
     },

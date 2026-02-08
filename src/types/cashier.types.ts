@@ -51,6 +51,9 @@ export interface ServicePrice {
   updatedAt: string;
   updatedBy?: string;
   department?: BillingDepartment;
+  isPremium?: boolean;
+  isRestricted?: boolean;
+  restrictionReason?: string;
 }
 
 export interface PriceApproval {

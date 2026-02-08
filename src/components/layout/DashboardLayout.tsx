@@ -25,14 +25,14 @@ export function DashboardLayout({ children, allowedRoles }: DashboardLayoutProps
   }
 
   return (
-    <div className="min-h-screen flex w-full bg-background">
+    <div className="h-screen flex w-full bg-background overflow-hidden">
       <AppSidebar />
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <AppHeader />
         <div className="hidden md:block fixed top-4 right-4 z-50">
           <SyncStatusIndicator />
         </div>
-        <main className="flex-1 p-4 md:p-6 pb-20 md:pb-6">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">{children}</main>
       </div>
       <MobileBottomNav />
     </div>

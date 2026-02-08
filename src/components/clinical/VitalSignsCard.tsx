@@ -142,7 +142,10 @@ export function VitalSignsCard({ vitals, showRecordedBy, recordedByName, compact
         )}
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className={cn(
+          "grid",
+          compact ? "grid-cols-2 gap-2" : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+        )}>
           <VitalMetric
             icon={<Heart className="h-4 w-4 text-primary" />}
             label="Blood Pressure"

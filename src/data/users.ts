@@ -70,13 +70,13 @@ export const mockUsers: Record<UserRole, User> = {
     createdAt: '2022-06-01',
     isActive: true,
   },
-  billing: {
+  cashier: {
     id: 'usr-007',
     name: 'Grace Adeyemi',
-    email: 'billing@lifecare.ng',
+    email: 'cashier@lifecare.ng',
     phone: '+234 810 789 0123',
-    role: 'billing',
-    department: 'Finance',
+    role: 'cashier',
+    department: 'Front Desk',
     createdAt: '2022-04-15',
     isActive: true,
   },

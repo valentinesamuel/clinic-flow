@@ -1,62 +1,83 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { ClaimsTable } from '@/components/billing/organisms/tables/ClaimsTable';
-import { ClaimDetailsDrawer } from '@/components/billing/organisms/claim-details/ClaimDetailsDrawer';
-import { ClaimWithdrawalModal } from '@/components/billing/organisms/claim-details/ClaimWithdrawalModal';
-import { PayOutOfPocketModal } from '@/components/billing/organisms/claim-details/PayOutOfPocketModal';
-import { ClaimCreationModal } from '@/components/billing/organisms/claim-submission/ClaimCreationModal';
-import { ClaimEditModal } from '@/components/billing/organisms/claim-submission/ClaimEditModal';
-import { BillDetailsDrawer } from '@/components/billing/organisms/bill-details/BillDetailsDrawer';
-import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { HMOClaim, ClaimStatus, WithdrawalReason, PaymentMethod, Bill } from '@/types/billing.types';
-import { getClaimsPaginated, mockHMOProviders, submitClaim, updateClaimStatus } from '@/data/claims';
-import { getBillById } from '@/data/bills';
-import { Search, FileCheck, ArrowLeft, Send, Plus } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+} from "@/components/ui/select";
+import { ClaimsTable } from "@/components/billing/organisms/tables/ClaimsTable";
+import { ClaimDetailsDrawer } from "@/components/billing/organisms/claim-details/ClaimDetailsDrawer";
+import { ClaimWithdrawalModal } from "@/components/billing/organisms/claim-details/ClaimWithdrawalModal";
+import { PayOutOfPocketModal } from "@/components/billing/organisms/claim-details/PayOutOfPocketModal";
+import { ClaimCreationModal } from "@/components/billing/organisms/claim-submission/ClaimCreationModal";
+import { ClaimEditModal } from "@/components/billing/organisms/claim-submission/ClaimEditModal";
+import { BillDetailsDrawer } from "@/components/billing/organisms/bill-details/BillDetailsDrawer";
+import { QueuePagination } from "@/components/molecules/queue/QueuePagination";
+import {
+  HMOClaim,
+  ClaimStatus,
+  WithdrawalReason,
+  PaymentMethod,
+  Bill,
+} from "@/types/billing.types";
+import {
+  getClaimsPaginated,
+  mockHMOProviders,
+  submitClaim,
+  updateClaimStatus,
+} from "@/data/claims";
+import { getBillById } from "@/data/bills";
+import { Search, FileCheck, ArrowLeft, Send, Plus } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserBillingDepartment } from "@/utils/billingDepartment";
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
 }
 
-const statusTabs: { value: ClaimStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'draft', label: 'Draft' },
-  { value: 'submitted', label: 'Submitted' },
-  { value: 'processing', label: 'Processing' },
-  { value: 'approved', label: 'Approved' },
-  { value: 'denied', label: 'Denied' },
-  { value: 'paid', label: 'Paid' },
-  { value: 'withdrawn', label: 'Withdrawn' },
+const statusTabs: { value: ClaimStatus | "all"; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "draft", label: "Draft" },
+  { value: "submitted", label: "Submitted" },
+  { value: "processing", label: "Processing" },
+  { value: "approved", label: "Approved" },
+  { value: "denied", label: "Denied" },
+  { value: "paid", label: "Paid" },
+  { value: "withdrawn", label: "Withdrawn" },
 ];
 
 export default function ClaimsListPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const userDepartment = user ? getUserBillingDepartment(user) : 'all';
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ClaimStatus | 'all'>(
-    (searchParams.get('status') as ClaimStatus) || 'all'
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ClaimStatus | "all">(
+    (searchParams.get("status") as ClaimStatus) || "all",
   );
-  const [providerFilter, setProviderFilter] = useState<string>('all');
+  const [providerFilter, setProviderFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -75,7 +96,7 @@ export default function ClaimsListPage() {
   // Claim edit modal state
   const [showClaimEdit, setShowClaimEdit] = useState(false);
   const [editClaim, setEditClaim] = useState<HMOClaim | null>(null);
-  const [editMode, setEditMode] = useState<'edit' | 'resubmit'>('edit');
+  const [editMode, setEditMode] = useState<"edit" | "resubmit">("edit");
 
   // Withdrawal modal state
   const [showWithdrawal, setShowWithdrawal] = useState(false);
@@ -83,14 +104,29 @@ export default function ClaimsListPage() {
 
   // Pay out of pocket modal state
   const [showPayOutOfPocket, setShowPayOutOfPocket] = useState(false);
-  const [payOutOfPocketClaim, setPayOutOfPocketClaim] = useState<HMOClaim | null>(null);
+  const [payOutOfPocketClaim, setPayOutOfPocketClaim] =
+    useState<HMOClaim | null>(null);
 
   // Fetch claims with filters
-  const { data: claims, total, totalPages } = getClaimsPaginated(currentPage, pageSize, {
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    providerId: providerFilter !== 'all' ? providerFilter : undefined,
+  const {
+    data: allClaims,
+    total: rawTotal,
+    totalPages: rawTotalPages,
+  } = getClaimsPaginated(currentPage, pageSize, {
+    status: statusFilter !== "all" ? statusFilter : undefined,
+    providerId: providerFilter !== "all" ? providerFilter : undefined,
     search: searchQuery || undefined,
   });
+
+  // Filter claims by department for cashier role
+  const claims = userDepartment === 'all'
+    ? allClaims
+    : allClaims.filter((claim) => {
+        const bill = getBillById(claim.billId);
+        return bill ? bill.department === userDepartment : true;
+      });
+  const total = userDepartment === 'all' ? rawTotal : claims.length;
+  const totalPages = userDepartment === 'all' ? rawTotalPages : Math.max(1, Math.ceil(claims.length / pageSize));
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -111,7 +147,7 @@ export default function ClaimsListPage() {
   const handleSubmit = (claim: HMOClaim) => {
     submitClaim(claim.id);
     toast({
-      title: 'Claim Submitted',
+      title: "Claim Submitted",
       description: `${claim.claimNumber} has been submitted`,
     });
   };
@@ -127,29 +163,31 @@ export default function ClaimsListPage() {
 
   const handleEdit = (claim: HMOClaim) => {
     setEditClaim(claim);
-    setEditMode('edit');
+    setEditMode("edit");
     setShowClaimEdit(true);
   };
 
   const handleResubmit = (claim: HMOClaim) => {
     setEditClaim(claim);
-    setEditMode('resubmit');
+    setEditMode("resubmit");
     setShowClaimEdit(true);
   };
 
   const handleMarkPaid = (claim: HMOClaim) => {
-    updateClaimStatus(claim.id, 'paid');
+    updateClaimStatus(claim.id, "paid");
     toast({
-      title: 'Claim Marked as Paid',
+      title: "Claim Marked as Paid",
       description: `${claim.claimNumber} has been marked as paid`,
     });
   };
 
   const handleBatchSubmit = () => {
-    const draftClaims = claims.filter((c) => selectedIds.includes(c.id) && c.status === 'draft');
+    const draftClaims = claims.filter(
+      (c) => selectedIds.includes(c.id) && c.status === "draft",
+    );
     draftClaims.forEach((c) => submitClaim(c.id));
     toast({
-      title: 'Batch Submit',
+      title: "Batch Submit",
       description: `${draftClaims.length} claims submitted`,
     });
     setSelectedIds([]);
@@ -161,7 +199,7 @@ export default function ClaimsListPage() {
 
   const handleClaimComplete = (claim: Partial<HMOClaim>) => {
     toast({
-      title: 'Claim Submitted',
+      title: "Claim Submitted",
       description: `Claim for ${claim.patientName} has been submitted`,
     });
     setShowClaimCreation(false);
@@ -169,7 +207,7 @@ export default function ClaimsListPage() {
 
   const handleClaimDraft = (claim: Partial<HMOClaim>) => {
     toast({
-      title: 'Draft Saved',
+      title: "Draft Saved",
       description: `Claim draft for ${claim.patientName} has been saved`,
     });
     setShowClaimCreation(false);
@@ -177,7 +215,7 @@ export default function ClaimsListPage() {
 
   const handleEditSave = (claim: Partial<HMOClaim>) => {
     toast({
-      title: 'Draft Saved',
+      title: "Draft Saved",
       description: `Claim ${editClaim?.claimNumber} has been updated`,
     });
     setShowClaimEdit(false);
@@ -186,8 +224,8 @@ export default function ClaimsListPage() {
 
   const handleEditSubmit = (claim: Partial<HMOClaim>) => {
     toast({
-      title: editMode === 'resubmit' ? 'Claim Resubmitted' : 'Claim Submitted',
-      description: `${editClaim?.claimNumber} has been ${editMode === 'resubmit' ? 'resubmitted' : 'submitted'}`,
+      title: editMode === "resubmit" ? "Claim Resubmitted" : "Claim Submitted",
+      description: `${editClaim?.claimNumber} has been ${editMode === "resubmit" ? "resubmitted" : "submitted"}`,
     });
     setShowClaimEdit(false);
     setEditClaim(null);
@@ -246,9 +284,9 @@ export default function ClaimsListPage() {
 
   const handleWithdraw = (reason: WithdrawalReason, notes?: string) => {
     if (withdrawClaim) {
-      updateClaimStatus(withdrawClaim.id, 'withdrawn');
+      updateClaimStatus(withdrawClaim.id, "withdrawn");
       toast({
-        title: 'Claim Withdrawn',
+        title: "Claim Withdrawn",
         description: `${withdrawClaim.claimNumber} has been withdrawn`,
       });
       setShowClaimDetails(false);
@@ -257,20 +295,24 @@ export default function ClaimsListPage() {
 
   const handleRequestRetraction = (reason: WithdrawalReason, notes: string) => {
     if (withdrawClaim) {
-      updateClaimStatus(withdrawClaim.id, 'retracted');
+      updateClaimStatus(withdrawClaim.id, "retracted");
       toast({
-        title: 'Retraction Requested',
+        title: "Retraction Requested",
         description: `${withdrawClaim.claimNumber} retraction request submitted. Please contact the HMO to complete.`,
       });
       setShowClaimDetails(false);
     }
   };
 
-  const handlePayOutOfPocketConfirm = (paymentMethod: PaymentMethod, referenceNumber?: string, bank?: string) => {
+  const handlePayOutOfPocketConfirm = (
+    paymentMethod: PaymentMethod,
+    referenceNumber?: string,
+    bank?: string,
+  ) => {
     if (payOutOfPocketClaim) {
-      updateClaimStatus(payOutOfPocketClaim.id, 'withdrawn');
+      updateClaimStatus(payOutOfPocketClaim.id, "withdrawn");
       toast({
-        title: 'Converted to Private Pay',
+        title: "Converted to Private Pay",
         description: `${payOutOfPocketClaim.claimNumber} has been withdrawn. Payment collected via ${paymentMethod}.`,
       });
       setShowClaimDetails(false);
@@ -278,17 +320,16 @@ export default function ClaimsListPage() {
   };
 
   return (
-    <DashboardLayout allowedRoles={['billing', 'hospital_admin', 'cmo']}>
+    <DashboardLayout allowedRoles={["cashier", "hospital_admin", "cmo"]}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/billing')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">HMO Claims</h1>
-              <p className="text-muted-foreground">Manage and track insurance claims</p>
+              <p className="text-muted-foreground">
+                Manage and track insurance claims
+              </p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -311,7 +352,11 @@ export default function ClaimsListPage() {
             <CardHeader className="pb-2">
               <CardDescription>Pending Claims</CardDescription>
               <CardTitle className="text-xl text-amber-600">
-                {claims.filter((c) => ['draft', 'submitted', 'processing'].includes(c.status)).length}
+                {
+                  claims.filter((c) =>
+                    ["draft", "submitted", "processing"].includes(c.status),
+                  ).length
+                }
               </CardTitle>
             </CardHeader>
           </Card>
@@ -319,7 +364,7 @@ export default function ClaimsListPage() {
             <CardHeader className="pb-2">
               <CardDescription>Approved</CardDescription>
               <CardTitle className="text-xl text-green-600">
-                {claims.filter((c) => c.status === 'approved').length}
+                {claims.filter((c) => c.status === "approved").length}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -327,7 +372,7 @@ export default function ClaimsListPage() {
             <CardHeader className="pb-2">
               <CardDescription>Denied</CardDescription>
               <CardTitle className="text-xl text-destructive">
-                {claims.filter((c) => c.status === 'denied').length}
+                {claims.filter((c) => c.status === "denied").length}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -335,7 +380,7 @@ export default function ClaimsListPage() {
             <CardHeader className="pb-2">
               <CardDescription>Paid (YTD)</CardDescription>
               <CardTitle className="text-xl text-primary">
-                {claims.filter((c) => c.status === 'paid').length}
+                {claims.filter((c) => c.status === "paid").length}
               </CardTitle>
             </CardHeader>
           </Card>
@@ -389,7 +434,7 @@ export default function ClaimsListPage() {
             <Tabs
               value={statusFilter}
               onValueChange={(value) => {
-                setStatusFilter(value as ClaimStatus | 'all');
+                setStatusFilter(value as ClaimStatus | "all");
                 setCurrentPage(1);
               }}
               className="mb-4"

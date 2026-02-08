@@ -49,7 +49,7 @@ const mobileNavByRole: Record<UserRole, NavItem[]> = {
     { title: 'Appointments', href: '/receptionist/appointments', icon: Calendar },
     { title: 'More', href: '/receptionist/more', icon: MoreHorizontal },
   ],
-  billing: [
+  cashier: [
     { title: 'Dashboard', href: '/billing', icon: LayoutDashboard },
     { title: 'Bills', href: '/billing/bills', icon: Receipt },
     { title: 'Claims', href: '/billing/claims', icon: FileCheck },

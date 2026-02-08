@@ -34,7 +34,7 @@ export function usePermissions({ userRole }: UsePermissionsProps) {
 
     // Financial data access
     const canViewFinancialData = (): boolean => {
-      const financialRoles: UserRole[] = ['cmo', 'hospital_admin', 'billing'];
+      const financialRoles: UserRole[] = ['cmo', 'hospital_admin', 'cashier'];
       if (financialRoles.includes(userRole)) return true;
       if (userRole === 'clinical_lead' && toggles.clinicalLeadFinancialAccess) return true;
       return false;

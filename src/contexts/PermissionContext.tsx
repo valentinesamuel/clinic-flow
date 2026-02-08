@@ -89,7 +89,7 @@ export const basePermissions: Record<UserRole, ResourceType[]> = {
   receptionist: [
     'appointments', 'queue_management'
   ],
-  billing: [
+  cashier: [
     'billing', 'hmo_claims'
   ],
   pharmacist: [

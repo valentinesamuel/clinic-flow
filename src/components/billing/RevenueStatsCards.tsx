@@ -34,7 +34,7 @@ export function RevenueStatsCards({ revenue, routePrefix }: RevenueStatsCardsPro
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-100 dark:bg-green-900/20',
-      onClick: () => navigate(`${routePrefix}/billing/payments?method=cash`),
+      onClick: () => navigate(`${routePrefix}/payments?method=cash`),
     },
     {
       label: 'Card/POS',
@@ -42,7 +42,7 @@ export function RevenueStatsCards({ revenue, routePrefix }: RevenueStatsCardsPro
       icon: CreditCard,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100 dark:bg-blue-900/20',
-      onClick: () => navigate(`${routePrefix}/billing/payments?method=card`),
+      onClick: () => navigate(`${routePrefix}/payments?method=card`),
     },
     {
       label: 'Bank Transfer',
@@ -50,7 +50,7 @@ export function RevenueStatsCards({ revenue, routePrefix }: RevenueStatsCardsPro
       icon: Building2,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100 dark:bg-purple-900/20',
-      onClick: () => navigate(`${routePrefix}/billing/payments?method=transfer`),
+      onClick: () => navigate(`${routePrefix}/payments?method=transfer`),
     },
     {
       label: "Today's Total",
@@ -58,7 +58,7 @@ export function RevenueStatsCards({ revenue, routePrefix }: RevenueStatsCardsPro
       icon: TrendingUp,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
-      onClick: () => navigate(`${routePrefix}/billing/payments`),
+      onClick: () => navigate(`${routePrefix}/payments`),
     },
   ];
 

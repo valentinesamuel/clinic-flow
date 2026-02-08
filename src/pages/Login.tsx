@@ -8,7 +8,7 @@ import { Stethoscope, ShieldCheck, User, Clipboard, CreditCard, Users, TestTube,
 import { Badge } from '@/components/ui/badge';
 
 const roleIcons: Record<UserRole, typeof User> = {
-  cmo: ShieldCheck, hospital_admin: Building, clinical_lead: UserCog, doctor: Stethoscope, nurse: Clipboard, receptionist: Users, billing: CreditCard, pharmacist: Pill, lab_tech: TestTube, patient: User,
+  cmo: ShieldCheck, hospital_admin: Building, clinical_lead: UserCog, doctor: Stethoscope, nurse: Clipboard, receptionist: Users, cashier: CreditCard, pharmacist: Pill, lab_tech: TestTube, patient: User,
 };
 
 export default function Login() {

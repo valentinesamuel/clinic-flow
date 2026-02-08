@@ -1,36 +1,64 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { BillsTable } from '@/components/billing/organisms/tables/BillsTable';
-import { PaymentCollectionForm } from '@/components/billing/organisms/cashier-station/PaymentCollectionForm';
-import { BillDetailsDrawer } from '@/components/billing/organisms/bill-details/BillDetailsDrawer';
-import { BillCreationForm } from '@/components/billing/organisms/bill-creation/BillCreationForm';
-import { ClaimCreationModal } from '@/components/billing/organisms/claim-submission/ClaimCreationModal';
-import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { Bill, BillStatus, BillingDepartment, PaymentItem, PaymentClearance, HMOClaim } from '@/types/billing.types';
-import { Patient } from '@/types/patient.types';
-import { getBillsPaginated, getPendingBills, getTotalPendingAmount } from '@/data/bills';
-import { mockPatients, getPatientById } from '@/data/patients';
-import { Search, Receipt, ArrowLeft, Plus, Building2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { getDepartmentForRole, getDepartmentLabel } from '@/utils/billingDepartment';
+} from "@/components/ui/select";
+import { BillsTable } from "@/components/billing/organisms/tables/BillsTable";
+import { PaymentCollectionForm } from "@/components/billing/organisms/cashier-station/PaymentCollectionForm";
+import { BillDetailsDrawer } from "@/components/billing/organisms/bill-details/BillDetailsDrawer";
+import { BillCreationForm } from "@/components/billing/organisms/bill-creation/BillCreationForm";
+import { ClaimCreationModal } from "@/components/billing/organisms/claim-submission/ClaimCreationModal";
+import { QueuePagination } from "@/components/molecules/queue/QueuePagination";
+import {
+  Bill,
+  BillStatus,
+  BillingDepartment,
+  PaymentItem,
+  PaymentClearance,
+  HMOClaim,
+} from "@/types/billing.types";
+import { Patient } from "@/types/patient.types";
+import {
+  getBillsPaginated,
+  getBillsByDepartment,
+  getPendingBillsByDepartment,
+} from "@/data/bills";
+import { mockPatients, getPatientById } from "@/data/patients";
+import {
+  Search,
+  Receipt,
+  ArrowLeft,
+  Plus,
+  Building2,
+  TrendingUp,
+  DollarSign,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  getUserBillingDepartment,
+  getDepartmentLabel,
+} from "@/utils/billingDepartment";
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
@@ -42,16 +70,16 @@ export default function BillsListPage() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Determine default department based on user role
-  const userDepartment = user ? getDepartmentForRole(user.role) : 'all';
-  const canViewAllDepartments = userDepartment === 'all';
+  // Determine default department based on user
+  const userDepartment = user ? getUserBillingDepartment(user) : "all";
+  const canViewAllDepartments = userDepartment === "all";
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<BillStatus | 'all'>(
-    (searchParams.get('status') as BillStatus) || 'all'
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<BillStatus | "all">(
+    (searchParams.get("status") as BillStatus) || "all",
   );
   const [departmentFilter, setDepartmentFilter] = useState<BillingDepartment>(
-    canViewAllDepartments ? 'all' : userDepartment
+    canViewAllDepartments ? "all" : userDepartment,
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
@@ -75,24 +103,30 @@ export default function BillsListPage() {
   const [claimBill, setClaimBill] = useState<Bill | null>(null);
 
   // Fetch bills with filters
-  const { data: bills, total, totalPages } = getBillsPaginated(currentPage, pageSize, {
+  const {
+    data: bills,
+    total,
+    totalPages,
+  } = getBillsPaginated(currentPage, pageSize, {
     department: departmentFilter,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
+    status: statusFilter !== "all" ? statusFilter : undefined,
     search: searchQuery || undefined,
   });
 
-  // Stats
-  const pendingBills = getPendingBills();
-  const totalPending = getTotalPendingAmount();
-  const awaitingPayment = pendingBills.length;
+  // Stats scoped by department filter
+  const deptBills = getBillsByDepartment(departmentFilter);
+  const pendingBills = getPendingBillsByDepartment(departmentFilter);
+  const totalPending = pendingBills.reduce((sum, b) => sum + b.balance, 0);
+  const totalPaidAmount = deptBills.filter(b => b.status === 'paid').reduce((sum, b) => sum + b.amountPaid, 0);
+  const isCashier = user?.role === 'cashier';
 
   const handleCollect = (bill: Bill) => {
     const patient = mockPatients.find((p) => p.id === bill.patientId);
     if (!patient) {
       toast({
-        title: 'Error',
-        description: 'Patient not found',
-        variant: 'destructive',
+        title: "Error",
+        description: "Patient not found",
+        variant: "destructive",
       });
       return;
     }
@@ -126,14 +160,14 @@ export default function BillsListPage() {
 
   const handlePrint = (bill: Bill) => {
     toast({
-      title: 'Print',
+      title: "Print",
       description: `Printing ${bill.billNumber}`,
     });
   };
 
   const handlePaymentComplete = (clearance: PaymentClearance) => {
     toast({
-      title: 'Payment Successful',
+      title: "Payment Successful",
       description: `Receipt ${clearance.receiptNumber} generated`,
     });
     setShowPaymentModal(false);
@@ -144,7 +178,7 @@ export default function BillsListPage() {
 
   const handleBillCreated = (bill: Partial<Bill>) => {
     toast({
-      title: 'Bill Created',
+      title: "Bill Created",
       description: `Bill for ${bill.patientName} has been created`,
     });
     setShowBillCreation(false);
@@ -160,7 +194,7 @@ export default function BillsListPage() {
 
   const handleClaimComplete = (claim: Partial<HMOClaim>) => {
     toast({
-      title: 'Claim Submitted',
+      title: "Claim Submitted",
       description: `Claim for ${claim.patientName} has been submitted`,
     });
     setShowClaimCreation(false);
@@ -169,7 +203,7 @@ export default function BillsListPage() {
 
   const handleClaimDraft = (claim: Partial<HMOClaim>) => {
     toast({
-      title: 'Draft Saved',
+      title: "Draft Saved",
       description: `Claim draft for ${claim.patientName} has been saved`,
     });
     setShowClaimCreation(false);
@@ -177,17 +211,16 @@ export default function BillsListPage() {
   };
 
   return (
-    <DashboardLayout allowedRoles={['billing', 'hospital_admin', 'cmo']}>
+    <DashboardLayout allowedRoles={["cashier", "hospital_admin", "cmo"]}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/billing')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
             <div>
               <h1 className="text-2xl font-bold text-foreground">Bills</h1>
-              <p className="text-muted-foreground">Manage patient bills and payments</p>
+              <p className="text-muted-foreground">
+                Manage patient bills and payments
+              </p>
             </div>
           </div>
           <Button onClick={() => setShowBillCreation(true)}>
@@ -197,25 +230,96 @@ export default function BillsListPage() {
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
+        <div className={`grid gap-5 ${isCashier ? 'md:grid-cols-4' : 'md:grid-cols-3'}`}>
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardHeader className="pb-2">
-              <CardDescription>Total Pending</CardDescription>
-              <CardTitle className="text-xl text-destructive">{formatCurrency(totalPending)}</CardTitle>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`flex p-1.5 rounded-md w-fit bg-green-100 dark:bg-green-900/20`}
+                >
+                  <DollarSign className={`h-4 w-4 text-green-600`} />
+                </div>
+                <CardDescription>Total Pending Amount</CardDescription>
+              </div>
+              <CardTitle className="text-xl font-bold ">
+                {formatCurrency(totalPending)}
+              </CardTitle>
             </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-sm text-green-600">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                <span>+12% today</span>
+              </div>
+            </CardContent>
           </Card>
-          <Card>
+
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardHeader className="pb-2">
-              <CardDescription>Bills Today</CardDescription>
-              <CardTitle className="text-xl">{bills.length}</CardTitle>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`flex p-1.5 rounded-md w-fit bg-amber-100 dark:bg-amber-900/20`}
+                >
+                  <Receipt className={`h-4 w-4 text-amber-600`} />
+                </div>
+                <CardDescription>Pending Bills</CardDescription>
+              </div>
+              <CardTitle className="text-xl font-bold ">
+                {pendingBills.length}
+              </CardTitle>
             </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-sm text-amber-600">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                <span>Awaiting payment</span>
+              </div>
+            </CardContent>
           </Card>
-          <Card>
+
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardHeader className="pb-2">
-              <CardDescription>Awaiting Payment</CardDescription>
-              <CardTitle className="text-xl">{awaitingPayment}</CardTitle>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`flex p-1.5 rounded-md w-fit bg-blue-100 dark:bg-blue-900/20`}
+                >
+                  <DollarSign className={`h-4 w-4 text-blue-600`} />
+                </div>
+                <CardDescription>Total Bills</CardDescription>
+              </div>
+              <CardTitle className="text-xl font-bold ">
+                {deptBills.length}
+              </CardTitle>
             </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-sm text-blue-600">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                <span>All time</span>
+              </div>
+            </CardContent>
           </Card>
+
+          {isCashier && (
+            <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2">
+                  <div
+                    className={`flex p-1.5 rounded-md w-fit bg-green-100 dark:bg-green-900/20`}
+                  >
+                    <DollarSign className={`h-4 w-4 text-green-600`} />
+                  </div>
+                  <CardDescription>Total Paid Amount</CardDescription>
+                </div>
+                <CardTitle className="text-xl font-bold ">
+                  {formatCurrency(totalPaidAmount)}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center text-sm text-green-600">
+                  <TrendingUp className="h-4 w-4 mr-1" />
+                  <span>Collected</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Filters */}
@@ -242,7 +346,7 @@ export default function BillsListPage() {
                 <Select
                   value={statusFilter}
                   onValueChange={(value) => {
-                    setStatusFilter(value as BillStatus | 'all');
+                    setStatusFilter(value as BillStatus | "all");
                     setCurrentPage(1);
                   }}
                 >
@@ -341,7 +445,9 @@ export default function BillsListPage() {
         open={showClaimCreation}
         onOpenChange={setShowClaimCreation}
         preselectedBill={claimBill}
-        preselectedPatient={claimBill ? getPatientById(claimBill.patientId) : null}
+        preselectedPatient={
+          claimBill ? getPatientById(claimBill.patientId) : null
+        }
         onComplete={handleClaimComplete}
         onSaveDraft={handleClaimDraft}
         onCancel={() => {

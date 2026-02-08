@@ -1,13 +1,19 @@
 // Hospital Administrator Dashboard - Operations & Finance
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { 
-  TrendingUp, 
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  TrendingUp,
   TrendingDown,
   AlertTriangle,
   DollarSign,
@@ -17,15 +23,19 @@ import {
   Fuel,
   CreditCard,
   ChevronRight,
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/hooks/usePermissions';
-import { getLowStockItems, getCriticalItems } from '@/data/inventory';
-import { getPendingBills, getTotalPendingAmount, getRecentBills, getTodaysRevenue } from '@/data/bills';
-import { getPendingClaims, getTotalPendingClaims } from '@/data/claims';
-import { getNonMedicalStaff, getOnDutyStaff } from '@/data/staff';
-import { BillingOverviewCard } from '@/components/billing/BillingOverviewCard';
-import { RevenueStatsCards } from '@/components/billing/RevenueStatsCards';
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
+import { getLowStockItems, getCriticalItems } from "@/data/inventory";
+import {
+  getPendingBills,
+  getTotalPendingAmount,
+  getRecentBills,
+  getTodaysRevenue,
+} from "@/data/bills";
+import { getPendingClaims, getTotalPendingClaims } from "@/data/claims";
+import { getNonMedicalStaff, getOnDutyStaff } from "@/data/staff";
+import { BillingOverviewCard } from "@/components/billing/BillingOverviewCard";
 
 export default function HospitalAdminDashboard() {
   const navigate = useNavigate();
@@ -40,32 +50,26 @@ export default function HospitalAdminDashboard() {
   const onDutyStaff = getOnDutyStaff();
   const recentBills = getRecentBills(5);
   const totalPendingAmount = getTotalPendingAmount();
-  const todaysRevenue = getTodaysRevenue();
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-NG', {
-      style: 'currency',
-      currency: 'NGN',
+    return new Intl.NumberFormat("en-NG", {
+      style: "currency",
+      currency: "NGN",
       minimumFractionDigits: 0,
     }).format(amount);
   };
 
   return (
-    <DashboardLayout allowedRoles={['hospital_admin']}>
+    <DashboardLayout allowedRoles={["hospital_admin"]}>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Hospital Administrator Dashboard</h1>
-            <p className="text-muted-foreground">Operations, finance & logistics overview</p>
-          </div>
-          <Button onClick={() => navigate('/hospital-admin/billing')}>
-            <Receipt className="h-4 w-4 mr-2" />
-            Billing
-          </Button>
+        <div>
+          <h1 className="text-2xl font-bold">
+            Hospital Administrator Dashboard
+          </h1>
+          <p className="text-muted-foreground">
+            Operations, finance & logistics overview
+          </p>
         </div>
-
-        {/* Revenue Stats Cards */}
-        <RevenueStatsCards revenue={todaysRevenue} routePrefix="/hospital-admin" />
 
         {/* Financial Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -107,7 +111,9 @@ export default function HospitalAdminDashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{pendingBills.length}</p>
-              <p className="text-xs text-muted-foreground">{formatCurrency(getTotalPendingAmount())}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatCurrency(getTotalPendingAmount())}
+              </p>
             </CardContent>
           </Card>
 
@@ -120,7 +126,9 @@ export default function HospitalAdminDashboard() {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{lowStockItems.length}</p>
-              <p className="text-xs text-destructive">{criticalItems.length} critical</p>
+              <p className="text-xs text-destructive">
+                {criticalItems.length} critical
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -138,23 +146,33 @@ export default function HospitalAdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               {lowStockItems.length === 0 ? (
-                <p className="text-sm text-muted-foreground">All items adequately stocked</p>
+                <p className="text-sm text-muted-foreground">
+                  All items adequately stocked
+                </p>
               ) : (
                 lowStockItems.map((item) => (
-                  <div 
-                    key={item.id} 
+                  <div
+                    key={item.id}
                     className={`p-3 rounded-lg border ${
-                      criticalItems.some(c => c.id === item.id)
-                        ? 'bg-destructive/10 border-destructive/20'
-                        : 'bg-warning/10 border-warning/20'
+                      criticalItems.some((c) => c.id === item.id)
+                        ? "bg-destructive/10 border-destructive/20"
+                        : "bg-warning/10 border-warning/20"
                     }`}
                   >
                     <div className="flex justify-between items-start">
                       <div>
                         <p className="text-sm font-medium">{item.name}</p>
-                        <p className="text-xs text-muted-foreground">{item.location}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.location}
+                        </p>
                       </div>
-                      <Badge variant={criticalItems.some(c => c.id === item.id) ? 'destructive' : 'secondary'}>
+                      <Badge
+                        variant={
+                          criticalItems.some((c) => c.id === item.id)
+                            ? "destructive"
+                            : "secondary"
+                        }
+                      >
                         {item.currentStock} {item.unit}
                       </Badge>
                     </div>
@@ -174,22 +192,31 @@ export default function HospitalAdminDashboard() {
                 <Users className="h-5 w-5 text-primary" />
                 Non-Clinical Staff
               </CardTitle>
-              <CardDescription>Front desk, security & housekeeping</CardDescription>
+              <CardDescription>
+                Front desk, security & housekeeping
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {nonMedicalStaff.map((staff) => (
-                <div key={staff.id} className="flex items-center justify-between p-2 rounded-lg bg-muted">
+                <div
+                  key={staff.id}
+                  className="flex items-center justify-between p-2 rounded-lg bg-muted"
+                >
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-xs font-medium">{staff.name.charAt(0)}</span>
+                      <span className="text-xs font-medium">
+                        {staff.name.charAt(0)}
+                      </span>
                     </div>
                     <div>
                       <p className="text-sm font-medium">{staff.name}</p>
-                      <p className="text-xs text-muted-foreground">{staff.role} • {staff.department}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {staff.role} • {staff.department}
+                      </p>
                     </div>
                   </div>
-                  <Badge variant={staff.isOnDuty ? 'default' : 'secondary'}>
-                    {staff.isOnDuty ? 'On Duty' : 'Off Duty'}
+                  <Badge variant={staff.isOnDuty ? "default" : "secondary"}>
+                    {staff.isOnDuty ? "On Duty" : "Off Duty"}
                   </Badge>
                 </div>
               ))}
@@ -204,38 +231,61 @@ export default function HospitalAdminDashboard() {
                   <CardTitle>HMO Claims Overview</CardTitle>
                   <CardDescription>Pending claims and status</CardDescription>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/hospital-admin/billing/claims')}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate("/hospital-admin/billing/claims")}
+                >
                   Manage
                   <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div 
+              <div
                 className="flex justify-between items-center cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
-                onClick={() => navigate('/hospital-admin/billing/claims?status=draft')}
+                onClick={() =>
+                  navigate("/hospital-admin/billing/claims?status=draft")
+                }
               >
                 <span className="text-sm">Draft Claims</span>
-                <Badge variant="outline">{pendingClaims.filter(c => c.status === 'draft').length}</Badge>
+                <Badge variant="outline">
+                  {pendingClaims.filter((c) => c.status === "draft").length}
+                </Badge>
               </div>
-              <div 
+              <div
                 className="flex justify-between items-center cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
-                onClick={() => navigate('/hospital-admin/billing/claims?status=submitted')}
+                onClick={() =>
+                  navigate("/hospital-admin/billing/claims?status=submitted")
+                }
               >
                 <span className="text-sm">Submitted</span>
-                <Badge variant="secondary">{pendingClaims.filter(c => c.status === 'submitted').length}</Badge>
+                <Badge variant="secondary">
+                  {pendingClaims.filter((c) => c.status === "submitted").length}
+                </Badge>
               </div>
-              <div 
+              <div
                 className="flex justify-between items-center cursor-pointer hover:bg-muted/50 -mx-2 px-2 py-1 rounded"
-                onClick={() => navigate('/hospital-admin/billing/claims?status=processing')}
+                onClick={() =>
+                  navigate("/hospital-admin/billing/claims?status=processing")
+                }
               >
                 <span className="text-sm">Processing</span>
-                <Badge>{pendingClaims.filter(c => c.status === 'processing').length}</Badge>
+                <Badge>
+                  {
+                    pendingClaims.filter((c) => c.status === "processing")
+                      .length
+                  }
+                </Badge>
               </div>
               <div className="pt-2 border-t">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Total Pending Value</span>
-                  <span className="font-bold">{formatCurrency(getTotalPendingClaims())}</span>
+                  <span className="text-sm font-medium">
+                    Total Pending Value
+                  </span>
+                  <span className="font-bold">
+                    {formatCurrency(getTotalPendingClaims())}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -255,7 +305,9 @@ export default function HospitalAdminDashboard() {
             <Card className="border-primary/50">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">Extended Access</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    Extended Access
+                  </Badge>
                 </CardTitle>
                 <CardDescription>Clinical data (read-only)</CardDescription>
               </CardHeader>

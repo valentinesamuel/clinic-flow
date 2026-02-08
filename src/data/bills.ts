@@ -11,7 +11,7 @@ export const mockBills: Bill[] = [
     patientMrn: 'LC-2024-0001',
     visitId: 'vis-001',
     department: 'front_desk',
-    createdByRole: 'billing',
+    createdByRole: 'cashier',
     items: [
       { id: 'bi-001', description: 'Consultation Fee', category: 'consultation', quantity: 1, unitPrice: 15000, discount: 0, total: 15000 },
       { id: 'bi-002', description: 'Blood Pressure Test', category: 'lab', quantity: 1, unitPrice: 3000, discount: 0, total: 3000 },
@@ -92,7 +92,7 @@ export const mockBills: Bill[] = [
     patientMrn: 'LC-2024-0004',
     visitId: 'vis-004',
     department: 'front_desk',
-    createdByRole: 'billing',
+    createdByRole: 'cashier',
     items: [
       { id: 'bi-010', description: 'Consultation Fee', category: 'consultation', quantity: 1, unitPrice: 15000, discount: 1500, total: 13500 },
       { id: 'bi-011', description: 'X-Ray - Knee', category: 'lab', quantity: 2, unitPrice: 12000, discount: 0, total: 24000 },
@@ -118,7 +118,7 @@ export const mockBills: Bill[] = [
     patientMrn: 'LC-2024-0005',
     visitId: 'vis-005',
     department: 'front_desk',
-    createdByRole: 'billing',
+    createdByRole: 'cashier',
     items: [
       { id: 'bi-013', description: 'Emergency Consultation', category: 'consultation', quantity: 1, unitPrice: 25000, discount: 0, total: 25000 },
       { id: 'bi-014', description: 'Nebulization x 2', category: 'procedure', quantity: 2, unitPrice: 5000, discount: 0, total: 10000 },

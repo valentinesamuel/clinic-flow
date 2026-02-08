@@ -16,7 +16,7 @@ export function useDashboardActions(role: UserRole) {
       case 'hospital_admin': return '/hospital-admin';
       case 'pharmacist': return '/pharmacist';
       case 'lab_tech': return '/lab-tech';
-      case 'billing': return '/billing';
+      case 'cashier': return '/cashier';
       case 'patient': return '/patient';
       default: return '/receptionist';
     }

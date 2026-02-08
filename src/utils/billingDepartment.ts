@@ -1,6 +1,6 @@
 // Billing Department Utility Functions
 
-import { UserRole } from '@/types/user.types';
+import { User, UserRole } from '@/types/user.types';
 import { BillingDepartment, ServiceCategory } from '@/types/billing.types';
 
 /**
@@ -13,13 +13,35 @@ export function getDepartmentForRole(role: UserRole): BillingDepartment {
     pharmacist: 'pharmacy',
     nurse: 'nursing',
     doctor: 'all',
-    billing: 'all',
+    cashier: 'front_desk',
     hospital_admin: 'all',
     cmo: 'all',
     clinical_lead: 'all',
     patient: 'all',
   };
   return roleToDepartment[role] || 'all';
+}
+
+/**
+ * Maps a user object to their billing department, using the user's
+ * actual department assignment for cashier role
+ */
+export function getUserBillingDepartment(user: User): BillingDepartment {
+  const allAccessRoles: UserRole[] = ['cmo', 'hospital_admin', 'clinical_lead'];
+  if (allAccessRoles.includes(user.role)) return 'all';
+
+  if (user.role === 'cashier') {
+    const deptMap: Record<string, BillingDepartment> = {
+      'Front Desk': 'front_desk',
+      'Laboratory': 'lab',
+      'Pharmacy': 'pharmacy',
+      'Nursing': 'nursing',
+      'Inpatient': 'inpatient',
+    };
+    return deptMap[user.department || ''] || 'front_desk';
+  }
+
+  return getDepartmentForRole(user.role);
 }
 
 /**
@@ -42,7 +64,7 @@ export function getDepartmentLabel(department: BillingDepartment): string {
  */
 export function canViewDepartment(userRole: UserRole, department: BillingDepartment): boolean {
   // These roles can view all departments
-  const allAccessRoles: UserRole[] = ['cmo', 'hospital_admin', 'billing', 'clinical_lead'];
+  const allAccessRoles: UserRole[] = ['cmo', 'hospital_admin', 'clinical_lead'];
   if (allAccessRoles.includes(userRole)) return true;
 
   // Department-specific access
@@ -69,7 +91,7 @@ export function getCategoryToDepartment(category: ServiceCategory): BillingDepar
  * Checks if a role can collect payments directly
  */
 export function canCollectPayments(userRole: UserRole): boolean {
-  const collectRoles: UserRole[] = ['billing', 'receptionist', 'hospital_admin', 'cmo'];
+  const collectRoles: UserRole[] = ['cashier', 'receptionist', 'hospital_admin', 'cmo'];
   return collectRoles.includes(userRole);
 }
 
@@ -77,7 +99,7 @@ export function canCollectPayments(userRole: UserRole): boolean {
  * Checks if a role can create bills
  */
 export function canCreateBills(userRole: UserRole): boolean {
-  const createRoles: UserRole[] = ['billing', 'receptionist', 'pharmacist', 'lab_tech', 'nurse', 'hospital_admin', 'cmo'];
+  const createRoles: UserRole[] = ['cashier', 'receptionist', 'pharmacist', 'lab_tech', 'nurse', 'hospital_admin', 'cmo'];
   return createRoles.includes(userRole);
 }
 
@@ -85,7 +107,7 @@ export function canCreateBills(userRole: UserRole): boolean {
  * Checks if a role can submit HMO claims
  */
 export function canSubmitClaims(userRole: UserRole): boolean {
-  const claimRoles: UserRole[] = ['billing', 'hospital_admin', 'cmo'];
+  const claimRoles: UserRole[] = ['cashier', 'hospital_admin', 'cmo'];
   return claimRoles.includes(userRole);
 }
 

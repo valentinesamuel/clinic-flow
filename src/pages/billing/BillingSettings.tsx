@@ -8,11 +8,11 @@ export default function BillingSettings() {
   const navigate = useNavigate();
 
   return (
-    <DashboardLayout allowedRoles={['billing', 'hospital_admin', 'cmo']}>
+    <DashboardLayout allowedRoles={['cashier', 'hospital_admin', 'cmo']}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/billing')}>
+          <Button variant="ghost" size="icon" onClick={() => navigate('/cashier')}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>

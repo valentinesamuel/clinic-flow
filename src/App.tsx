@@ -37,6 +37,7 @@ import ServicePricingPage from "./pages/billing/ServicePricingPage";
 import PriceApprovalPage from "./pages/billing/PriceApprovalPage";
 import PharmacyBillingPage from "./pages/pharmacy/PharmacyBillingPage";
 import LabBillingPage from "./pages/lab/LabBillingPage";
+import CashierCombinedDashboard from "./pages/dashboards/CashierCombinedDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,97 +54,250 @@ const App = () => (
                 <Sonner />
                 <BrowserRouter>
                   <Routes>
-                    <Route path="/" element={<Navigate to="/login" replace />} />
+                    <Route
+                      path="/"
+                      element={<Navigate to="/login" replace />}
+                    />
                     <Route path="/login" element={<Login />} />
-                    
+
                     {/* CMO Routes */}
                     <Route path="/cmo" element={<CMODashboard />} />
                     <Route path="/cmo/patients" element={<PatientListPage />} />
-                    <Route path="/cmo/patients/new" element={<PatientRegistrationPage />} />
-                    <Route path="/cmo/patients/:id" element={<PatientProfilePage />} />
-                    <Route path="/cmo/patients/:id/edit" element={<PatientEditPage />} />
-                    <Route path="/cmo/appointments" element={<AppointmentListPage />} />
+                    <Route
+                      path="/cmo/patients/new"
+                      element={<PatientRegistrationPage />}
+                    />
+                    <Route
+                      path="/cmo/patients/:id"
+                      element={<PatientProfilePage />}
+                    />
+                    <Route
+                      path="/cmo/patients/:id/edit"
+                      element={<PatientEditPage />}
+                    />
+                    <Route
+                      path="/cmo/appointments"
+                      element={<AppointmentListPage />}
+                    />
                     <Route path="/cmo/billing" element={<BillingDashboard />} />
-                    <Route path="/cmo/billing/bills" element={<BillsListPage />} />
-                    <Route path="/cmo/billing/claims" element={<ClaimsListPage />} />
-                    <Route path="/cmo/billing/payments" element={<PaymentsListPage />} />
-                    <Route path="/cmo/settings/permissions" element={<PermissionSettings />} />
-                    <Route path="/cmo/approvals/pricing" element={<PriceApprovalPage />} />
+                    <Route
+                      path="/cmo/billing/bills"
+                      element={<BillsListPage />}
+                    />
+                    <Route
+                      path="/cmo/billing/claims"
+                      element={<ClaimsListPage />}
+                    />
+                    <Route
+                      path="/cmo/billing/payments"
+                      element={<PaymentsListPage />}
+                    />
+                    <Route
+                      path="/cmo/settings/permissions"
+                      element={<PermissionSettings />}
+                    />
+                    <Route
+                      path="/cmo/approvals/pricing"
+                      element={<PriceApprovalPage />}
+                    />
                     <Route path="/cmo/*" element={<CMODashboard />} />
-                    
+
                     {/* Hospital Admin Routes */}
-                    <Route path="/hospital-admin" element={<HospitalAdminDashboard />} />
-                    <Route path="/hospital-admin/billing" element={<BillingDashboard />} />
-                    <Route path="/hospital-admin/billing/bills" element={<BillsListPage />} />
-                    <Route path="/hospital-admin/billing/claims" element={<ClaimsListPage />} />
-                    <Route path="/hospital-admin/billing/payments" element={<PaymentsListPage />} />
-                    <Route path="/hospital-admin/settings/pricing" element={<ServicePricingPage />} />
-                    <Route path="/hospital-admin/*" element={<HospitalAdminDashboard />} />
-                    
+                    <Route
+                      path="/hospital-admin"
+                      element={<HospitalAdminDashboard />}
+                    />
+                    <Route
+                      path="/hospital-admin/billing"
+                      element={<BillingDashboard />}
+                    />
+                    <Route
+                      path="/hospital-admin/billing/bills"
+                      element={<BillsListPage />}
+                    />
+                    <Route
+                      path="/hospital-admin/billing/claims"
+                      element={<ClaimsListPage />}
+                    />
+                    <Route
+                      path="/hospital-admin/billing/payments"
+                      element={<PaymentsListPage />}
+                    />
+                    <Route
+                      path="/hospital-admin/settings/pricing"
+                      element={<ServicePricingPage />}
+                    />
+                    <Route
+                      path="/hospital-admin/*"
+                      element={<HospitalAdminDashboard />}
+                    />
+
                     {/* Clinical Lead Routes */}
-                    <Route path="/clinical-lead" element={<ClinicalLeadDashboard />} />
-                    <Route path="/clinical-lead/patients" element={<PatientListPage />} />
-                    <Route path="/clinical-lead/patients/new" element={<PatientRegistrationPage />} />
-                    <Route path="/clinical-lead/patients/:id" element={<PatientProfilePage />} />
-                    <Route path="/clinical-lead/patients/:id/edit" element={<PatientEditPage />} />
-                    <Route path="/clinical-lead/queue" element={<TriageQueuePage />} />
-                    <Route path="/clinical-lead/*" element={<ClinicalLeadDashboard />} />
-                    
+                    <Route
+                      path="/clinical-lead"
+                      element={<ClinicalLeadDashboard />}
+                    />
+                    <Route
+                      path="/clinical-lead/patients"
+                      element={<PatientListPage />}
+                    />
+                    <Route
+                      path="/clinical-lead/patients/new"
+                      element={<PatientRegistrationPage />}
+                    />
+                    <Route
+                      path="/clinical-lead/patients/:id"
+                      element={<PatientProfilePage />}
+                    />
+                    <Route
+                      path="/clinical-lead/patients/:id/edit"
+                      element={<PatientEditPage />}
+                    />
+                    <Route
+                      path="/clinical-lead/queue"
+                      element={<TriageQueuePage />}
+                    />
+                    <Route
+                      path="/clinical-lead/*"
+                      element={<ClinicalLeadDashboard />}
+                    />
+
                     {/* Receptionist Routes */}
-                    <Route path="/receptionist" element={<ReceptionistDashboard />} />
-                    <Route path="/receptionist/patients" element={<PatientListPage />} />
-                    <Route path="/receptionist/patients/new" element={<PatientRegistrationPage />} />
-                    <Route path="/receptionist/patients/:id" element={<PatientProfilePage />} />
-                    <Route path="/receptionist/patients/:id/edit" element={<PatientEditPage />} />
-                    <Route path="/receptionist/check-in" element={<CheckInQueuePage />} />
-                    <Route path="/receptionist/appointments" element={<AppointmentListPage />} />
-                    <Route path="/receptionist/*" element={<ReceptionistDashboard />} />
-                    
+                    <Route
+                      path="/receptionist"
+                      element={<ReceptionistDashboard />}
+                    />
+                    <Route
+                      path="/receptionist/patients"
+                      element={<PatientListPage />}
+                    />
+                    <Route
+                      path="/receptionist/patients/new"
+                      element={<PatientRegistrationPage />}
+                    />
+                    <Route
+                      path="/receptionist/patients/:id"
+                      element={<PatientProfilePage />}
+                    />
+                    <Route
+                      path="/receptionist/patients/:id/edit"
+                      element={<PatientEditPage />}
+                    />
+                    <Route
+                      path="/receptionist/check-in"
+                      element={<CheckInQueuePage />}
+                    />
+                    <Route
+                      path="/receptionist/appointments"
+                      element={<AppointmentListPage />}
+                    />
+                    <Route
+                      path="/receptionist/*"
+                      element={<ReceptionistDashboard />}
+                    />
+
                     {/* Doctor Routes */}
                     <Route path="/doctor" element={<DoctorDashboard />} />
-                    <Route path="/doctor/patients" element={<PatientListPage />} />
-                    <Route path="/doctor/patients/new" element={<PatientRegistrationPage />} />
-                    <Route path="/doctor/patients/:id" element={<PatientProfilePage />} />
-                    <Route path="/doctor/patients/:id/edit" element={<PatientEditPage />} />
+                    <Route
+                      path="/doctor/patients"
+                      element={<PatientListPage />}
+                    />
+                    <Route
+                      path="/doctor/patients/new"
+                      element={<PatientRegistrationPage />}
+                    />
+                    <Route
+                      path="/doctor/patients/:id"
+                      element={<PatientProfilePage />}
+                    />
+                    <Route
+                      path="/doctor/patients/:id/edit"
+                      element={<PatientEditPage />}
+                    />
                     <Route path="/doctor/queue" element={<DoctorQueuePage />} />
-                    <Route path="/doctor/appointments" element={<AppointmentListPage />} />
+                    <Route
+                      path="/doctor/appointments"
+                      element={<AppointmentListPage />}
+                    />
                     <Route path="/doctor/*" element={<DoctorDashboard />} />
-                    
+
                     {/* Nurse Routes */}
                     <Route path="/nurse" element={<NurseDashboard />} />
-                    <Route path="/nurse/patients" element={<PatientListPage />} />
-                    <Route path="/nurse/patients/new" element={<PatientRegistrationPage />} />
-                    <Route path="/nurse/patients/:id" element={<PatientProfilePage />} />
-                    <Route path="/nurse/patients/:id/edit" element={<PatientEditPage />} />
+                    <Route
+                      path="/nurse/patients"
+                      element={<PatientListPage />}
+                    />
+                    <Route
+                      path="/nurse/patients/new"
+                      element={<PatientRegistrationPage />}
+                    />
+                    <Route
+                      path="/nurse/patients/:id"
+                      element={<PatientProfilePage />}
+                    />
+                    <Route
+                      path="/nurse/patients/:id/edit"
+                      element={<PatientEditPage />}
+                    />
                     <Route path="/nurse/triage" element={<TriageQueuePage />} />
                     <Route path="/nurse/queue" element={<TriageQueuePage />} />
                     <Route path="/nurse/*" element={<NurseDashboard />} />
-                    
-                    {/* Billing Routes */}
-                    <Route path="/billing" element={<BillingDashboard />} />
-                    <Route path="/billing/bills" element={<BillsListPage />} />
-                    <Route path="/billing/claims" element={<ClaimsListPage />} />
-                    <Route path="/billing/payments" element={<PaymentsListPage />} />
-                    <Route path="/billing/settings" element={<BillingSettings />} />
-                    <Route path="/billing/cashier" element={<CashierDashboardPage station="main" />} />
-                    <Route path="/billing/cashier/lab" element={<CashierDashboardPage station="lab" />} />
-                    <Route path="/billing/cashier/pharmacy" element={<CashierDashboardPage station="pharmacy" />} />
-                    <Route path="/billing/*" element={<BillingDashboard />} />
-                    
+
+                    {/* Cashier Routes */}
+                    <Route path="/cashier" element={<CashierCombinedDashboard />} />
+                    <Route path="/cashier/bills" element={<BillsListPage />} />
+                    <Route
+                      path="/cashier/claims"
+                      element={<ClaimsListPage />}
+                    />
+                    <Route
+                      path="/cashier/payments"
+                      element={<PaymentsListPage />}
+                    />
+                    <Route
+                      path="/cashier/settings"
+                      element={<BillingSettings />}
+                    />
+                    <Route
+                      path="/cashier/station"
+                      element={<CashierDashboardPage station="main" />}
+                    />
+                    <Route
+                      path="/cashier/station/lab"
+                      element={<CashierDashboardPage station="lab" />}
+                    />
+                    <Route
+                      path="/cashier/station/pharmacy"
+                      element={<CashierDashboardPage station="pharmacy" />}
+                    />
+                    <Route path="/cashier/*" element={<CashierCombinedDashboard />} />
+
                     {/* Pharmacist Routes */}
-                    <Route path="/pharmacist" element={<PharmacistDashboard />} />
-                    <Route path="/pharmacist/billing" element={<PharmacyBillingPage />} />
-                    <Route path="/pharmacist/*" element={<PharmacistDashboard />} />
-                    
+                    <Route
+                      path="/pharmacist"
+                      element={<PharmacistDashboard />}
+                    />
+                    <Route
+                      path="/pharmacist/billing"
+                      element={<PharmacyBillingPage />}
+                    />
+                    <Route
+                      path="/pharmacist/*"
+                      element={<PharmacistDashboard />}
+                    />
+
                     {/* Lab Tech Routes */}
                     <Route path="/lab-tech" element={<LabTechDashboard />} />
-                    <Route path="/lab-tech/billing" element={<LabBillingPage />} />
+                    <Route
+                      path="/lab-tech/billing"
+                      element={<LabBillingPage />}
+                    />
                     <Route path="/lab-tech/*" element={<LabTechDashboard />} />
-                    
+
                     {/* Patient Routes */}
                     <Route path="/patient" element={<PatientDashboard />} />
                     <Route path="/patient/*" element={<PatientDashboard />} />
-                    
+
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </BrowserRouter>

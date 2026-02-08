@@ -7,7 +7,7 @@ export type UserRole =
   | 'doctor'
   | 'nurse'
   | 'receptionist'
-  | 'billing'
+  | 'cashier'
   | 'pharmacist'
   | 'lab_tech'
   | 'patient';
@@ -82,12 +82,12 @@ export const roleMetadata: Record<UserRole, RoleMetadata> = {
     reportsTo: 'hospital_admin',
     routePrefix: '/receptionist',
   },
-  billing: {
-    label: 'Billing Officer',
+  cashier: {
+    label: 'Cashier',
     description: 'Payments, invoices & claims',
     category: 'support',
     reportsTo: 'hospital_admin',
-    routePrefix: '/billing',
+    routePrefix: '/cashier',
   },
   pharmacist: {
     label: 'Pharmacist',
@@ -115,7 +115,7 @@ export const roleMetadata: Record<UserRole, RoleMetadata> = {
 export const roleCategories = {
   executive: ['cmo', 'hospital_admin', 'clinical_lead'] as UserRole[],
   clinical: ['doctor', 'nurse'] as UserRole[],
-  support: ['receptionist', 'billing'] as UserRole[],
+  support: ['receptionist', 'cashier'] as UserRole[],
   hybrid: ['pharmacist', 'lab_tech'] as UserRole[],
   portal: ['patient'] as UserRole[],
 };

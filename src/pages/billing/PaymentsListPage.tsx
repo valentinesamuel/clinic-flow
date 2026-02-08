@@ -1,28 +1,52 @@
-import { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { PaymentsTable } from '@/components/billing/organisms/tables/PaymentsTable';
-import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { PaymentMethod } from '@/types/billing.types';
-import { PaymentRecord, getPaymentsPaginated, getDailyRevenue } from '@/data/payments';
-import { Search, CreditCard, ArrowLeft, Download, Banknote, Building2, Shield } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+} from "@/components/ui/select";
+import { PaymentsTable } from "@/components/billing/organisms/tables/PaymentsTable";
+import { QueuePagination } from "@/components/molecules/queue/QueuePagination";
+import { PaymentMethod } from "@/types/billing.types";
+import {
+  PaymentRecord,
+  getPaymentsPaginated,
+  getDailyRevenue,
+} from "@/data/payments";
+import {
+  Search,
+  CreditCard,
+  ArrowLeft,
+  Download,
+  Banknote,
+  Building2,
+  Shield,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { getUserBillingDepartment } from "@/utils/billingDepartment";
+import { getBillById } from "@/data/bills";
 
 function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(value);
@@ -32,62 +56,81 @@ export default function PaymentsListPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const userDepartment = user ? getUserBillingDepartment(user) : 'all';
 
-  const initialMethod = searchParams.get('method') as PaymentMethod | null;
-  const [searchQuery, setSearchQuery] = useState('');
-  const [methodFilter, setMethodFilter] = useState<PaymentMethod | 'all'>(initialMethod || 'all');
+  const initialMethod = searchParams.get("method") as PaymentMethod | null;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [methodFilter, setMethodFilter] = useState<PaymentMethod | "all">(
+    initialMethod || "all",
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
   // Fetch payments with filters
-  const { data: payments, total, totalPages } = getPaymentsPaginated(currentPage, pageSize, {
-    method: methodFilter !== 'all' ? methodFilter : undefined,
+  const {
+    data: allPayments,
+    total: rawTotal,
+    totalPages: rawTotalPages,
+  } = getPaymentsPaginated(currentPage, pageSize, {
+    method: methodFilter !== "all" ? methodFilter : undefined,
     search: searchQuery || undefined,
   });
+
+  // Filter payments by department for cashier role
+  const payments = userDepartment === 'all'
+    ? allPayments
+    : allPayments.filter((payment) => {
+        const bill = getBillById(payment.billId);
+        return bill ? bill.department === userDepartment : true;
+      });
+  const total = userDepartment === 'all' ? rawTotal : payments.length;
+  const totalPages = userDepartment === 'all' ? rawTotalPages : Math.max(1, Math.ceil(payments.length / pageSize));
 
   // Today's revenue
   const dailyRevenue = getDailyRevenue();
 
   const handleViewReceipt = (payment: PaymentRecord) => {
     toast({
-      title: 'View Receipt',
+      title: "View Receipt",
       description: `Viewing ${payment.receiptNumber}`,
     });
   };
 
   const handleReprint = (payment: PaymentRecord) => {
     toast({
-      title: 'Reprint',
+      title: "Reprint",
       description: `Reprinting ${payment.receiptNumber}`,
     });
   };
 
   const handleEmail = (payment: PaymentRecord) => {
     toast({
-      title: 'Email Sent',
+      title: "Email Sent",
       description: `Receipt emailed for ${payment.receiptNumber}`,
     });
   };
 
   const handleExport = () => {
     toast({
-      title: 'Export',
-      description: 'Exporting transactions to CSV...',
+      title: "Export",
+      description: "Exporting transactions to CSV...",
     });
   };
 
   return (
-    <DashboardLayout allowedRoles={['billing', 'hospital_admin', 'cmo']}>
+    <DashboardLayout allowedRoles={["cashier", "hospital_admin", "cmo"]}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/billing')}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
             <div>
-              <h1 className="text-2xl font-bold text-foreground">Payments & Transactions</h1>
-              <p className="text-muted-foreground">Payment history and receipts</p>
+              <h1 className="text-2xl font-bold text-foreground">
+                Payments & Transactions
+              </h1>
+              <p className="text-muted-foreground">
+                Payment history and receipts
+              </p>
             </div>
           </div>
           <Button variant="outline" onClick={handleExport}>
@@ -97,48 +140,114 @@ export default function PaymentsListPage() {
         </div>
 
         {/* Revenue Summary */}
-        <div className="grid gap-4 md:grid-cols-5">
-          <Card>
+        <div className="grid gap-5 md:grid-cols-5">
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-1">
-                <Banknote className="h-4 w-4" />
-                Cash
-              </CardDescription>
-              <CardTitle className="text-xl">{formatCurrency(dailyRevenue.cash)}</CardTitle>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`flex p-1.5 rounded-md w-fit bg-green-100 dark:bg-green-900/20`}
+                >
+                  <DollarSign className={`h-4 w-4 text-green-600`} />
+                </div>
+                <CardDescription>Cash Payments</CardDescription>
+              </div>
+              <CardTitle className="text-xl font-bold ">
+                {formatCurrency(dailyRevenue.cash)}
+              </CardTitle>
             </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-sm text-green-600">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                <span>+12% today</span>
+              </div>
+            </CardContent>
           </Card>
-          <Card>
+
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-1">
-                <CreditCard className="h-4 w-4" />
-                POS
-              </CardDescription>
-              <CardTitle className="text-xl">{formatCurrency(dailyRevenue.card)}</CardTitle>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`flex p-1.5 rounded-md w-fit bg-blue-100 dark:bg-blue-900/20`}
+                >
+                  <CreditCard className={`h-4 w-4 text-blue-600`} />
+                </div>
+                <CardDescription>Card/POS Payments</CardDescription>
+              </div>
+              <CardTitle className="text-xl font-bold ">
+                {formatCurrency(dailyRevenue.card)}
+              </CardTitle>
             </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-sm text-red-600">
+                <TrendingDown className="h-4 w-4 mr-1" />
+                <span>-2% today</span>
+              </div>
+            </CardContent>
           </Card>
-          <Card>
+
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-1">
-                <Building2 className="h-4 w-4" />
-                Transfer
-              </CardDescription>
-              <CardTitle className="text-xl">{formatCurrency(dailyRevenue.transfer)}</CardTitle>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`flex p-1.5 rounded-md w-fit bg-purple-100 dark:bg-purple-900/20`}
+                >
+                  <Building2 className={`h-4 w-4 text-purple-600`} />
+                </div>
+                <CardDescription>Transfer Payments</CardDescription>
+              </div>
+              <CardTitle className="text-xl font-bold ">
+                {formatCurrency(dailyRevenue.transfer)}
+              </CardTitle>
             </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-sm text-green-600">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                <span>1% today</span>
+              </div>
+            </CardContent>
           </Card>
-          <Card>
+
+          <Card className="cursor-pointer hover:bg-accent/50 transition-colors">
             <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-1">
-                <Shield className="h-4 w-4" />
-                HMO
-              </CardDescription>
-              <CardTitle className="text-xl">{formatCurrency(dailyRevenue.hmo)}</CardTitle>
+              <div className="flex items-center gap-2">
+                <div
+                  className={`flex p-1.5 rounded-md w-fit bg-teal-100 dark:bg-teal-900/20`}
+                >
+                  <Shield className={`h-4 w-4 text-teal-600`} />
+                </div>
+                <CardDescription>HMO Payments</CardDescription>
+              </div>
+              <CardTitle className="text-xl font-bold ">
+                {formatCurrency(dailyRevenue.total)}
+              </CardTitle>
             </CardHeader>
+            <CardContent>
+              <div className="flex items-center text-sm text-green-600">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                <span>1% today</span>
+              </div>
+            </CardContent>
           </Card>
-          <Card className="bg-primary text-primary-foreground">
+
+          <Card className="bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors">
             <CardHeader className="pb-2">
-              <CardDescription className="text-primary-foreground/80">Today's Total</CardDescription>
-              <CardTitle className="text-xl">{formatCurrency(dailyRevenue.total)}</CardTitle>
+              <div className="flex items-center gap-2">
+                <div className={`flex p-1.5 rounded-md w-fit bg-secondary`}>
+                  <TrendingUp className={`h-4 w-4 text-primary`} />
+                </div>
+                <CardDescription className="text-primary-foreground/80">
+                  Total Today
+                </CardDescription>
+              </div>
+              <CardTitle className="text-xl">
+                {formatCurrency(dailyRevenue.total)}
+              </CardTitle>
             </CardHeader>
+            <CardContent>
+              <p className="text-sm text-primary-foreground/80">
+                All payment methods
+              </p>
+            </CardContent>
           </Card>
         </div>
 
@@ -166,7 +275,7 @@ export default function PaymentsListPage() {
                 <Select
                   value={methodFilter}
                   onValueChange={(value) => {
-                    setMethodFilter(value as PaymentMethod | 'all');
+                    setMethodFilter(value as PaymentMethod | "all");
                     setCurrentPage(1);
                   }}
                 >

@@ -1,23 +1,26 @@
 // PharmacyBillingCodeFlow - Generate billing code for pharmacy/lab payments
 
-import { useState } from 'react';
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { PaymentItem } from '@/types/billing.types';
-import { Patient } from '@/types/patient.types';
-import { BillingDepartment } from '@/types/billing.types';
-import { generateBillingCode, getBillingCodeExpiry } from '@/utils/billingDepartment';
-import { Copy, Printer, CheckCircle2, QrCode } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { PaymentItem } from "@/types/billing.types";
+import { Patient } from "@/types/patient.types";
+import { BillingDepartment } from "@/types/billing.types";
+import {
+  generateBillingCode,
+  getBillingCodeExpiry,
+} from "@/utils/billingDepartment";
+import { Copy, Printer, CheckCircle2, QrCode } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface PharmacyBillingCodeFlowProps {
   open: boolean;
@@ -30,19 +33,19 @@ interface PharmacyBillingCodeFlowProps {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
 }
 
 function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
   });
 }
 
@@ -59,14 +62,12 @@ export function PharmacyBillingCodeFlow({
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const isHmoPatient = patient.paymentType === 'hmo';
+  const isHmoPatient = patient.paymentType === "hmo";
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
   const hmoCoverage = isHmoPatient ? subtotal * 0.9 : 0;
   const expiryDateStr = getBillingCodeExpiry();
   const expiryDateObj = new Date(expiryDateStr);
   const patientLiability = isHmoPatient ? subtotal * 0.1 : subtotal;
-
-  
 
   const handleGenerateCode = () => {
     const code = generateBillingCode();
@@ -78,14 +79,14 @@ export function PharmacyBillingCodeFlow({
     if (generatedCode) {
       navigator.clipboard.writeText(generatedCode);
       toast({
-        title: 'Code Copied',
-        description: 'Billing code copied to clipboard',
+        title: "Code Copied",
+        description: "Billing code copied to clipboard",
       });
     }
   };
 
   const handlePrint = () => {
-    const printWindow = window.open('', '_blank', 'width=400,height=500');
+    const printWindow = window.open("", "_blank", "width=400,height=500");
     if (!printWindow) return;
 
     printWindow.document.write(`
@@ -125,13 +126,13 @@ export function PharmacyBillingCodeFlow({
           </style>
         </head>
         <body>
-          <h2>LIFECARE MEDICAL CENTRE</h2>
-          <p class="info">${department === 'pharmacy' ? 'Pharmacy' : 'Laboratory'} Billing Code</p>
+          <h2>DEYON MEDICAL CENTRE</h2>
+          <p class="info">${department === "pharmacy" ? "Pharmacy" : "Laboratory"} Billing Code</p>
           <div class="code">${generatedCode}</div>
           <p class="info">Patient: ${patient.firstName} ${patient.lastName}</p>
           <p class="info">MRN: ${patient.mrn}</p>
           <p class="amount">Amount Due: ₦${patientLiability.toLocaleString()}</p>
-          <p class="info">Expires: ${expiryDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+          <p class="info">Expires: ${expiryDateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}</p>
           <div class="instructions">
             <p><strong>Instructions:</strong></p>
             <p>Take this code to the billing desk to make payment.</p>
@@ -163,7 +164,7 @@ export function PharmacyBillingCodeFlow({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {step === 1 ? 'Generate Billing Code' : '✓ Billing Code Generated'}
+            {step === 1 ? "Generate Billing Code" : "✓ Billing Code Generated"}
           </DialogTitle>
         </DialogHeader>
 
@@ -199,7 +200,9 @@ export function PharmacyBillingCodeFlow({
                     {item.description}
                     {item.quantity > 1 && ` × ${item.quantity}`}
                   </span>
-                  <span className="font-medium">{formatCurrency(item.total)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(item.total)}
+                  </span>
                 </div>
               ))}
             </div>
@@ -247,9 +250,9 @@ export function PharmacyBillingCodeFlow({
             <div className="py-4">
               <div
                 className={cn(
-                  'inline-flex items-center justify-center',
-                  'text-4xl font-mono font-bold tracking-widest',
-                  'px-8 py-4 rounded-lg border-2 border-dashed border-primary bg-primary/5'
+                  "inline-flex items-center justify-center",
+                  "text-4xl font-mono font-bold tracking-widest",
+                  "px-8 py-4 rounded-lg border-2 border-dashed border-primary bg-primary/5",
                 )}
               >
                 {generatedCode}
@@ -264,7 +267,12 @@ export function PharmacyBillingCodeFlow({
                 Amount Due: {formatCurrency(patientLiability)}
               </p>
               <p className="text-sm text-muted-foreground">
-                Expires: {expiryDateObj.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                Expires:{" "}
+                {expiryDateObj.toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
               </p>
             </div>
 

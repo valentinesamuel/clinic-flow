@@ -1,6 +1,6 @@
-import { Separator } from '@/components/ui/separator';
-import { PaymentMethod } from '@/types/billing.types';
-import { QrCode } from 'lucide-react';
+import { Separator } from "@/components/ui/separator";
+import { PaymentMethod } from "@/types/billing.types";
+import { QrCode } from "lucide-react";
 
 interface ReceiptFooterProps {
   showQRCode?: boolean;
@@ -9,15 +9,21 @@ interface ReceiptFooterProps {
 }
 
 const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
-  cash: 'Cash',
-  card: 'POS',
-  transfer: 'Bank Transfer',
-  hmo: 'HMO',
-  corporate: 'Corporate',
+  cash: "Cash",
+  card: "POS",
+  transfer: "Bank Transfer",
+  hmo: "HMO",
+  corporate: "Corporate",
 };
 
-export function ReceiptFooter({ showQRCode = false, receiptId, paymentMethod }: ReceiptFooterProps) {
-  const receiptUrl = receiptId ? `${window.location.origin}/receipts/${receiptId}` : undefined;
+export function ReceiptFooter({
+  showQRCode = false,
+  receiptId,
+  paymentMethod,
+}: ReceiptFooterProps) {
+  const receiptUrl = receiptId
+    ? `${window.location.origin}/receipts/${receiptId}`
+    : undefined;
 
   return (
     <div className="font-mono text-center space-y-3 mt-4">
@@ -27,7 +33,9 @@ export function ReceiptFooter({ showQRCode = false, receiptId, paymentMethod }: 
       <div className="text-xs space-y-1">
         <div className="flex justify-center gap-2">
           <span className="text-muted-foreground">Payment Method:</span>
-          <span className="font-medium">{PAYMENT_METHOD_LABELS[paymentMethod]}</span>
+          <span className="font-medium">
+            {PAYMENT_METHOD_LABELS[paymentMethod]}
+          </span>
         </div>
         <div className="flex justify-center gap-2">
           <span className="text-muted-foreground">Status:</span>
@@ -50,7 +58,7 @@ export function ReceiptFooter({ showQRCode = false, receiptId, paymentMethod }: 
       {/* Thank You Message */}
       <div className="space-y-1">
         <p className="text-sm font-medium">Thank you for choosing</p>
-        <p className="text-sm font-bold">LifeCare!</p>
+        <p className="text-sm font-bold">Deyon!</p>
       </div>
 
       {/* Disclaimer */}

@@ -1,8 +1,8 @@
 // ReceiptPrintTemplate - A5-sized print-friendly receipt
 
-import { PaymentClearance } from '@/types/billing.types';
-import { Patient } from '@/types/patient.types';
-import { cn } from '@/lib/utils';
+import { PaymentClearance } from "@/types/billing.types";
+import { Patient } from "@/types/patient.types";
+import { cn } from "@/lib/utils";
 
 interface ReceiptPrintTemplateProps {
   clearance: PaymentClearance;
@@ -16,29 +16,29 @@ interface ReceiptPrintTemplateProps {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-NG', {
-    style: 'currency',
-    currency: 'NGN',
+  return new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
 }
 
 function formatDateTime(timestamp: string): string {
-  return new Date(timestamp).toLocaleString('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Date(timestamp).toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }
 
 const defaultClinicInfo = {
-  name: 'LIFECARE MEDICAL CENTRE',
-  address: '123 Herbert Macaulay Way, Yaba, Lagos State, Nigeria',
-  phone: '+234 801 234 5678',
-  email: 'info@lifecaremedical.ng',
+  name: "DEYON MEDICAL CENTRE",
+  address: "123 Herbert Macaulay Way, Yaba, Lagos State, Nigeria",
+  phone: "+234 801 234 5678",
+  email: "info@deyonmedical.ng",
 };
 
 export function ReceiptPrintTemplate({
@@ -81,14 +81,14 @@ export function ReceiptPrintTemplate({
 
       <div
         className={cn(
-          'print-receipt mx-auto bg-background border rounded-lg p-6',
-          'max-w-[148mm] font-mono text-sm'
+          "print-receipt mx-auto bg-background border rounded-lg p-6",
+          "max-w-[148mm] font-mono text-sm",
         )}
       >
         {/* PAID Watermark */}
         <div
           className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5 print:opacity-10"
-          style={{ transform: 'rotate(-30deg)' }}
+          style={{ transform: "rotate(-30deg)" }}
         >
           <span className="text-8xl font-bold text-foreground">PAID</span>
         </div>
@@ -100,7 +100,9 @@ export function ReceiptPrintTemplate({
           </div>
           <h1 className="text-lg font-bold">{clinicInfo.name}</h1>
           <p className="text-xs text-muted-foreground">{clinicInfo.address}</p>
-          <p className="text-xs text-muted-foreground">Tel: {clinicInfo.phone}</p>
+          <p className="text-xs text-muted-foreground">
+            Tel: {clinicInfo.phone}
+          </p>
         </div>
 
         <div className="border-t border-dashed pt-3 mb-3">
@@ -128,7 +130,9 @@ export function ReceiptPrintTemplate({
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
               <span>Name:</span>
-              <span>{patient.firstName} {patient.lastName}</span>
+              <span>
+                {patient.firstName} {patient.lastName}
+              </span>
             </div>
             <div className="flex justify-between">
               <span>Patient #:</span>
@@ -194,7 +198,9 @@ export function ReceiptPrintTemplate({
         <div className="border-t border-dashed pt-3 mb-3 text-xs">
           <div className="flex justify-between">
             <span>Payment Method:</span>
-            <span className="uppercase font-bold">{clearance.paymentMethod}</span>
+            <span className="uppercase font-bold">
+              {clearance.paymentMethod}
+            </span>
           </div>
           {clearance.referenceNumber && (
             <div className="flex justify-between">
@@ -217,8 +223,12 @@ export function ReceiptPrintTemplate({
 
         {/* Footer */}
         <div className="text-center text-xs text-muted-foreground">
-          <p className="font-medium">Thank you for choosing {clinicInfo.name.split(' ')[0]}!</p>
-          <p className="mt-2 text-[10px]">Computer-generated receipt - Valid without signature</p>
+          <p className="font-medium">
+            Thank you for choosing {clinicInfo.name.split(" ")[0]}!
+          </p>
+          <p className="mt-2 text-[10px]">
+            Computer-generated receipt - Valid without signature
+          </p>
         </div>
       </div>
 

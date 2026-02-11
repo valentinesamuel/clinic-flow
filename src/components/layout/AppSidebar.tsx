@@ -64,8 +64,16 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           icon: Receipt,
           children: [
             { title: "Bills", href: "/cmo/billing/bills", icon: Receipt },
-            { title: "Payments", href: "/cmo/billing/payments", icon: CreditCard },
-            { title: "HMO Claims", href: "/cmo/billing/claims", icon: FileCheck },
+            {
+              title: "Payments",
+              href: "/cmo/billing/payments",
+              icon: CreditCard,
+            },
+            {
+              title: "HMO Claims",
+              href: "/cmo/billing/claims",
+              icon: FileCheck,
+            },
           ],
         },
         { title: "Staff", href: "/cmo/staff", icon: UserCog },
@@ -110,9 +118,21 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           icon: Receipt,
           badge: 5,
           children: [
-            { title: "Bills", href: "/hospital-admin/billing/bills", icon: Receipt },
-            { title: "Payments", href: "/hospital-admin/billing/payments", icon: CreditCard },
-            { title: "HMO Claims", href: "/hospital-admin/billing/claims", icon: FileCheck },
+            {
+              title: "Bills",
+              href: "/hospital-admin/billing/bills",
+              icon: Receipt,
+            },
+            {
+              title: "Payments",
+              href: "/hospital-admin/billing/payments",
+              icon: CreditCard,
+            },
+            {
+              title: "HMO Claims",
+              href: "/hospital-admin/billing/claims",
+              icon: FileCheck,
+            },
           ],
         },
       ],
@@ -156,7 +176,11 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           icon: ClipboardList,
           badge: 8,
         },
-        { title: "Consultations", href: "/clinical-lead/consultations", icon: Stethoscope },
+        {
+          title: "Consultations",
+          href: "/clinical-lead/consultations",
+          icon: Stethoscope,
+        },
         {
           title: "Lab Results",
           href: "/clinical-lead/lab-results",
@@ -185,7 +209,11 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           badge: 8,
         },
         { title: "Patients", href: "/doctor/patients", icon: Users },
-        { title: "Consultations", href: "/doctor/consultation/new", icon: Stethoscope },
+        {
+          title: "Consultations",
+          href: "/doctor/consultation/new",
+          icon: Stethoscope,
+        },
         { title: "Prescriptions", href: "/doctor/prescriptions", icon: Pill },
       ],
     },
@@ -247,15 +275,29 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
       label: "Finance",
       items: [
         { title: "Dashboard", href: "/cashier", icon: LayoutDashboard },
-        { title: "Cashier Station", href: "/cashier/station", icon: CreditCard },
+        {
+          title: "Cashier Station",
+          href: "/cashier/station",
+          icon: CreditCard,
+        },
         {
           title: "Billing",
           href: "/cashier/bills",
           icon: Receipt,
           badge: 12,
           children: [
-            { title: "Bills", href: "/cashier/bills", icon: Receipt, badge: 12 },
-            { title: "Claims", href: "/cashier/claims", icon: FileCheck, badge: 7 },
+            {
+              title: "Bills",
+              href: "/cashier/bills",
+              icon: Receipt,
+              badge: 12,
+            },
+            {
+              title: "Claims",
+              href: "/cashier/claims",
+              icon: FileCheck,
+              badge: 7,
+            },
             { title: "Payments", href: "/cashier/payments", icon: CreditCard },
           ],
         },
@@ -313,7 +355,9 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
+  const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
+    {},
+  );
 
   const navigation = user ? navigationByRole[user.role] : [];
   const baseRoute = user
@@ -334,7 +378,9 @@ export function AppSidebar() {
       for (const item of group.items) {
         if (item.children) {
           const childMatch = item.children.some(
-            (child) => location.pathname === child.href || location.pathname.startsWith(child.href + "/")
+            (child) =>
+              location.pathname === child.href ||
+              location.pathname.startsWith(child.href + "/"),
           );
           if (childMatch) {
             expanded[item.href] = true;
@@ -343,7 +389,7 @@ export function AppSidebar() {
       }
     }
     setExpandedItems((prev) => ({ ...prev, ...expanded }));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, user?.role]);
 
   if (!user) return null;
@@ -354,7 +400,9 @@ export function AppSidebar() {
 
   const isActive = (href: string) => {
     if (href === baseRoute) return location.pathname === href;
-    return location.pathname === href || location.pathname.startsWith(href + "/");
+    return (
+      location.pathname === href || location.pathname.startsWith(href + "/")
+    );
   };
 
   const renderNavItem = (item: NavItem) => {
@@ -364,7 +412,9 @@ export function AppSidebar() {
 
     if (hasChildren && !collapsed) {
       const hasActiveChild = item.children!.some(
-        (child) => location.pathname === child.href || location.pathname.startsWith(child.href + "/")
+        (child) =>
+          location.pathname === child.href ||
+          location.pathname.startsWith(child.href + "/"),
       );
       const parentActive = active && !hasActiveChild;
 
@@ -409,7 +459,10 @@ export function AppSidebar() {
                       <child.icon className="h-4 w-4 shrink-0" />
                       <span className="flex-1 truncate">{child.title}</span>
                       {child.badge && (
-                        <Badge variant="secondary" className="h-5 min-w-5 text-xs">
+                        <Badge
+                          variant="secondary"
+                          className="h-5 min-w-5 text-xs"
+                        >
                           {child.badge}
                         </Badge>
                       )}
@@ -441,10 +494,7 @@ export function AppSidebar() {
             <>
               <span className="flex-1 truncate">{item.title}</span>
               {item.badge && (
-                <Badge
-                  variant="secondary"
-                  className="h-5 min-w-5 text-xs"
-                >
+                <Badge variant="secondary" className="h-5 min-w-5 text-xs">
                   {item.badge}
                 </Badge>
               )}
@@ -474,7 +524,7 @@ export function AppSidebar() {
         {!collapsed && (
           <div className="overflow-hidden">
             <h1 className="font-semibold text-sidebar-foreground truncate">
-              LifeCare Clinic
+              Deyon Clinic
             </h1>
           </div>
         )}

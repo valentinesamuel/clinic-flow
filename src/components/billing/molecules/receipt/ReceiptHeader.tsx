@@ -1,5 +1,5 @@
-import { Separator } from '@/components/ui/separator';
-import { Building2 } from 'lucide-react';
+import { Separator } from "@/components/ui/separator";
+import { Building2 } from "lucide-react";
 
 interface ReceiptHeaderProps {
   receiptNumber: string;
@@ -7,7 +7,11 @@ interface ReceiptHeaderProps {
   cashier?: string;
 }
 
-export function ReceiptHeader({ receiptNumber, date, cashier }: ReceiptHeaderProps) {
+export function ReceiptHeader({
+  receiptNumber,
+  date,
+  cashier,
+}: ReceiptHeaderProps) {
   return (
     <div className="text-center space-y-2 font-mono">
       {/* Clinic Logo/Icon */}
@@ -19,9 +23,15 @@ export function ReceiptHeader({ receiptNumber, date, cashier }: ReceiptHeaderPro
 
       {/* Clinic Name */}
       <div>
-        <h2 className="text-lg font-bold tracking-tight">LIFECARE MEDICAL CENTRE</h2>
-        <p className="text-xs text-muted-foreground">123 Herbert Macaulay Way</p>
-        <p className="text-xs text-muted-foreground">Yaba, Lagos State, Nigeria</p>
+        <h2 className="text-lg font-bold tracking-tight">
+          DEYON MEDICAL CENTRE
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          123 Herbert Macaulay Way
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Yaba, Lagos State, Nigeria
+        </p>
         <p className="text-xs text-muted-foreground">Tel: +234 801 234 5678</p>
       </div>
 

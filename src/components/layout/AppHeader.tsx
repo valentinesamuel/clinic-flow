@@ -1,17 +1,17 @@
-import { useAuth } from '@/contexts/AuthContext';
-import { SyncStatusIndicator } from '@/components/SyncStatusIndicator';
-import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { useAuth } from "@/contexts/AuthContext";
+import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 
 export function AppHeader() {
   const { user, logout } = useAuth();
-  
+
   if (!user) return null;
 
   return (
     <header className="sticky top-0 z-40 bg-card border-b border-border px-4 h-14 flex items-center justify-between md:hidden">
       <div>
-        <h1 className="font-semibold text-foreground">LifeCare Clinic</h1>
+        <h1 className="font-semibold text-foreground">Deyon Clinic</h1>
       </div>
       <div className="flex items-center gap-2">
         <SyncStatusIndicator />

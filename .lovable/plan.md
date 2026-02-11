@@ -1,4 +1,3 @@
-
 # Comprehensive Pharmacy Module Implementation Plan
 
 ## Executive Summary
@@ -13,19 +12,19 @@ This plan implements a full-featured Pharmacy Module that serves as a clinical c
 
 Create a dedicated pharmacy types file with the following interfaces:
 
-| Type | Purpose |
-|------|---------|
+| Type                     | Purpose                                                          |
+| ------------------------ | ---------------------------------------------------------------- |
 | `PrescriptionQueueEntry` | Enhanced prescription with payment status, PA codes, source type |
-| `DispensingItem` | Individual drug with brand selection, batch tracking, FEFO |
-| `DispensingRecord` | Complete dispensing transaction with stock deductions |
-| `DrugFormulary` | Drug catalog with generic/brand, HMO approval status |
-| `DrugBatch` | Batch tracking with expiry, quantity, location |
-| `StockRequisition` | Internal requisition from pharmacy to main store |
-| `DrugInteraction` | Drug-drug interaction alert data |
-| `RetailItem` | Non-prescription retail items (barcode, VAT, fixed price) |
-| `RetailSale` | POS transaction for walk-in retail |
-| `ShrinkageLog` | Damage/expiry/missing stock logging |
-| `DispensingAudit` | Audit trail for reversed/cancelled dispenses |
+| `DispensingItem`         | Individual drug with brand selection, batch tracking, FEFO       |
+| `DispensingRecord`       | Complete dispensing transaction with stock deductions            |
+| `DrugFormulary`          | Drug catalog with generic/brand, HMO approval status             |
+| `DrugBatch`              | Batch tracking with expiry, quantity, location                   |
+| `StockRequisition`       | Internal requisition from pharmacy to main store                 |
+| `DrugInteraction`        | Drug-drug interaction alert data                                 |
+| `RetailItem`             | Non-prescription retail items (barcode, VAT, fixed price)        |
+| `RetailSale`             | POS transaction for walk-in retail                               |
+| `ShrinkageLog`           | Damage/expiry/missing stock logging                              |
+| `DispensingAudit`        | Audit trail for reversed/cancelled dispenses                     |
 
 ### Key Type Definitions
 
@@ -81,13 +80,13 @@ interface RetailItem {
 
 ### New Data Files
 
-| File | Purpose |
-|------|---------|
-| `src/data/drug-formulary.ts` | Nigerian essential drugs with brands, generics, HMO lists |
-| `src/data/drug-batches.ts` | Batch/expiry tracking mock data |
-| `src/data/drug-interactions.ts` | Common drug-drug interactions database |
-| `src/data/retail-catalog.ts` | Retail items with barcodes |
-| `src/data/requisitions.ts` | Stock requisition history |
+| File                            | Purpose                                                   |
+| ------------------------------- | --------------------------------------------------------- |
+| `src/data/drug-formulary.ts`    | Nigerian essential drugs with brands, generics, HMO lists |
+| `src/data/drug-batches.ts`      | Batch/expiry tracking mock data                           |
+| `src/data/drug-interactions.ts` | Common drug-drug interactions database                    |
+| `src/data/retail-catalog.ts`    | Retail items with barcodes                                |
+| `src/data/requisitions.ts`      | Stock requisition history                                 |
 
 ---
 
@@ -98,6 +97,7 @@ interface RetailItem {
 Main prescription queue interface visible only after Doctor commits prescription with ICD-10 diagnosis.
 
 **Layout:**
+
 ```text
 +--------------------------------------------------+
 | PRESCRIPTION QUEUE           [Filters ▼] [Stats] |
@@ -121,6 +121,7 @@ Main prescription queue interface visible only after Doctor commits prescription
 ```
 
 **Features:**
+
 - Real-time queue from doctor prescriptions
 - Color-coded payment status (Green=Paid, Red=Unpaid, Yellow=Pending PA)
 - Source type filtering (In-Patient, Out-Patient, Walk-In)
@@ -129,6 +130,7 @@ Main prescription queue interface visible only after Doctor commits prescription
 - Queue priority sorting
 
 **Hard Guardrail - No-Voucher, No-Drug Rule:**
+
 - "Dispense" button disabled unless:
   - Private → Payment confirmed (green badge)
   - HMO → PA Code attached OR drug on auto-approved list
@@ -136,6 +138,7 @@ Main prescription queue interface visible only after Doctor commits prescription
 ### PrescriptionQueueCard.tsx (`src/components/pharmacy/PrescriptionQueueCard.tsx`)
 
 Individual queue entry card showing:
+
 - Patient name, MRN, photo
 - Source type badge (In-Patient/Out-Patient/Walk-In)
 - Payer status with color coding
@@ -154,6 +157,7 @@ Individual queue entry card showing:
 Multi-step dispensing workflow:
 
 **Step 1: Verify Prescription**
+
 ```text
 +------------------------------------------+
 | VERIFY PRESCRIPTION                      |
@@ -172,6 +176,7 @@ Multi-step dispensing workflow:
 ```
 
 **Step 2: Drug Selection & Substitution**
+
 ```text
 +------------------------------------------+
 | SELECT DRUGS                             |
@@ -194,6 +199,7 @@ Multi-step dispensing workflow:
 ```
 
 **Step 3: Batch Selection (FEFO)**
+
 ```text
 +------------------------------------------+
 | SELECT BATCH (FEFO)                      |
@@ -217,6 +223,7 @@ Multi-step dispensing workflow:
 ```
 
 **Step 4: Partial Dispensing (if needed)**
+
 ```text
 +------------------------------------------+
 | PARTIAL DISPENSING                       |
@@ -235,6 +242,7 @@ Multi-step dispensing workflow:
 ```
 
 **Step 5: Auto-Label & Finalize**
+
 ```text
 +------------------------------------------+
 | FINALIZE DISPENSING                      |
@@ -256,15 +264,15 @@ Multi-step dispensing workflow:
 
 ### Key Components
 
-| Component | Purpose |
-|-----------|---------|
-| `DrugSelector.tsx` | Drug search with brand/generic alternatives |
+| Component                       | Purpose                                         |
+| ------------------------------- | ----------------------------------------------- |
+| `DrugSelector.tsx`              | Drug search with brand/generic alternatives     |
 | `GenericSubstitutionEngine.tsx` | Suggest in-stock generics for prescribed brands |
-| `BatchSelector.tsx` | FEFO-enforced batch selection |
-| `PartialDispensingModal.tsx` | Handle partial fills with outstanding tracking |
-| `DrugLabelGenerator.tsx` | Auto-generate labels from dosage instructions |
-| `DrugInteractionAlert.tsx` | Display drug-drug interaction warnings |
-| `AllergyWarningBanner.tsx` | Red banner for allergy conflicts |
+| `BatchSelector.tsx`             | FEFO-enforced batch selection                   |
+| `PartialDispensingModal.tsx`    | Handle partial fills with outstanding tracking  |
+| `DrugLabelGenerator.tsx`        | Auto-generate labels from dosage instructions   |
+| `DrugInteractionAlert.tsx`      | Display drug-drug interaction warnings          |
+| `AllergyWarningBanner.tsx`      | Red banner for allergy conflicts                |
 
 ---
 
@@ -275,6 +283,7 @@ Multi-step dispensing workflow:
 Comprehensive inventory management with anti-theft controls:
 
 **Features:**
+
 - Batch + Expiry tracking for all drugs
 - FEFO enforcement (cannot dispense newer batch if older exists)
 - Real-time stock sync (dispense = immediate deduction)
@@ -337,6 +346,7 @@ Mandatory logging for stock discrepancies:
 ### Theft Detection Alerts
 
 System flags for review:
+
 - Cancelled bills with "Returned to Stock"
 - Repeated reversals by same staff
 - Stock count vs system mismatch
@@ -349,6 +359,7 @@ System flags for review:
 ### Clinical Safety Components
 
 **PatientContextBar.tsx** (Sticky header during dispensing):
+
 ```text
 +--------------------------------------------------+
 | 👤 Aisha Mohammed | PT-2026-00123 | 39F          |
@@ -359,6 +370,7 @@ System flags for review:
 ```
 
 **DrugInteractionChecker.tsx**:
+
 - Checks prescribed drugs against:
   - Current medications
   - Other prescribed items in same prescription
@@ -366,12 +378,14 @@ System flags for review:
 - Severe interactions require "Prescribe Anyway" confirmation
 
 **AllergyBlocker.tsx**:
+
 - Hard block on drugs containing allergens
 - Cannot proceed without override by prescriber
 
 ### Chain of Evidence
 
 Pharmacist can view (read-only):
+
 - Diagnosis (ICD-10) from consultation
 - Prescriber details and credentials
 - Clinical justification written by doctor
@@ -384,6 +398,7 @@ Pharmacist can view (read-only):
 ### HMO Rules Engine
 
 **Prescriber Level Validation:**
+
 ```text
 Drug: Specialist Antibiotic XYZ
 Rule: Consultant-only authorization required
@@ -396,6 +411,7 @@ Options:
 ```
 
 **Clinical Justification Display:**
+
 ```text
 +------------------------------------------+
 | HMO JUSTIFICATION                        |
@@ -414,6 +430,7 @@ Options:
 ### PACodeVerifier.tsx
 
 Verify Pre-Authorization codes for HMO drugs:
+
 - Check PA code validity
 - Verify covered amount
 - Flag expired/invalid codes
@@ -451,6 +468,7 @@ Direct retail sales without clinical workflow:
 ```
 
 **Features:**
+
 - Barcode scanning (camera or manual entry)
 - No manual price entry (prevents fraud)
 - VAT auto-applied to applicable items
@@ -461,6 +479,7 @@ Direct retail sales without clinical workflow:
 ### RetailInventoryPage.tsx
 
 Separate catalog for retail items:
+
 - OTC medications
 - Cosmetics
 - Supplements
@@ -477,7 +496,7 @@ Single receipt with clear sections:
 
 ```text
 +------------------------------------------+
-|        LIFECARE MEDICAL CENTRE           |
+|        DEYON MEDICAL CENTRE           |
 |        Pharmacy Receipt                   |
 +------------------------------------------+
 | Receipt: RX-2026-00123                   |
@@ -514,16 +533,16 @@ Single receipt with clear sections:
 
 **Report Types:**
 
-| Report | Content |
-|--------|---------|
-| Fast/Slow Movers | Drug turnover analysis |
-| Expiry Risk | Items expiring in 30/60/90 days |
-| Revenue vs Cost | Margin analysis per drug |
-| HMO Margin | Revenue after HMO discounts |
-| Theft Detection | Flagged suspicious activities |
-| Stock Reconciliation | System vs physical count |
-| Prescription Analysis | Top prescribers, common drugs |
-| Outstanding Balances | Partial dispenses pending |
+| Report                | Content                         |
+| --------------------- | ------------------------------- |
+| Fast/Slow Movers      | Drug turnover analysis          |
+| Expiry Risk           | Items expiring in 30/60/90 days |
+| Revenue vs Cost       | Margin analysis per drug        |
+| HMO Margin            | Revenue after HMO discounts     |
+| Theft Detection       | Flagged suspicious activities   |
+| Stock Reconciliation  | System vs physical count        |
+| Prescription Analysis | Top prescribers, common drugs   |
+| Outstanding Balances  | Partial dispenses pending       |
 
 ### Dashboard Widgets
 
@@ -595,14 +614,14 @@ Single receipt with clear sections:
 
 ### Modified Files
 
-| File | Changes |
-|------|---------|
+| File                                           | Changes                              |
+| ---------------------------------------------- | ------------------------------------ |
 | `src/pages/dashboards/PharmacistDashboard.tsx` | Remove "Coming Soon", add live queue |
-| `src/data/prescriptions.ts` | Add diagnosis, payment status fields |
-| `src/data/inventory.ts` | Add batch tracking, FEFO logic |
-| `src/App.tsx` | Add new pharmacy routes |
-| `src/components/layout/AppSidebar.tsx` | Add pharmacy navigation items |
-| `src/types/clinical.types.ts` | Extend Prescription interface |
+| `src/data/prescriptions.ts`                    | Add diagnosis, payment status fields |
+| `src/data/inventory.ts`                        | Add batch tracking, FEFO logic       |
+| `src/App.tsx`                                  | Add new pharmacy routes              |
+| `src/components/layout/AppSidebar.tsx`         | Add pharmacy navigation items        |
+| `src/types/clinical.types.ts`                  | Extend Prescription interface        |
 
 ---
 
@@ -697,38 +716,39 @@ Pharmacist Menu:
 
 ## Part 13: Workflow Guardrails Summary
 
-| Step | Action | Non-Negotiable Rule |
-|------|--------|---------------------|
-| 1 | View Prescription | Diagnosis (ICD-10) must exist |
-| 2 | Verify Payer | No payment/PA → No dispense button |
-| 3 | Check Safety | Drug interactions + allergies acknowledged |
-| 4 | Pick Stock | FEFO batch enforced (cannot skip) |
-| 5 | Label | Auto-generated from dosage |
-| 6 | Finalize | Stock deducts instantly + audit logged |
+| Step | Action            | Non-Negotiable Rule                        |
+| ---- | ----------------- | ------------------------------------------ |
+| 1    | View Prescription | Diagnosis (ICD-10) must exist              |
+| 2    | Verify Payer      | No payment/PA → No dispense button         |
+| 3    | Check Safety      | Drug interactions + allergies acknowledged |
+| 4    | Pick Stock        | FEFO batch enforced (cannot skip)          |
+| 5    | Label             | Auto-generated from dosage                 |
+| 6    | Finalize          | Stock deducts instantly + audit logged     |
 
 ---
 
 ## Part 14: Testing Scenarios
 
-| Test | Expected Result |
-|------|-----------------|
-| Prescription without diagnosis | Cannot enter queue |
-| Private patient, unpaid | Dispense button disabled |
-| HMO patient, no PA code | Dispense disabled unless auto-approved |
-| Drug with allergy | Hard block, cannot proceed |
-| Severe drug interaction | Must acknowledge before continue |
-| Select non-FEFO batch | System prevents selection |
-| Partial dispense | Outstanding balance created |
-| Retail barcode scan | Item added to cart instantly |
-| Manual price entry retail | Not possible (no input field) |
-| Stock requisition | Requires dual signatures |
-| Shrinkage logging | Admin approval required |
+| Test                           | Expected Result                        |
+| ------------------------------ | -------------------------------------- |
+| Prescription without diagnosis | Cannot enter queue                     |
+| Private patient, unpaid        | Dispense button disabled               |
+| HMO patient, no PA code        | Dispense disabled unless auto-approved |
+| Drug with allergy              | Hard block, cannot proceed             |
+| Severe drug interaction        | Must acknowledge before continue       |
+| Select non-FEFO batch          | System prevents selection              |
+| Partial dispense               | Outstanding balance created            |
+| Retail barcode scan            | Item added to cart instantly           |
+| Manual price entry retail      | Not possible (no input field)          |
+| Stock requisition              | Requires dual signatures               |
+| Shrinkage logging              | Admin approval required                |
 
 ---
 
 ## Part 15: Security & Audit Considerations
 
 **Audit Trail Captures:**
+
 - Every dispensing transaction
 - Stock movements (in/out)
 - Requisition approvals
@@ -739,6 +759,7 @@ Pharmacist Menu:
 - Timestamp for all events
 
 **Theft Prevention:**
+
 - No manual stock adjustments
 - FEFO cannot be bypassed
 - Reversed dispenses flagged

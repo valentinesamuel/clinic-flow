@@ -153,8 +153,9 @@ export default function ClaimsListPage() {
   };
 
   const handleView = (claim: HMOClaim) => {
-    setDetailsClaim(claim);
-    setShowClaimDetails(true);
+    // Navigate to claim detail page based on user role
+    const roleBasePath = user?.role === 'hospital_admin' ? '/hospital-admin/billing' : user?.role === 'cmo' ? '/cmo/billing' : '/cashier';
+    navigate(`${roleBasePath}/claims/${claim.id}`);
   };
 
   const handleRowClick = (claim: HMOClaim) => {

@@ -36,8 +36,15 @@ import { getBillsByPatient, getBillById } from '@/data/bills';
 import { mockHMOProviders } from '@/data/claims';
 import { HMOProviderSelector } from '@/components/billing/molecules/hmo/HMOProviderSelector';
 import { DiagnosisSelector } from '@/components/billing/molecules/diagnosis/DiagnosisSelector';
+import { DiagnosisServiceSuggestion } from '@/components/billing/molecules/diagnosis/DiagnosisServiceSuggestion';
+import { ClinicalJustificationField } from '@/components/billing/molecules/claim/ClinicalJustificationField';
+import { DocumentUploadZone } from '@/components/billing/molecules/documents/DocumentUploadZone';
+import { DocumentList } from '@/components/billing/molecules/documents/DocumentList';
 import { InsuranceBadge } from '@/components/atoms/display/InsuranceBadge';
+import { HMOItemStatusBadge } from '@/components/atoms/display/HMOItemStatusBadge';
 import { ICD10Code, getCommonICD10Codes } from '@/data/icd10-codes';
+import { getServicesForMultipleDiagnoses } from '@/data/icd10-service-mappings';
+import { buildClaimItemsFromBill } from '@/utils/hmoCoverage';
 
 interface ClaimCreationModalProps {
   open: boolean;
@@ -126,6 +133,13 @@ export function ClaimCreationModal({
   // Diagnoses (ICD-10)
   const [diagnoses, setDiagnoses] = useState<ClaimDiagnosis[]>([]);
 
+  // Clinical justifications for off-protocol items
+  const [justifications, setJustifications] = useState<Record<string, string>>({});
+
+  // Diagnosis service selection tracking
+  const [selectedDiagnosisServiceIds, setSelectedDiagnosisServiceIds] = useState<string[]>([]);
+  const [serviceJustifications, setServiceJustifications] = useState<Record<string, string>>({});
+
   // Documents
   const [autoDocuments, setAutoDocuments] = useState<AutoDocument[]>([
     { id: 'doc-auto-1', name: 'Consultation Note', type: 'auto', source: 'consultation', selected: true },
@@ -147,8 +161,29 @@ export function ClaimCreationModal({
     );
   }, [selectedPatient]);
 
-  // Calculate claim amount from bill
-  const claimAmount = selectedBill?.balance || 0;
+  // Build pre-populated claim items from bill with HMO coverage
+  const prePopulatedClaim = useMemo(() => {
+    if (!selectedBill || !hmoProviderId) return null;
+    return buildClaimItemsFromBill(selectedBill, hmoProviderId);
+  }, [selectedBill, hmoProviderId]);
+
+  // Calculate claim amount from bill (use pre-populated if available)
+  const claimAmount = prePopulatedClaim?.claimAmount || selectedBill?.balance || 0;
+
+  // Get approved services for selected diagnoses
+  const diagnosisServiceMappings = useMemo(() => {
+    if (diagnoses.length === 0) return [];
+    return getServicesForMultipleDiagnoses(diagnoses.map((d) => d.code));
+  }, [diagnoses]);
+
+  // Check which bill items are off-protocol
+  const offProtocolItems = useMemo(() => {
+    if (!selectedBill || diagnosisServiceMappings.length === 0) return [];
+    const approvedServiceIds = new Set(
+      diagnosisServiceMappings.flatMap((m) => m.approvedServiceIds)
+    );
+    return selectedBill.items.filter((item) => !approvedServiceIds.has(item.id));
+  }, [selectedBill, diagnosisServiceMappings]);
 
   // Get HMO provider name
   const selectedProvider = useMemo(() => {
@@ -250,6 +285,8 @@ export function ClaimCreationModal({
     setEnrollmentId('');
     setPreAuthCode('');
     setDiagnoses([]);
+    setSelectedDiagnosisServiceIds([]);
+    setServiceJustifications({});
     setUploadedFiles([]);
     onCancel();
   };
@@ -467,6 +504,36 @@ export function ClaimCreationModal({
                   suggestedCodes={suggestedDiagnoses}
                   required={true}
                 />
+
+                {/* Diagnosis Service Suggestions */}
+                {diagnoses.length > 0 && (
+                  <div className="mt-4">
+                    <DiagnosisServiceSuggestion
+                      diagnosisCodes={diagnoses.map((d) => d.code)}
+                      onAddService={(serviceId, serviceName) => {
+                        setSelectedDiagnosisServiceIds((prev) =>
+                          prev.includes(serviceId) ? prev : [...prev, serviceId]
+                        );
+                      }}
+                      onRemoveService={(serviceId, serviceName, justification) => {
+                        setSelectedDiagnosisServiceIds((prev) =>
+                          prev.filter((id) => id !== serviceId)
+                        );
+                        if (justification) {
+                          setServiceJustifications((prev) => ({ ...prev, [serviceId]: justification }));
+                        }
+                      }}
+                      selectedServiceIds={[
+                        ...(selectedBill?.items.map((i) => i.id) || []),
+                        ...selectedDiagnosisServiceIds,
+                      ]}
+                      serviceJustifications={serviceJustifications}
+                      onJustificationChange={(serviceId, justification) => {
+                        setServiceJustifications((prev) => ({ ...prev, [serviceId]: justification }));
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             </ScrollArea>
           )}
@@ -477,19 +544,45 @@ export function ClaimCreationModal({
               <div className="space-y-4 p-1">
                 <p className="text-sm text-muted-foreground">
                   Items from bill {selectedBill.billNumber} will be included in this claim.
+                  {prePopulatedClaim && ' Amounts reflect HMO coverage.'}
                 </p>
                 <div className="space-y-2">
-                  {selectedBill.items.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                      <div>
-                        <p className="font-medium text-sm">{item.description}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.quantity} × {formatCurrency(item.unitPrice)}
-                        </p>
+                  {(prePopulatedClaim?.claimItems || selectedBill.items.map((item) => ({
+                    id: item.id,
+                    description: item.description,
+                    category: item.category,
+                    quantity: item.quantity,
+                    unitPrice: item.unitPrice,
+                    claimedAmount: item.total,
+                  }))).map((item) => {
+                    const isOffProtocol = offProtocolItems.some((opi) => opi.id === item.id);
+                    return (
+                      <div key={item.id} className="space-y-2">
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-sm">{item.description}</p>
+                              {isOffProtocol && (
+                                <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">Off-Protocol</Badge>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {item.quantity} × {formatCurrency(item.unitPrice)}
+                            </p>
+                          </div>
+                          <span className="font-medium">{formatCurrency(item.claimedAmount)}</span>
+                        </div>
+                        {isOffProtocol && (
+                          <ClinicalJustificationField
+                            itemName={item.description}
+                            isOffProtocol={true}
+                            justification={justifications[item.id] || ''}
+                            onChange={(value) => setJustifications((prev) => ({ ...prev, [item.id]: value }))}
+                          />
+                        )}
                       </div>
-                      <span className="font-medium">{formatCurrency(item.total)}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between font-semibold">
@@ -531,43 +624,30 @@ export function ClaimCreationModal({
                 {/* Manual upload */}
                 <div className="space-y-2">
                   <Label>Upload Additional Documents</Label>
-                  <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                    <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Drag and drop files here, or click to browse
-                    </p>
-                    <Input
-                      type="file"
-                      multiple
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <Button variant="outline" size="sm" asChild>
-                      <label htmlFor="file-upload" className="cursor-pointer">
-                        Browse Files
-                      </label>
-                    </Button>
-                  </div>
+                  <DocumentUploadZone
+                    onFilesSelected={(files) => setUploadedFiles((prev) => [...prev, ...files])}
+                    acceptedTypes=".pdf,.jpg,.jpeg,.png"
+                    maxSizeMB={10}
+                    multiple={true}
+                  />
                 </div>
 
                 {/* Uploaded files list */}
                 {uploadedFiles.length > 0 && (
-                  <div className="space-y-2">
-                    {uploadedFiles.map((file, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/50"
-                      >
-                        <File className="h-4 w-4 text-muted-foreground" />
-                        <span className="flex-1 text-sm truncate">{file.name}</span>
-                        <button onClick={() => handleRemoveFile(index)}>
-                          <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                  <DocumentList
+                    documents={uploadedFiles.map((f, i) => ({
+                      id: `doc-manual-${i}`,
+                      name: f.name,
+                      type: 'manual' as const,
+                      uploadedAt: new Date().toISOString(),
+                      size: f.size,
+                    }))}
+                    onRemove={(id) => {
+                      const index = parseInt(id.replace('doc-manual-', ''));
+                      handleRemoveFile(index);
+                    }}
+                    readOnly={false}
+                  />
                 )}
               </div>
             </ScrollArea>
@@ -621,12 +701,80 @@ export function ClaimCreationModal({
                   </div>
                 )}
 
+                {/* Claim Items */}
+                {selectedBill && (
+                  <div className="p-4 rounded-lg border">
+                    <p className="text-xs text-muted-foreground mb-2">Claim Items</p>
+                    <div className="space-y-2">
+                      {(prePopulatedClaim?.claimItems || selectedBill.items.map((item) => ({
+                        id: item.id,
+                        description: item.description,
+                        category: item.category,
+                        quantity: item.quantity,
+                        unitPrice: item.unitPrice,
+                        claimedAmount: item.total,
+                        isOffProtocol: offProtocolItems.some((opi) => opi.id === item.id),
+                      }))).map((item) => {
+                        const isOffProtocol = 'isOffProtocol' in item ? item.isOffProtocol : offProtocolItems.some((opi) => opi.id === item.id);
+                        return (
+                          <div key={item.id} className="flex items-center justify-between text-sm py-1">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              <span className="truncate">{item.description}</span>
+                              {isOffProtocol && (
+                                <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 shrink-0">Off-Protocol</Badge>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0 ml-2">
+                              <span className="text-muted-foreground text-xs">{item.quantity} × {formatCurrency(item.unitPrice)}</span>
+                              <span className="ml-2 font-medium">{formatCurrency(item.claimedAmount)}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {offProtocolItems.length > 0 && Object.keys(justifications).length > 0 && (
+                        <div className="mt-2 pt-2 border-t">
+                          <p className="text-xs text-muted-foreground mb-1">Clinical Justifications</p>
+                          {Object.entries(justifications).filter(([, v]) => v).map(([itemId, text]) => {
+                            const item = selectedBill.items.find(i => i.id === itemId);
+                            return (
+                              <div key={itemId} className="text-xs text-muted-foreground mt-1">
+                                <span className="font-medium">{item?.description}:</span> {text}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <Separator />
+                      <div className="flex items-center justify-between font-semibold text-sm">
+                        <span>Total Claim Amount</span>
+                        <span>{formatCurrency(claimAmount)}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Documents */}
                 <div className="p-4 rounded-lg border">
                   <p className="text-xs text-muted-foreground mb-2">Documents</p>
-                  <p className="text-sm">
-                    {autoDocuments.filter(d => d.selected).length} auto-attached, {uploadedFiles.length} uploaded
-                  </p>
+                  <DocumentList
+                    documents={[
+                      ...autoDocuments.filter(d => d.selected).map(d => ({
+                        id: d.id,
+                        name: `${d.name}.pdf`,
+                        type: 'auto' as const,
+                        source: d.source,
+                        uploadedAt: new Date().toISOString(),
+                      })),
+                      ...uploadedFiles.map((f, i) => ({
+                        id: `doc-manual-${i}`,
+                        name: f.name,
+                        type: 'manual' as const,
+                        uploadedAt: new Date().toISOString(),
+                        size: f.size,
+                      })),
+                    ]}
+                    readOnly={true}
+                  />
                 </div>
               </div>
             </ScrollArea>

@@ -42,6 +42,11 @@ import {
   SERVICE_CATEGORY_LABELS,
 } from '@/data/bill-items';
 import { InsuranceBadge } from '@/components/atoms/display/InsuranceBadge';
+import { HMOBillSummary } from '@/components/billing/molecules/hmo/HMOBillSummary';
+import { HMOItemStatusBadge } from '@/components/atoms/display/HMOItemStatusBadge';
+import { calculateBillCoverage } from '@/utils/hmoCoverage';
+import { mockClaims } from '@/data/claims';
+import { HMOClaimExistencePopup } from '@/components/billing/organisms/hmo-bill-check/HMOClaimExistencePopup';
 
 interface BillCreationFormProps {
   open: boolean;
@@ -121,6 +126,8 @@ export function BillCreationForm({
   const [itemSearchQuery, setItemSearchQuery] = useState('');
   const [notes, setNotes] = useState('');
   const [visitReason, setVisitReason] = useState('');
+  const [showHMOClaimPopup, setShowHMOClaimPopup] = useState(false);
+  const [existingClaim, setExistingClaim] = useState<typeof mockClaims[0] | null>(null);
 
   // Search patients
   const patientResults = useMemo(() => {
@@ -143,10 +150,41 @@ export function BillCreationForm({
     return { subtotal, discount, tax: 0, total: subtotal };
   }, [selectedItems]);
 
+  // Calculate HMO coverage for items if patient is HMO
+  const hmoCoverage = useMemo(() => {
+    if (!selectedPatient || selectedPatient.paymentType !== 'hmo' || selectedItems.length === 0) {
+      return null;
+    }
+    const billItems: BillItem[] = selectedItems.map((item) => ({
+      id: item.id,
+      description: item.name,
+      category: item.category,
+      quantity: item.quantity,
+      unitPrice: item.defaultPrice,
+      discount: item.discount,
+      total: item.total,
+    }));
+    const hmoProviderId = selectedPatient.hmoDetails?.providerId || '';
+    return calculateBillCoverage(billItems, hmoProviderId);
+  }, [selectedPatient, selectedItems]);
+
   const handleSelectPatient = (patient: Patient) => {
     setSelectedPatient(patient);
     setPatientSearchOpen(false);
     setPatientSearchQuery('');
+
+    // Check for existing pending HMO claims
+    if (patient.paymentType === 'hmo') {
+      const pendingClaim = mockClaims.find(
+        (c) => c.patientId === patient.id && ['draft', 'submitted', 'processing'].includes(c.status)
+      );
+      if (pendingClaim) {
+        setExistingClaim(pendingClaim);
+        setShowHMOClaimPopup(true);
+        return;
+      }
+    }
+
     if (currentStep === 1) setCurrentStep(2);
   };
 
@@ -196,19 +234,23 @@ export function BillCreationForm({
   const handleGenerateBill = () => {
     if (!selectedPatient) return;
 
+    const billItems = hmoCoverage
+      ? hmoCoverage.items
+      : selectedItems.map(item => ({
+          id: item.id,
+          description: item.name,
+          category: item.category,
+          quantity: item.quantity,
+          unitPrice: item.defaultPrice,
+          discount: item.discount,
+          total: item.total,
+        }));
+
     const bill: Partial<Bill> = {
       patientId: selectedPatient.id,
       patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
       patientMrn: selectedPatient.mrn,
-      items: selectedItems.map(item => ({
-        id: item.id,
-        description: item.name,
-        category: item.category,
-        quantity: item.quantity,
-        unitPrice: item.defaultPrice,
-        discount: item.discount,
-        total: item.total,
-      })),
+      items: billItems,
       subtotal: totals.subtotal,
       discount: totals.discount,
       tax: totals.tax,
@@ -218,6 +260,8 @@ export function BillCreationForm({
       status: 'pending',
       notes: notes || undefined,
       createdAt: new Date().toISOString(),
+      hmoTotalCoverage: hmoCoverage?.hmoTotalCoverage,
+      patientTotalLiability: hmoCoverage?.patientTotalLiability,
     };
 
     onComplete(bill);
@@ -432,20 +476,36 @@ export function BillCreationForm({
                 {/* Items Summary */}
                 <div className="p-4 rounded-lg border space-y-2">
                   <p className="text-xs text-muted-foreground mb-2">Items</p>
-                  {selectedItems.map((item) => (
-                    <div key={item.id} className="flex justify-between text-sm">
-                      <span>
-                        {item.name} × {item.quantity}
-                      </span>
-                      <span>{formatCurrency(item.total)}</span>
-                    </div>
-                  ))}
+                  {(hmoCoverage ? hmoCoverage.items : selectedItems).map((item) => {
+                    const hmoItem = hmoCoverage?.items.find((i) => i.id === item.id);
+                    return (
+                      <div key={item.id} className="flex justify-between text-sm items-center">
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {'name' in item ? item.name : item.description} × {'quantity' in item ? item.quantity : 1}
+                          </span>
+                          {hmoItem?.hmoStatus && <HMOItemStatusBadge status={hmoItem.hmoStatus} />}
+                        </div>
+                        <span>{formatCurrency(item.total)}</span>
+                      </div>
+                    );
+                  })}
                   <Separator className="my-2" />
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
                     <span>{formatCurrency(totals.total)}</span>
                   </div>
                 </div>
+
+                {/* HMO Coverage Summary */}
+                {hmoCoverage && (
+                  <HMOBillSummary
+                    items={hmoCoverage.items}
+                    hmoTotalCoverage={hmoCoverage.hmoTotalCoverage}
+                    patientTotalLiability={hmoCoverage.patientTotalLiability}
+                    totalBill={totals.total}
+                  />
+                )}
 
                 {/* Notes */}
                 <div className="space-y-2">
@@ -496,6 +556,23 @@ export function BillCreationForm({
           )}
         </div>
       </DialogContent>
+
+      {/* HMO Claim Existence Popup */}
+      {existingClaim && (
+        <HMOClaimExistencePopup
+          open={showHMOClaimPopup}
+          onOpenChange={setShowHMOClaimPopup}
+          existingClaim={existingClaim}
+          onAddToExisting={() => {
+            setShowHMOClaimPopup(false);
+            setCurrentStep(2);
+          }}
+          onPayOutOfPocket={() => {
+            setShowHMOClaimPopup(false);
+            setCurrentStep(2);
+          }}
+        />
+      )}
     </Dialog>
   );
 }

@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { InsuranceBadge } from '@/components/atoms/display/InsuranceBadge';
+import { HMOBillSummary } from '@/components/billing/molecules/hmo/HMOBillSummary';
+import { PaymentAllocationBar } from '@/components/billing/molecules/payment/PaymentAllocationBar';
 import { cn } from '@/lib/utils';
 
 interface Payment {
@@ -248,6 +250,31 @@ export function BillDetailsDrawer({
                 </div>
               </CardContent>
             </Card>
+
+            {/* HMO Coverage Summary */}
+            {bill.items.some(item => item.hmoStatus) && (
+              <HMOBillSummary
+                items={bill.items}
+                hmoTotalCoverage={bill.hmoTotalCoverage || 0}
+                patientTotalLiability={bill.patientTotalLiability || 0}
+                totalBill={bill.total}
+              />
+            )}
+
+            {/* Payment Allocation Bar */}
+            {bill.paymentSplits && bill.paymentSplits.length > 1 && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    Payment Allocation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <PaymentAllocationBar splits={bill.paymentSplits} totalDue={bill.total} />
+                </CardContent>
+              </Card>
+            )}
 
             {/* Payment History */}
             {payments.length > 0 && (

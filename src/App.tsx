@@ -40,6 +40,10 @@ import LabBillingPage from "./pages/lab/LabBillingPage";
 import CashierCombinedDashboard from "./pages/dashboards/CashierCombinedDashboard";
 import ConsultationPage from "./pages/consultation/ConsultationPage";
 import ConsultationViewPage from "./pages/consultation/ConsultationViewPage";
+import HMOCoverageConfigPage from "./pages/billing/HMOCoverageConfigPage";
+import ClaimDetailPage from "./pages/billing/ClaimDetailPage";
+import EpisodeListPage from "./pages/episodes/EpisodeListPage";
+import EpisodeDetailPage from "./pages/episodes/EpisodeDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -99,6 +103,22 @@ const App = () => (
                       element={<PermissionSettings />}
                     />
                     <Route
+                      path="/cmo/billing/claims/:id"
+                      element={<ClaimDetailPage />}
+                    />
+                    <Route
+                      path="/cmo/settings/hmo-coverage"
+                      element={<HMOCoverageConfigPage />}
+                    />
+                    <Route
+                      path="/cmo/episodes"
+                      element={<EpisodeListPage />}
+                    />
+                    <Route
+                      path="/cmo/episodes/:id"
+                      element={<EpisodeDetailPage />}
+                    />
+                    <Route
                       path="/cmo/approvals/pricing"
                       element={<PriceApprovalPage />}
                     />
@@ -128,6 +148,22 @@ const App = () => (
                     <Route
                       path="/hospital-admin/settings/pricing"
                       element={<ServicePricingPage />}
+                    />
+                    <Route
+                      path="/hospital-admin/billing/claims/:id"
+                      element={<ClaimDetailPage />}
+                    />
+                    <Route
+                      path="/hospital-admin/settings/hmo-coverage"
+                      element={<HMOCoverageConfigPage />}
+                    />
+                    <Route
+                      path="/hospital-admin/episodes"
+                      element={<EpisodeListPage />}
+                    />
+                    <Route
+                      path="/hospital-admin/episodes/:id"
+                      element={<EpisodeDetailPage />}
                     />
                     <Route
                       path="/hospital-admin/*"
@@ -198,6 +234,14 @@ const App = () => (
                       element={<AppointmentListPage />}
                     />
                     <Route
+                      path="/receptionist/episodes"
+                      element={<EpisodeListPage />}
+                    />
+                    <Route
+                      path="/receptionist/episodes/:id"
+                      element={<EpisodeDetailPage />}
+                    />
+                    <Route
                       path="/receptionist/*"
                       element={<ReceptionistDashboard />}
                     />
@@ -237,6 +281,14 @@ const App = () => (
                       path="/doctor/appointments"
                       element={<AppointmentListPage />}
                     />
+                    <Route
+                      path="/doctor/episodes"
+                      element={<EpisodeListPage />}
+                    />
+                    <Route
+                      path="/doctor/episodes/:id"
+                      element={<EpisodeDetailPage />}
+                    />
                     <Route path="/doctor/*" element={<DoctorDashboard />} />
 
                     {/* Nurse Routes */}
@@ -271,6 +323,18 @@ const App = () => (
                     <Route
                       path="/cashier/payments"
                       element={<PaymentsListPage />}
+                    />
+                    <Route
+                      path="/cashier/claims/:id"
+                      element={<ClaimDetailPage />}
+                    />
+                    <Route
+                      path="/cashier/episodes"
+                      element={<EpisodeListPage />}
+                    />
+                    <Route
+                      path="/cashier/episodes/:id"
+                      element={<EpisodeDetailPage />}
                     />
                     <Route
                       path="/cashier/settings"

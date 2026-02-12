@@ -1,0 +1,1 @@
+export { HMOCoverageConfigTable } from './HMOCoverageConfigTable';

@@ -325,6 +325,10 @@ export function getBillById(id: string): Bill | undefined {
   return mockBills.find((b) => b.id === id);
 }
 
+export function getBillsByEpisode(episodeId: string): Bill[] {
+  return mockBills.filter((b) => b.episodeId === episodeId);
+}
+
 export function updateBillStatus(id: string, status: Bill['status']): Bill | undefined {
   const bill = mockBills.find((b) => b.id === id);
   if (bill) {

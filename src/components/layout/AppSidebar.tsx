@@ -76,6 +76,7 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
             },
           ],
         },
+        { title: "Episodes", href: "/cmo/episodes", icon: Activity },
         { title: "Staff", href: "/cmo/staff", icon: UserCog },
         { title: "Reports", href: "/cmo/reports", icon: FileText },
       ],
@@ -97,6 +98,11 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
         {
           title: "Permissions",
           href: "/cmo/settings/permissions",
+          icon: Shield,
+        },
+        {
+          title: "HMO Coverage",
+          href: "/cmo/settings/hmo-coverage",
           icon: Shield,
         },
       ],
@@ -141,6 +147,11 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
       label: "Operations",
       items: [
         {
+          title: "Episodes",
+          href: "/hospital-admin/episodes",
+          icon: Activity,
+        },
+        {
           title: "Inventory",
           href: "/hospital-admin/inventory",
           icon: Package,
@@ -156,6 +167,11 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           title: "Pricing",
           href: "/hospital-admin/settings/pricing",
           icon: CreditCard,
+        },
+        {
+          title: "HMO Coverage",
+          href: "/hospital-admin/settings/hmo-coverage",
+          icon: Shield,
         },
       ],
     },
@@ -267,6 +283,7 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           icon: Calendar,
         },
         { title: "Waiting Room", href: "/receptionist/waiting", icon: Users },
+        { title: "Episodes", href: "/receptionist/episodes", icon: Activity },
       ],
     },
   ],
@@ -279,6 +296,11 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           title: "Cashier Station",
           href: "/cashier/station",
           icon: CreditCard,
+        },
+        {
+          title: "Episodes",
+          href: "/cashier/episodes",
+          icon: Activity,
         },
         {
           title: "Billing",

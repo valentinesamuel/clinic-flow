@@ -26,10 +26,12 @@ import { HMOProviderSelector } from '@/components/billing/molecules/hmo/HMOProvi
 import { HMOVerificationCard } from '@/components/billing/molecules/hmo/HMOVerificationCard';
 import { ThermalReceipt } from '@/components/billing/organisms/receipt/ThermalReceipt';
 
-import { PaymentMethod, PaymentItem, PaymentClearance, HMOVerification } from '@/types/billing.types';
+import { PaymentMethod, PaymentItem, PaymentClearance, PaymentSplit, HMOVerification } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
 import { useNigerianBanks } from '@/data/nigerian-banks';
 import { getHMOProviderById } from '@/data/hmo-providers';
+import { SplitPaymentManager } from '@/components/billing/molecules/payment/SplitPaymentManager';
+import { Switch } from '@/components/ui/switch';
 
 interface PaymentCollectionFormProps {
   patient: Patient;
@@ -101,6 +103,8 @@ export function PaymentCollectionForm({
   const [hmoVerification, setHmoVerification] = useState<HMOVerification | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [clearance, setClearance] = useState<PaymentClearance | null>(null);
+  const [isSplitPayment, setIsSplitPayment] = useState(false);
+  const [paymentSplits, setPaymentSplits] = useState<PaymentSplit[]>([]);
 
   const { banks } = useNigerianBanks();
 
@@ -112,6 +116,10 @@ export function PaymentCollectionForm({
 
   // Validation for step 2
   const isStep2Valid = useCallback(() => {
+    if (isSplitPayment) {
+      const allocated = paymentSplits.reduce((sum, s) => sum + s.amount, 0);
+      return paymentSplits.length > 0 && allocated === total;
+    }
     switch (paymentMethod) {
       case 'cash':
         return amountReceived >= total;
@@ -124,7 +132,7 @@ export function PaymentCollectionForm({
       default:
         return false;
     }
-  }, [paymentMethod, amountReceived, total, referenceNumber, selectedBank, hmoVerification]);
+  }, [paymentMethod, amountReceived, total, referenceNumber, selectedBank, hmoVerification, isSplitPayment, paymentSplits]);
 
   // Handle HMO verification
   const handleVerifyHMO = async () => {
@@ -179,7 +187,7 @@ export function PaymentCollectionForm({
       total,
       amountPaid: actualAmountPaid,
       change: actualChange,
-      paymentMethod,
+      paymentMethod: isSplitPayment ? 'cash' : paymentMethod,
       referenceNumber: referenceNumber || undefined,
       bank: selectedBank || undefined,
       hmoProviderId: hmoVerification?.providerId,
@@ -190,6 +198,7 @@ export function PaymentCollectionForm({
       cashierName: 'Blessing Okafor', // Would come from auth context
       createdAt: new Date().toISOString(),
       receiptUrl: `${window.location.origin}/receipts/${receiptNumber}`,
+      paymentSplits: isSplitPayment ? paymentSplits : undefined,
     };
 
     setClearance(newClearance);
@@ -252,6 +261,28 @@ export function PaymentCollectionForm({
         {/* Step 2: Payment Method */}
         {currentStep === 2 && (
           <div className="space-y-6">
+            {/* Split Payment Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg border bg-muted/30">
+              <div>
+                <Label className="text-sm font-medium">Split Payment</Label>
+                <p className="text-xs text-muted-foreground">Pay with multiple methods</p>
+              </div>
+              <Switch
+                checked={isSplitPayment}
+                onCheckedChange={(checked) => {
+                  setIsSplitPayment(checked);
+                  if (!checked) setPaymentSplits([]);
+                }}
+              />
+            </div>
+
+            {isSplitPayment ? (
+              <SplitPaymentManager
+                totalDue={total}
+                onSplitsChange={setPaymentSplits}
+              />
+            ) : (
+              <>
             {/* Payment Method Selector */}
             <PaymentMethodSelector
               selected={paymentMethod}
@@ -370,6 +401,8 @@ export function PaymentCollectionForm({
                   <HMOVerificationCard verification={hmoVerification} />
                 )}
               </div>
+            )}
+              </>
             )}
 
             <div className="flex gap-2 justify-end pt-4">

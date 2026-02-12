@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Printer } from 'lucide-react';
-import { PaymentClearance } from '@/types/billing.types';
+import { PaymentClearance, PaymentMethod } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
 import { ReceiptHeader } from '@/components/billing/molecules/receipt/ReceiptHeader';
 import { ReceiptItemList } from '@/components/billing/molecules/receipt/ReceiptItemList';
@@ -115,6 +115,38 @@ export function ThermalReceipt({ clearance, patient, onPrint }: ThermalReceiptPr
           change={clearance.change}
           paymentMethod={clearance.paymentMethod}
         />
+
+        {/* Split Payment Methods */}
+        {clearance.paymentSplits && clearance.paymentSplits.length > 1 && (
+          <div className="my-2">
+            <Separator />
+            <p className="text-xs font-medium my-1 text-center">PAYMENT METHODS</p>
+            <div className="space-y-0.5 text-xs">
+              {clearance.paymentSplits.map((split) => {
+                const methodLabels: Record<PaymentMethod, string> = {
+                  cash: 'Cash',
+                  card: 'POS/Card',
+                  transfer: 'Transfer',
+                  hmo: 'HMO',
+                  corporate: 'Corporate',
+                };
+                return (
+                  <div key={split.id} className="flex justify-between">
+                    <span>{methodLabels[split.method]}</span>
+                    <span>
+                      {new Intl.NumberFormat('en-NG', {
+                        style: 'currency',
+                        currency: 'NGN',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      }).format(split.amount)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <ReceiptFooter
           paymentMethod={clearance.paymentMethod}

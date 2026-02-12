@@ -8,6 +8,34 @@ export type ClaimStatus = 'draft' | 'submitted' | 'processing' | 'approved' | 'd
 export type ServiceCategory = 'consultation' | 'lab' | 'pharmacy' | 'procedure' | 'admission' | 'other';
 export type WithdrawalReason = 'patient_self_pay' | 'hospital_cancelled' | 'claim_error' | 'treatment_changed';
 export type BillingDepartment = 'front_desk' | 'lab' | 'pharmacy' | 'nursing' | 'inpatient' | 'all';
+export type HMOCoverageType = 'full' | 'partial_percent' | 'partial_flat' | 'none';
+export type HMOItemStatus = 'covered' | 'partial' | 'not_covered' | 'opted_out';
+
+export interface HMOServiceCoverage {
+  id: string;
+  hmoProviderId: string;
+  serviceId: string;
+  serviceName: string;
+  serviceCategory: ServiceCategory;
+  coverageType: HMOCoverageType;
+  coveragePercentage?: number;
+  coverageFlatAmount?: number;
+  maxCoveredAmount?: number;
+  requiresPreAuth: boolean;
+  isActive: boolean;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+export interface PaymentSplit {
+  id: string;
+  method: PaymentMethod;
+  amount: number;
+  referenceNumber?: string;
+  bank?: string;
+  hmoProviderId?: string;
+  notes?: string;
+}
 
 // Diagnosis codes for claims (ICD-10)
 export interface ClaimDiagnosis {
@@ -24,6 +52,11 @@ export interface BillItem {
   unitPrice: number;
   discount: number;
   total: number;
+  hmoStatus?: HMOItemStatus;
+  hmoCoveredAmount?: number;
+  patientLiabilityAmount?: number;
+  hmoServiceCoverageId?: string;
+  isOptedOutOfHMO?: boolean;
 }
 
 export interface Bill {
@@ -51,6 +84,10 @@ export interface Bill {
   billingCodeExpiry?: string;
   paidAt?: string;
   notes?: string;
+  episodeId?: string;
+  hmoTotalCoverage?: number;
+  patientTotalLiability?: number;
+  paymentSplits?: PaymentSplit[];
 }
 
 export interface Payment {
@@ -94,6 +131,8 @@ export interface ClaimItem {
   claimedAmount: number;
   isExcluded: boolean;
   clinicalNotes?: string;
+  clinicalJustification?: string;
+  isOffProtocol?: boolean;
 }
 
 export interface HMOClaim {
@@ -201,6 +240,7 @@ export interface PaymentClearance {
   cashierName: string;
   createdAt: string;
   receiptUrl?: string;
+  paymentSplits?: PaymentSplit[];
 }
 
 export interface HMOVerification {

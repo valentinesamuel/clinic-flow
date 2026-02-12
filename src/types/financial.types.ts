@@ -49,3 +49,12 @@ export interface BundleMedItem {
   quantity: number;
   instructions: string;
 }
+
+export interface ICD10ServiceMapping {
+  id: string;
+  icd10Code: string;
+  icd10Description: string;
+  approvedServiceIds: string[];
+  approvedServiceNames: string[];
+  bundleId?: string;
+}

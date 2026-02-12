@@ -154,3 +154,7 @@ export function getBundlesForDiagnosis(icd10Code: string): ProtocolBundle[] {
     bundle.icd10Codes.some(code => icd10Code.startsWith(code))
   );
 }
+
+export function getBundleById(id: string): ProtocolBundle | undefined {
+  return PROTOCOL_BUNDLES.find(bundle => bundle.id === id);
+}

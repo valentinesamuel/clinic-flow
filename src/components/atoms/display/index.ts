@@ -11,3 +11,7 @@ export { PhoneNumber } from './PhoneNumber';
 export { QueueNumber } from './QueueNumber';
 export { AllergyAlert } from './AllergyAlert';
 export { InsuranceBadge } from './InsuranceBadge';
+export { HMOCoverageTypeBadge } from './HMOCoverageTypeBadge';
+export { HMOItemStatusBadge } from './HMOItemStatusBadge';
+export { EpisodeBadge } from './EpisodeBadge';
+export { EpisodeTimerBadge } from './EpisodeTimerBadge';

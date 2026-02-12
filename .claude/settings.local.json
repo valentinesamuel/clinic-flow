@@ -6,7 +6,8 @@
       "Bash(npx tsc:*)",
       "Bash(find:*)",
       "Bash(wc:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

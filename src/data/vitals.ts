@@ -111,6 +111,11 @@ export const getTodaysVitals = (): VitalSigns[] => {
   return mockVitals.filter(v => v.recordedAt.startsWith(today));
 };
 
+export const getAllRecentVitals = (): VitalSigns[] =>
+  [...mockVitals].sort((a, b) =>
+    new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+  );
+
 // ID counter for new vitals
 let vitalsIdCounter = mockVitals.length;
 

@@ -120,7 +120,7 @@ export function ClaimCreationModal({
 
   const [currentStep, setCurrentStep] = useState<Step>(getInitialStep());
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(preselectedPatient || null);
-  const [selectedBill, setSelectedBill] = useState<Bill | null>(preselectedBill || null);
+  const [selectedBills, setSelectedBills] = useState<Bill[]>(preselectedBill ? [preselectedBill] : []);
   const [patientSearchQuery, setPatientSearchQuery] = useState('');
   const [patientSearchOpen, setPatientSearchOpen] = useState(false);
 
@@ -161,14 +161,16 @@ export function ClaimCreationModal({
     );
   }, [selectedPatient]);
 
-  // Build pre-populated claim items from bill with HMO coverage
+  // Build pre-populated claim items from first selected bill with HMO coverage
   const prePopulatedClaim = useMemo(() => {
-    if (!selectedBill || !hmoProviderId) return null;
-    return buildClaimItemsFromBill(selectedBill, hmoProviderId);
-  }, [selectedBill, hmoProviderId]);
+    if (selectedBills.length === 0 || !hmoProviderId) return null;
+    return buildClaimItemsFromBill(selectedBills[0], hmoProviderId);
+  }, [selectedBills, hmoProviderId]);
 
-  // Calculate claim amount from bill (use pre-populated if available)
-  const claimAmount = prePopulatedClaim?.claimAmount || selectedBill?.balance || 0;
+  // Calculate claim amount from all selected bills
+  const claimAmount = selectedBills.length > 0
+    ? selectedBills.reduce((sum, bill) => sum + bill.balance, 0)
+    : 0;
 
   // Get approved services for selected diagnoses
   const diagnosisServiceMappings = useMemo(() => {
@@ -176,14 +178,19 @@ export function ClaimCreationModal({
     return getServicesForMultipleDiagnoses(diagnoses.map((d) => d.code));
   }, [diagnoses]);
 
+  // Aggregate all items from all selected bills
+  const allSelectedBillItems = useMemo(() => {
+    return selectedBills.flatMap(bill => bill.items);
+  }, [selectedBills]);
+
   // Check which bill items are off-protocol
   const offProtocolItems = useMemo(() => {
-    if (!selectedBill || diagnosisServiceMappings.length === 0) return [];
+    if (allSelectedBillItems.length === 0 || diagnosisServiceMappings.length === 0) return [];
     const approvedServiceIds = new Set(
       diagnosisServiceMappings.flatMap((m) => m.approvedServiceIds)
     );
-    return selectedBill.items.filter((item) => !approvedServiceIds.has(item.id));
-  }, [selectedBill, diagnosisServiceMappings]);
+    return allSelectedBillItems.filter((item) => !approvedServiceIds.has(item.id));
+  }, [allSelectedBillItems, diagnosisServiceMappings]);
 
   // Get HMO provider name
   const selectedProvider = useMemo(() => {
@@ -206,8 +213,12 @@ export function ClaimCreationModal({
     }
   };
 
-  const handleSelectBill = (bill: Bill) => {
-    setSelectedBill(bill);
+  const handleToggleBill = (bill: Bill) => {
+    setSelectedBills(prev => {
+      const exists = prev.some(b => b.id === bill.id);
+      if (exists) return prev.filter(b => b.id !== bill.id);
+      return [...prev, bill];
+    });
   };
 
   const handleToggleAutoDoc = (docId: string) => {
@@ -253,7 +264,7 @@ export function ClaimCreationModal({
       policyNumber: policyNumber || undefined,
       enrollmentId,
       preAuthCode: preAuthCode || undefined,
-      billId: selectedBill?.id,
+      billIds: selectedBills.map(b => b.id),
       claimAmount,
       diagnoses,
       documents,
@@ -279,7 +290,7 @@ export function ClaimCreationModal({
   const handleClose = () => {
     setCurrentStep(getInitialStep());
     setSelectedPatient(preselectedPatient || null);
-    setSelectedBill(preselectedBill || null);
+    setSelectedBills(preselectedBill ? [preselectedBill] : []);
     setHmoProviderId('');
     setPolicyNumber('');
     setEnrollmentId('');
@@ -294,7 +305,7 @@ export function ClaimCreationModal({
   const canProceed = (step: Step): boolean => {
     switch (step) {
       case 1:
-        return !!selectedPatient && !!selectedBill;
+        return !!selectedPatient && selectedBills.length > 0;
       case 2:
         return !!hmoProviderId && !!enrollmentId;
       case 3:
@@ -403,38 +414,46 @@ export function ClaimCreationModal({
                 {/* Bill Selection */}
                 {selectedPatient && (
                   <div className="space-y-2">
-                    <Label>Select Bill</Label>
+                    <Label>Select Bills</Label>
                     {patientBills.length === 0 ? (
                       <p className="text-sm text-muted-foreground p-4 border rounded-lg text-center">
                         No pending HMO bills for this patient
                       </p>
                     ) : (
                       <div className="space-y-2">
-                        {patientBills.map((bill) => (
-                          <div
-                            key={bill.id}
-                            onClick={() => handleSelectBill(bill)}
-                            className={cn(
-                              "p-4 rounded-lg border cursor-pointer transition-colors",
-                              selectedBill?.id === bill.id
-                                ? "border-primary bg-primary/5"
-                                : "hover:bg-accent/50"
-                            )}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium">{bill.billNumber}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {bill.items.length} items
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-semibold">{formatCurrency(bill.balance)}</p>
-                                <Badge variant="outline">{bill.status}</Badge>
+                        {patientBills.map((bill) => {
+                          const isSelected = selectedBills.some(b => b.id === bill.id);
+                          return (
+                            <div
+                              key={bill.id}
+                              onClick={() => handleToggleBill(bill)}
+                              className={cn(
+                                "p-4 rounded-lg border cursor-pointer transition-colors",
+                                isSelected
+                                  ? "border-primary bg-primary/5"
+                                  : "hover:bg-accent/50"
+                              )}
+                            >
+                              <div className="flex items-center gap-3">
+                                <Checkbox checked={isSelected} />
+                                <div className="flex-1">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-medium">{bill.billNumber}</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        {bill.items.length} items
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="font-semibold">{formatCurrency(bill.balance)}</p>
+                                      <Badge variant="outline">{bill.status}</Badge>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -524,7 +543,7 @@ export function ClaimCreationModal({
                         }
                       }}
                       selectedServiceIds={[
-                        ...(selectedBill?.items.map((i) => i.id) || []),
+                        ...allSelectedBillItems.map((i) => i.id),
                         ...selectedDiagnosisServiceIds,
                       ]}
                       serviceJustifications={serviceJustifications}
@@ -538,16 +557,16 @@ export function ClaimCreationModal({
             </ScrollArea>
           )}
 
-          {/* Step 4: Claim Items (Read-only from bill) */}
-          {currentStep === 4 && selectedBill && (
+          {/* Step 4: Claim Items (Read-only from bills) */}
+          {currentStep === 4 && selectedBills.length > 0 && (
             <ScrollArea className="h-[45vh]">
               <div className="space-y-4 p-1">
                 <p className="text-sm text-muted-foreground">
-                  Items from bill {selectedBill.billNumber} will be included in this claim.
+                  Items from {selectedBills.length} bill{selectedBills.length > 1 ? 's' : ''} ({selectedBills.map(b => b.billNumber).join(', ')}) will be included in this claim.
                   {prePopulatedClaim && ' Amounts reflect HMO coverage.'}
                 </p>
                 <div className="space-y-2">
-                  {(prePopulatedClaim?.claimItems || selectedBill.items.map((item) => ({
+                  {(prePopulatedClaim?.claimItems || allSelectedBillItems.map((item) => ({
                     id: item.id,
                     description: item.description,
                     category: item.category,
@@ -690,23 +709,29 @@ export function ClaimCreationModal({
                   </div>
                 </div>
 
-                {/* Bill */}
-                {selectedBill && (
+                {/* Bills */}
+                {selectedBills.length > 0 && (
                   <div className="p-4 rounded-lg border">
-                    <p className="text-xs text-muted-foreground mb-2">Linked Bill</p>
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium">{selectedBill.billNumber}</p>
+                    <p className="text-xs text-muted-foreground mb-2">Linked Bills</p>
+                    {selectedBills.map(bill => (
+                      <div key={bill.id} className="flex items-center justify-between py-1">
+                        <p className="font-medium">{bill.billNumber}</p>
+                        <p className="text-sm">{formatCurrency(bill.balance)}</p>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between pt-2 border-t mt-2">
+                      <p className="font-semibold text-sm">Total Claim</p>
                       <p className="font-semibold">{formatCurrency(claimAmount)}</p>
                     </div>
                   </div>
                 )}
 
                 {/* Claim Items */}
-                {selectedBill && (
+                {selectedBills.length > 0 && (
                   <div className="p-4 rounded-lg border">
                     <p className="text-xs text-muted-foreground mb-2">Claim Items</p>
                     <div className="space-y-2">
-                      {(prePopulatedClaim?.claimItems || selectedBill.items.map((item) => ({
+                      {(prePopulatedClaim?.claimItems || allSelectedBillItems.map((item) => ({
                         id: item.id,
                         description: item.description,
                         category: item.category,
@@ -735,7 +760,7 @@ export function ClaimCreationModal({
                         <div className="mt-2 pt-2 border-t">
                           <p className="text-xs text-muted-foreground mb-1">Clinical Justifications</p>
                           {Object.entries(justifications).filter(([, v]) => v).map(([itemId, text]) => {
-                            const item = selectedBill.items.find(i => i.id === itemId);
+                            const item = allSelectedBillItems.find(i => i.id === itemId);
                             return (
                               <div key={itemId} className="text-xs text-muted-foreground mt-1">
                                 <span className="font-medium">{item?.description}:</span> {text}

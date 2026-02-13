@@ -1,6 +1,6 @@
 // QueueTable - Refactored to use atomic components
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { User, Activity, Play, Eye, MoreHorizontal } from 'lucide-react';
 import { QueueEntry } from '@/types/patient.types';
 import { calculateWaitTime } from '@/data/queue';
@@ -36,6 +36,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 
 interface QueueTableProps {
@@ -63,6 +73,8 @@ export function QueueTable({
   onTransfer,
   selectedEntryId,
 }: QueueTableProps) {
+  const [confirmEntry, setConfirmEntry] = useState<QueueEntry | null>(null);
+
   const totalPages = Math.ceil(entries.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedEntries = entries.slice(startIndex, startIndex + itemsPerPage);
@@ -183,7 +195,7 @@ export function QueueTable({
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onStart(entry);
+                              setConfirmEntry(entry);
                             }}
                           >
                             <Play className="h-3.5 w-3.5 mr-1" />
@@ -219,6 +231,33 @@ export function QueueTable({
           </TableBody>
         </Table>
       </div>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={!!confirmEntry} onOpenChange={(open) => !open && setConfirmEntry(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Start Consultation</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to start a consultation with{' '}
+              <span className="font-medium text-foreground">{confirmEntry?.patientName}</span>.
+              This will mark the patient as in progress.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmEntry && onStart) {
+                  onStart(confirmEntry);
+                }
+                setConfirmEntry(null);
+              }}
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Pagination with page size selector */}
       <QueuePagination

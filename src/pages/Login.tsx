@@ -99,7 +99,7 @@ export default function Login() {
           <div className="mx-auto h-16 w-16 rounded-full bg-primary flex items-center justify-center mb-4">
             <Stethoscope className="h-8 w-8 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Deyon Clinic</h1>
+          <h1 className="text-2xl font-bold text-foreground">Deyon HMS</h1>
           <p className="text-muted-foreground mt-1">
             Hospital Management System
           </p>

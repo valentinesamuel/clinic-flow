@@ -85,6 +85,9 @@ export interface Bill {
   paidAt?: string;
   notes?: string;
   episodeId?: string;
+  isWalkIn?: boolean;
+  walkInCustomerName?: string;
+  walkInPhone?: string;
   hmoTotalCoverage?: number;
   patientTotalLiability?: number;
   paymentSplits?: PaymentSplit[];
@@ -145,7 +148,7 @@ export interface HMOClaim {
   enrollmentId: string;
   policyNumber?: string;
   preAuthCode?: string;
-  billId: string;
+  billIds: string[];
   items?: ClaimItem[];
   diagnoses?: ClaimDiagnosis[];
   claimAmount: number;

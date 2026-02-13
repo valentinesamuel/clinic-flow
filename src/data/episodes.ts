@@ -442,6 +442,49 @@ export const mockEpisodeTimeline: EpisodeTimelineEvent[] = [
   },
 ];
 
+// CRUD Functions
+
+/**
+ * Create a new episode
+ */
+export const createEpisode = (
+  episode: Omit<Episode, 'id'>
+): Episode => {
+  const newEpisode: Episode = {
+    ...episode,
+    id: `ep-${String(mockEpisodes.length + 1).padStart(3, '0')}`,
+  };
+  mockEpisodes.push(newEpisode);
+  return newEpisode;
+};
+
+/**
+ * Update an existing episode
+ */
+export const updateEpisode = (
+  id: string,
+  updates: Partial<Episode>
+): Episode | undefined => {
+  const index = mockEpisodes.findIndex((ep) => ep.id === id);
+  if (index === -1) return undefined;
+  mockEpisodes[index] = { ...mockEpisodes[index], ...updates };
+  return mockEpisodes[index];
+};
+
+/**
+ * Complete an episode
+ */
+export const completeEpisode = (id: string): Episode | undefined => {
+  const index = mockEpisodes.findIndex((ep) => ep.id === id);
+  if (index === -1) return undefined;
+  mockEpisodes[index] = {
+    ...mockEpisodes[index],
+    status: 'completed',
+    completedAt: new Date().toISOString(),
+  };
+  return mockEpisodes[index];
+};
+
 // Helper Functions
 
 /**

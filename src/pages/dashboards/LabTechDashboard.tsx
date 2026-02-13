@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { getPendingLabOrders, getLabOrdersByStatus, getUrgentLabOrders } from '@/data/lab-orders';
 import { getPendingBillsByDepartment } from '@/data/bills';
+import { getPartnerLabs, getReferralsByDirection } from '@/data/lab-referrals';
 
 export default function LabTechDashboard() {
   const navigate = useNavigate();
@@ -27,6 +28,11 @@ export default function LabTechDashboard() {
   const processing = getLabOrdersByStatus('processing');
   const urgentOrders = getUrgentLabOrders();
   const pendingLabBills = getPendingBillsByDepartment('lab');
+
+  const partnerLabs = getPartnerLabs();
+  const connectedPartners = partnerLabs.filter(lab => lab.status === 'connected');
+  const outboundReferrals = getReferralsByDirection('outbound');
+  const activeReferrals = outboundReferrals.filter(ref => !['completed', 'cancelled'].includes(ref.status));
 
   return (
     <DashboardLayout allowedRoles={['lab_tech']}>
@@ -247,32 +253,37 @@ export default function LabTechDashboard() {
             </CardContent>
           </Card>
 
-          {/* Partner Lab Sync - Coming Soon */}
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-              <div className="text-center p-4">
-                <Badge variant="secondary" className="mb-2">Coming Soon</Badge>
-                <p className="text-sm text-muted-foreground">
-                  Partner lab integration for outsourced tests coming in next phase
-                </p>
-              </div>
-            </div>
+          {/* Partner Lab Sync */}
+          <Card
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => navigate('/lab-tech/partner-labs')}
+          >
             <CardHeader>
               <CardTitle>Partner Lab Sync</CardTitle>
               <CardDescription>External lab integration status</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="p-3 rounded-lg bg-muted">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">PathCare Nigeria</span>
-                  <Badge variant="outline">Disconnected</Badge>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 rounded-lg bg-primary/10">
+                  <p className="text-2xl font-bold">{connectedPartners.length}</p>
+                  <p className="text-xs text-muted-foreground">Connected Partners</p>
+                </div>
+                <div className="p-3 rounded-lg bg-primary/10">
+                  <p className="text-2xl font-bold">{activeReferrals.length}</p>
+                  <p className="text-xs text-muted-foreground">Active Referrals</p>
                 </div>
               </div>
-              <div className="p-3 rounded-lg bg-muted">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">Synlab Nigeria</span>
-                  <Badge variant="outline">Disconnected</Badge>
-                </div>
+              <div className="space-y-2">
+                {partnerLabs.slice(0, 2).map((lab) => (
+                  <div key={lab.id} className="p-3 rounded-lg bg-muted">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">{lab.name}</span>
+                      <Badge variant={lab.status === 'connected' ? 'default' : 'outline'}>
+                        {lab.status === 'connected' ? 'Connected' : 'Disconnected'}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

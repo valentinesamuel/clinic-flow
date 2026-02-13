@@ -12,8 +12,10 @@ import {
   Activity,
   MoreHorizontal,
   AlertCircle,
+  Eye,
+  FileImage,
 } from 'lucide-react';
-import { HMOClaim } from '@/types/billing.types';
+import { HMOClaim, ClaimDocument } from '@/types/billing.types';
 import { getBillById } from '@/data/bills';
 import { ClaimVersionHistory } from '@/components/billing/molecules/claim/ClaimVersionHistory';
 import { DocumentList } from '@/components/billing/molecules/documents/DocumentList';
@@ -27,6 +29,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import type { Bill } from '@/types/billing.types';
 
@@ -93,14 +101,15 @@ export function ClaimDetailView({
   onMarkPaid,
   onWithdraw,
 }: ClaimDetailViewProps) {
-  const [linkedBill, setLinkedBill] = useState<Bill | null>(null);
+  const [linkedBills, setLinkedBills] = useState<Bill[]>([]);
+  const [previewDocument, setPreviewDocument] = useState<ClaimDocument | null>(null);
 
   useEffect(() => {
-    if (claim.billId) {
-      const bill = getBillById(claim.billId);
-      setLinkedBill(bill || null);
+    if (claim.billIds && claim.billIds.length > 0) {
+      const bills = claim.billIds.map(id => getBillById(id)).filter(Boolean) as Bill[];
+      setLinkedBills(bills);
     }
-  }, [claim.billId]);
+  }, [claim.billIds]);
 
   const renderActionButtons = () => {
     const buttons: JSX.Element[] = [];
@@ -262,94 +271,71 @@ export function ClaimDetailView({
               </Card>
             )}
 
-            {/* Linked Bill Card */}
-            {linkedBill && (
+            {/* Linked Bills Card */}
+            {linkedBills.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Receipt className="h-5 w-5 text-gray-500" />
-                    Linked Bill
+                    Linked Bills ({linkedBills.length})
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-gray-500">Bill Number</p>
-                    <p className="font-medium">{linkedBill.billNumber}</p>
-                  </div>
+                  {linkedBills.map((bill) => (
+                    <div key={bill.id} className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium">{bill.billNumber}</p>
+                        <Badge variant="outline">{bill.status}</Badge>
+                      </div>
 
-                  <Separator />
+                      <div className="space-y-2">
+                        {bill.items.map((item) => {
+                          const Icon =
+                            categoryIcons[
+                              item.category as keyof typeof categoryIcons
+                            ] || MoreHorizontal;
 
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-gray-700">Items</p>
-                    {linkedBill.items.map((item) => {
-                      const Icon =
-                        categoryIcons[
-                          item.category as keyof typeof categoryIcons
-                        ] || MoreHorizontal;
-
-                      return (
-                        <div
-                          key={item.id}
-                          className="flex items-start justify-between gap-4 py-2"
-                        >
-                          <div className="flex items-start gap-3 flex-1">
-                            <Icon className="h-4 w-4 text-gray-400 mt-0.5" />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900">
-                                {item.description}
-                              </p>
-                              <p className="text-xs text-gray-500 mt-0.5">
-                                {item.quantity} × {formatCurrency(item.unitPrice)}
-                              </p>
-                              {item.hmoStatus && (
-                                <div className="flex items-center gap-2 mt-1">
-                                  <HMOItemStatusBadge status={item.hmoStatus} />
-                                  <span className="text-xs text-gray-600">
-                                    HMO: {formatCurrency(item.hmoCoveredAmount || 0)} /
-                                    Patient: {formatCurrency(item.patientLiabilityAmount || 0)}
-                                  </span>
+                          return (
+                            <div
+                              key={item.id}
+                              className="flex items-start justify-between gap-4 py-1"
+                            >
+                              <div className="flex items-start gap-3 flex-1">
+                                <Icon className="h-4 w-4 text-gray-400 mt-0.5" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {item.description}
+                                  </p>
+                                  <p className="text-xs text-gray-500 mt-0.5">
+                                    {item.quantity} × {formatCurrency(item.unitPrice)}
+                                  </p>
+                                  {item.hmoStatus && (
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <HMOItemStatusBadge status={item.hmoStatus} />
+                                      <span className="text-xs text-gray-600">
+                                        HMO: {formatCurrency(item.hmoCoveredAmount || 0)} /
+                                        Patient: {formatCurrency(item.patientLiabilityAmount || 0)}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
+                              </div>
+                              <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
+                                {formatCurrency(item.total)}
+                              </p>
                             </div>
-                          </div>
-                          <p className="text-sm font-medium text-gray-900 whitespace-nowrap">
-                            {formatCurrency(item.total)}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  <Separator />
-
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Subtotal</span>
-                      <span className="font-medium">
-                        {formatCurrency(linkedBill.subtotal)}
-                      </span>
-                    </div>
-                    {linkedBill.discount > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Discount</span>
-                        <span className="font-medium text-red-600">
-                          -{formatCurrency(linkedBill.discount)}
-                        </span>
+                          );
+                        })}
                       </div>
-                    )}
-                    {linkedBill.tax > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Tax</span>
-                        <span className="font-medium">
-                          {formatCurrency(linkedBill.tax)}
-                        </span>
+
+                      <div className="flex justify-between text-sm font-medium pt-2 border-t">
+                        <span>Bill Total</span>
+                        <span>{formatCurrency(bill.total)}</span>
                       </div>
-                    )}
-                    <div className="flex justify-between text-base font-semibold pt-2 border-t">
-                      <span>Total</span>
-                      <span>{formatCurrency(linkedBill.total)}</span>
+
+                      {linkedBills.indexOf(bill) < linkedBills.length - 1 && <Separator />}
                     </div>
-                  </div>
+                  ))}
                 </CardContent>
               </Card>
             )}
@@ -501,7 +487,7 @@ export function ClaimDetailView({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <DocumentList documents={claim.documents} />
+                  <DocumentList documents={claim.documents} onPreview={setPreviewDocument} />
                 </CardContent>
               </Card>
             )}
@@ -571,6 +557,63 @@ export function ClaimDetailView({
           </div>
         </div>
       </div>
+
+      {/* Document Preview Dialog */}
+      <Dialog open={!!previewDocument} onOpenChange={(open) => !open && setPreviewDocument(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileImage className="h-5 w-5" />
+              Document Preview
+            </DialogTitle>
+          </DialogHeader>
+          {previewDocument && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-center p-12 border-2 border-dashed rounded-lg bg-muted/30">
+                <div className="text-center">
+                  <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                  <p className="text-sm font-medium">{previewDocument.name}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Preview not available for mock data
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">File Name</span>
+                  <span className="font-medium">{previewDocument.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Type</span>
+                  <span className="font-medium capitalize">{previewDocument.type}</span>
+                </div>
+                {previewDocument.source && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Source</span>
+                    <span className="font-medium capitalize">{previewDocument.source}</span>
+                  </div>
+                )}
+                {previewDocument.size && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Size</span>
+                    <span className="font-medium">
+                      {previewDocument.size < 1024 * 1024
+                        ? `${(previewDocument.size / 1024).toFixed(1)} KB`
+                        : `${(previewDocument.size / (1024 * 1024)).toFixed(1)} MB`}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Uploaded</span>
+                  <span className="font-medium">
+                    {format(new Date(previewDocument.uploadedAt), 'MMM dd, yyyy HH:mm')}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

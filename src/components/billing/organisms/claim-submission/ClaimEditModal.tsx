@@ -16,7 +16,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
-import { HMOClaim, ClaimDocument } from '@/types/billing.types';
+import { HMOClaim, ClaimDocument, ClaimDiagnosis } from '@/types/billing.types';
+import { DiagnosisSelector } from '@/components/billing/molecules/diagnosis/DiagnosisSelector';
 
 interface ClaimEditModalProps {
   open: boolean;
@@ -53,6 +54,7 @@ export function ClaimEditModal({
   const [enrollmentId, setEnrollmentId] = useState(claim.enrollmentId);
   const [preAuthCode, setPreAuthCode] = useState(claim.preAuthCode || '');
   const [resubmissionNotes, setResubmissionNotes] = useState('');
+  const [diagnoses, setDiagnoses] = useState<ClaimDiagnosis[]>(claim.diagnoses || []);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,6 +80,7 @@ export function ClaimEditModal({
       policyNumber,
       enrollmentId,
       preAuthCode: preAuthCode || undefined,
+      diagnoses,
       resubmissionNotes: isResubmit ? resubmissionNotes : undefined,
       documents: [...claim.documents, ...newDocuments],
       currentVersion: claim.currentVersion + 1,
@@ -100,6 +103,7 @@ export function ClaimEditModal({
     setEnrollmentId(claim.enrollmentId);
     setPreAuthCode(claim.preAuthCode || '');
     setResubmissionNotes('');
+    setDiagnoses(claim.diagnoses || []);
     setUploadedFiles([]);
     onCancel();
   };
@@ -150,12 +154,22 @@ export function ClaimEditModal({
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Bill</span>
-                <span className="text-sm font-mono">{claim.billId}</span>
+                <span className="text-sm font-mono">{claim.billIds.join(', ')}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Claim Amount</span>
                 <span className="text-sm font-semibold">{formatCurrency(claim.claimAmount)}</span>
               </div>
+            </div>
+
+            {/* Diagnoses */}
+            <div className="space-y-2">
+              <Label>Diagnoses (ICD-10)</Label>
+              <DiagnosisSelector
+                selectedDiagnoses={diagnoses}
+                onDiagnosesChange={setDiagnoses}
+                required={false}
+              />
             </div>
 
             {/* Editable fields */}

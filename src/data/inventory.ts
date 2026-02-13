@@ -188,8 +188,31 @@ export const getLowStockItems = (): InventoryItem[] =>
 export const getItemsByCategory = (category: InventoryItem['category']): InventoryItem[] => 
   mockInventory.filter(item => item.category === category);
 
-export const getCriticalItems = (): InventoryItem[] => 
-  mockInventory.filter(item => 
-    ['Diesel', 'Medical Oxygen'].includes(item.name) && 
+export const getCriticalItems = (): InventoryItem[] =>
+  mockInventory.filter(item =>
+    ['Diesel', 'Medical Oxygen'].includes(item.name) &&
     item.currentStock <= item.reorderLevel
   );
+
+export const addInventoryItem = (item: Omit<InventoryItem, 'id'>): InventoryItem => {
+  const newItem: InventoryItem = {
+    ...item,
+    id: `inv-${String(mockInventory.length + 1).padStart(3, '0')}`,
+  };
+  mockInventory.push(newItem);
+  return newItem;
+};
+
+export const updateInventoryItem = (id: string, updates: Partial<InventoryItem>): void => {
+  const index = mockInventory.findIndex(item => item.id === id);
+  if (index !== -1) {
+    mockInventory[index] = { ...mockInventory[index], ...updates };
+  }
+};
+
+export const archiveInventoryItem = (id: string): void => {
+  const index = mockInventory.findIndex(item => item.id === id);
+  if (index !== -1) {
+    mockInventory.splice(index, 1);
+  }
+};

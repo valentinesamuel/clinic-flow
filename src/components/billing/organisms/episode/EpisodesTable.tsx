@@ -11,13 +11,6 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import {
-  Receipt,
-  Stethoscope,
-  FlaskConical,
-  Pill,
-  FileCheck,
-} from 'lucide-react';
 
 interface EpisodesTableProps {
   episodes: Episode[];
@@ -46,13 +39,12 @@ export function EpisodesTable({ episodes, onRowClick }: EpisodesTableProps) {
             <TableHead>Expires</TableHead>
             <TableHead className="text-right">Billed</TableHead>
             <TableHead className="text-right">Balance</TableHead>
-            <TableHead className="text-center">Items</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {episodes.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={8} className="h-24 text-center text-muted-foreground">
+              <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                 No episodes found.
               </TableCell>
             </TableRow>
@@ -117,47 +109,6 @@ export function EpisodesTable({ episodes, onRowClick }: EpisodesTableProps) {
                   >
                     {formatCurrency(episode.totalBalance)}
                   </span>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                    {episode.billIds.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Receipt className="h-3.5 w-3.5" />
-                        <span>{episode.billIds.length}</span>
-                      </div>
-                    )}
-                    {episode.consultationIds.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Stethoscope className="h-3.5 w-3.5" />
-                        <span>{episode.consultationIds.length}</span>
-                      </div>
-                    )}
-                    {episode.labOrderIds.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <FlaskConical className="h-3.5 w-3.5" />
-                        <span>{episode.labOrderIds.length}</span>
-                      </div>
-                    )}
-                    {episode.prescriptionIds.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <Pill className="h-3.5 w-3.5" />
-                        <span>{episode.prescriptionIds.length}</span>
-                      </div>
-                    )}
-                    {episode.claimIds.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <FileCheck className="h-3.5 w-3.5" />
-                        <span>{episode.claimIds.length}</span>
-                      </div>
-                    )}
-                    {episode.billIds.length === 0 &&
-                      episode.consultationIds.length === 0 &&
-                      episode.labOrderIds.length === 0 &&
-                      episode.prescriptionIds.length === 0 &&
-                      episode.claimIds.length === 0 && (
-                        <span className="text-muted-foreground">—</span>
-                      )}
-                  </div>
                 </TableCell>
               </TableRow>
             ))

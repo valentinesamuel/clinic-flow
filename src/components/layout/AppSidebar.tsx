@@ -20,6 +20,8 @@ import {
   Package,
   UserPlus,
   Shield,
+  FlaskConical,
+  ArrowLeftRight,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { UserRole } from "@/types/user.types";
@@ -77,6 +79,7 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           ],
         },
         { title: "Episodes", href: "/cmo/episodes", icon: Activity },
+        { title: "Stock Requests", href: "/cmo/stock-requests", icon: ClipboardList },
         { title: "Staff", href: "/cmo/staff", icon: UserCog },
         { title: "Reports", href: "/cmo/reports", icon: FileText },
       ],
@@ -104,6 +107,11 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           title: "HMO Coverage",
           href: "/cmo/settings/hmo-coverage",
           icon: Shield,
+        },
+        {
+          title: "Lab Settings",
+          href: "/cmo/settings/lab",
+          icon: FlaskConical,
         },
       ],
     },
@@ -156,6 +164,7 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           href: "/hospital-admin/inventory",
           icon: Package,
         },
+        { title: "Stock Requests", href: "/hospital-admin/stock-requests", icon: ClipboardList },
         { title: "Staff", href: "/hospital-admin/staff", icon: UserCog },
         { title: "Reports", href: "/hospital-admin/reports", icon: FileText },
       ],
@@ -172,6 +181,11 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           title: "HMO Coverage",
           href: "/hospital-admin/settings/hmo-coverage",
           icon: Shield,
+        },
+        {
+          title: "Lab Settings",
+          href: "/hospital-admin/settings/lab",
+          icon: FlaskConical,
         },
       ],
     },
@@ -244,6 +258,12 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
         },
       ],
     },
+    {
+      label: "Operations",
+      items: [
+        { title: "Stock Requests", href: "/doctor/stock-requests", icon: ClipboardList },
+      ],
+    },
   ],
   nurse: [
     {
@@ -253,6 +273,12 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
         { title: "Triage", href: "/nurse/triage", icon: Stethoscope, badge: 4 },
         { title: "Patient Queue", href: "/nurse/queue", icon: ClipboardList },
         { title: "Vitals", href: "/nurse/vitals", icon: Activity },
+      ],
+    },
+    {
+      label: "Operations",
+      items: [
+        { title: "Stock Requests", href: "/nurse/stock-requests", icon: ClipboardList },
       ],
     },
   ],
@@ -284,6 +310,12 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
         },
         { title: "Waiting Room", href: "/receptionist/waiting", icon: Users },
         { title: "Episodes", href: "/receptionist/episodes", icon: Activity },
+      ],
+    },
+    {
+      label: "Operations",
+      items: [
+        { title: "Stock Requests", href: "/receptionist/stock-requests", icon: ClipboardList },
       ],
     },
   ],
@@ -338,6 +370,13 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           badge: 5,
         },
         { title: "Stock", href: "/pharmacist/stock", icon: Package },
+        { title: "Billing", href: "/pharmacist/billing", icon: Receipt },
+      ],
+    },
+    {
+      label: "Operations",
+      items: [
+        { title: "Stock Requests", href: "/pharmacist/stock-requests", icon: ClipboardList },
       ],
     },
   ],
@@ -353,6 +392,14 @@ const navigationByRole: Record<UserRole, NavGroup[]> = {
           badge: 6,
         },
         { title: "Results", href: "/lab-tech/results", icon: FileText },
+        { title: "Partner Labs", href: "/lab-tech/partner-labs", icon: ArrowLeftRight },
+        { title: "Billing", href: "/lab-tech/billing", icon: Receipt },
+      ],
+    },
+    {
+      label: "Operations",
+      items: [
+        { title: "Stock Requests", href: "/lab-tech/stock-requests", icon: ClipboardList },
       ],
     },
   ],
@@ -546,7 +593,7 @@ export function AppSidebar() {
         {!collapsed && (
           <div className="overflow-hidden">
             <h1 className="font-semibold text-sidebar-foreground truncate">
-              Deyon Clinic
+              Deyon HMS
             </h1>
           </div>
         )}

@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EpisodesTable } from '@/components/billing/organisms/episode/EpisodesTable';
 import { EpisodeCreationModal } from '@/components/billing/organisms/episode/EpisodeCreationModal';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { getEpisodesPaginated } from '@/data/episodes';
+import { getEpisodesPaginated, createEpisode } from '@/data/episodes';
 import { EpisodeStatus } from '@/types/episode.types';
 import { Search, Activity, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -33,6 +33,7 @@ export default function EpisodeListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [showCreation, setShowCreation] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const { data: episodes, total, totalPages } = getEpisodesPaginated(
     currentPage,
@@ -58,11 +59,32 @@ export default function EpisodeListPage() {
   };
 
   const handleCreate = (data: { patientId: string; patientName: string; patientMrn: string; notes?: string }) => {
+    createEpisode({
+      episodeNumber: `EP-${Date.now()}`,
+      patientId: data.patientId,
+      patientName: data.patientName,
+      patientMrn: data.patientMrn,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      createdBy: user?.name || 'System',
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      billIds: [],
+      consultationIds: [],
+      labOrderIds: [],
+      prescriptionIds: [],
+      claimIds: [],
+      totalBilled: 0,
+      totalPaid: 0,
+      totalBalance: 0,
+      isLockedForAudit: false,
+      notes: data.notes,
+    });
     toast({
       title: 'Episode Created',
       description: `New episode created for ${data.patientName}`,
     });
     setShowCreation(false);
+    setRefreshKey((k) => k + 1);
   };
 
   return (

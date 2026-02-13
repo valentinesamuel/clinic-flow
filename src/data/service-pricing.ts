@@ -322,6 +322,97 @@ export const mockPriceApprovals: PriceApproval[] = [
     reviewNotes: 'Approved. Competitive with other facilities.',
     isNewService: false,
   },
+  {
+    id: 'appr-004',
+    serviceId: 'svc-030',
+    serviceName: 'Nebulization',
+    serviceCode: 'PROC-NEB-001',
+    category: 'procedure',
+    oldPrice: 5000,
+    newPrice: 6500,
+    changePercentage: 30,
+    reason: 'Significant increase in consumables cost and equipment maintenance',
+    requestedBy: 'usr-nurse',
+    requestedByName: 'Nurse Okafor',
+    requestedByRole: 'nurse',
+    requestedAt: '2024-02-03T08:15:00Z',
+    status: 'pending',
+    isNewService: false,
+  },
+  {
+    id: 'appr-005',
+    serviceId: 'svc-017',
+    serviceName: 'X-Ray (Single View)',
+    serviceCode: 'LAB-XRAY-001',
+    category: 'lab',
+    oldPrice: 12000,
+    newPrice: 13200,
+    changePercentage: 10,
+    reason: 'Updated to reflect current market rates for radiology services',
+    requestedBy: 'usr-radiologist',
+    requestedByName: 'Dr. Ibrahim',
+    requestedByRole: 'doctor',
+    requestedAt: '2024-02-04T11:45:00Z',
+    status: 'pending',
+    isNewService: false,
+  },
+  {
+    id: 'appr-006',
+    serviceId: 'svc-020',
+    serviceName: 'Amoxicillin 500mg x 21',
+    serviceCode: 'PHRM-AMOX-001',
+    category: 'pharmacy',
+    oldPrice: 3500,
+    newPrice: 2800,
+    changePercentage: -20,
+    reason: 'Bulk purchase discount from new supplier allows price reduction',
+    requestedBy: 'usr-pharmacist',
+    requestedByName: 'Pharm. Chukwu',
+    requestedByRole: 'pharmacist',
+    requestedAt: '2024-01-30T16:20:00Z',
+    status: 'approved',
+    reviewedBy: 'usr-cmo',
+    reviewedByName: 'Dr. Nwosu',
+    reviewedAt: '2024-01-31T09:30:00Z',
+    reviewNotes: 'Approved. Beneficial to patients, supplier verified.',
+    isNewService: false,
+  },
+  {
+    id: 'appr-007',
+    serviceId: 'svc-new-002',
+    serviceName: 'Telemedicine Consultation',
+    serviceCode: 'CONS-TELE-001',
+    category: 'consultation',
+    newPrice: 8000,
+    reason: 'New service offering for remote patient consultations via video call',
+    requestedBy: 'usr-admin',
+    requestedByName: 'Dr. Adeyemi',
+    requestedByRole: 'hospital_admin',
+    requestedAt: '2024-02-05T10:00:00Z',
+    status: 'pending',
+    isNewService: true,
+  },
+  {
+    id: 'appr-008',
+    serviceId: 'svc-014',
+    serviceName: 'Liver Function Test',
+    serviceCode: 'LAB-LFT-001',
+    category: 'lab',
+    oldPrice: 8000,
+    newPrice: 7000,
+    changePercentage: -12.5,
+    reason: 'Price reduction to match competitor rates and improve accessibility',
+    requestedBy: 'usr-admin',
+    requestedByName: 'Dr. Adeyemi',
+    requestedByRole: 'hospital_admin',
+    requestedAt: '2024-01-25T13:30:00Z',
+    status: 'rejected',
+    reviewedBy: 'usr-cmo',
+    reviewedByName: 'Dr. Nwosu',
+    reviewedAt: '2024-01-26T10:15:00Z',
+    rejectionReason: 'Price reduction not sustainable given current reagent costs. Consider renegotiating with suppliers first.',
+    isNewService: false,
+  },
 ];
 
 // Helper functions
@@ -375,4 +466,35 @@ export function getServicePricesPaginated(
   const start = (page - 1) * limit;
   const data = filtered.slice(start, start + limit);
   return { data, total, totalPages };
+}
+
+export function getAllApprovals(): PriceApproval[] {
+  return mockPriceApprovals;
+}
+
+export function getApprovalHistory(): PriceApproval[] {
+  return mockPriceApprovals.filter(
+    (a) => a.status === 'approved' || a.status === 'rejected'
+  );
+}
+
+export function updateApprovalStatus(
+  id: string,
+  status: PriceApprovalStatus,
+  reviewNotes?: string,
+  reviewedBy?: string,
+  reviewedByName?: string
+): void {
+  const approval = mockPriceApprovals.find((a) => a.id === id);
+  if (approval) {
+    approval.status = status;
+    approval.reviewedAt = new Date().toISOString();
+    if (reviewedBy) approval.reviewedBy = reviewedBy;
+    if (reviewedByName) approval.reviewedByName = reviewedByName;
+    if (status === 'approved' && reviewNotes) {
+      approval.reviewNotes = reviewNotes;
+    } else if (status === 'rejected' && reviewNotes) {
+      approval.rejectionReason = reviewNotes;
+    }
+  }
 }

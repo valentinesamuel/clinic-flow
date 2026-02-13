@@ -100,9 +100,10 @@ export function ClaimDetailsDrawer({
   const canPayOutOfPocket = claim.status === 'denied';
 
   // Get linked bill details
-  const bill = getBillById(claim.billId);
-  const displayItems = bill?.items.slice(0, 4) || [];
-  const remainingItemsCount = (bill?.items.length || 0) - 4;
+  const bills = (claim.billIds || []).map(id => getBillById(id)).filter(Boolean);
+  const firstBill = bills[0];
+  const displayItems = firstBill?.items.slice(0, 4) || [];
+  const remainingItemsCount = (firstBill?.items.length || 0) - 4;
 
   const handleDocumentClick = (doc: ClaimDocument) => {
     setPreviewDoc(doc);
@@ -110,8 +111,8 @@ export function ClaimDetailsDrawer({
   };
 
   const handleViewBillClick = () => {
-    if (onViewBill && claim.billId) {
-      onViewBill(claim.billId);
+    if (onViewBill && claim.billIds && claim.billIds.length > 0) {
+      onViewBill(claim.billIds[0]);
     }
   };
 
@@ -226,7 +227,7 @@ export function ClaimDetailsDrawer({
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{bill?.billNumber || claim.billId}</span>
+                    <span className="text-sm font-medium">{firstBill?.billNumber || claim.billIds.join(', ')}</span>
                     <span className="text-sm font-medium">{formatCurrency(claim.claimAmount)}</span>
                   </div>
                   

@@ -126,6 +126,47 @@ export const mockStaff: StaffMember[] = [
     shiftEnd: "06:00",
     isOnDuty: false,
   },
+  // Pharmacists
+  {
+    id: "phm-001",
+    name: "Pharm. Oluwaseun Adeyemi",
+    role: "Pharmacist",
+    department: "Pharmacy",
+    specialization: "Clinical Pharmacy",
+    licenseNumber: "PCN/2013/12345",
+    phone: "+234 822 901 2345",
+    email: "pharmacy@deyon.ng",
+    shiftStart: "08:00",
+    shiftEnd: "16:00",
+    isOnDuty: true,
+  },
+  {
+    id: "phm-002",
+    name: "Pharm. Ngozi Eze",
+    role: "Pharmacist",
+    department: "Pharmacy",
+    specialization: "Hospital Pharmacy",
+    licenseNumber: "PCN/2016/67890",
+    phone: "+234 823 012 3456",
+    email: "ngozi.eze@deyon.ng",
+    shiftStart: "14:00",
+    shiftEnd: "22:00",
+    isOnDuty: false,
+  },
+  // Lab Technicians
+  {
+    id: "lab-t-001",
+    name: "Chinedu Okafor",
+    role: "Lab Technician",
+    department: "Laboratory",
+    specialization: "Medical Laboratory Science",
+    licenseNumber: "MLSCN/2014/34567",
+    phone: "+234 824 123 4567",
+    email: "lab@deyon.ng",
+    shiftStart: "08:00",
+    shiftEnd: "16:00",
+    isOnDuty: true,
+  },
   // Cleaners
   {
     id: "cln-001",
@@ -157,3 +198,40 @@ export const getOnDutyStaff = (): StaffMember[] =>
 
 export const getStaffByDepartment = (department: string): StaffMember[] =>
   mockStaff.filter((s) => s.department === department);
+
+export const getPharmacists = (): StaffMember[] =>
+  mockStaff.filter((s) => s.role === "Pharmacist");
+
+export const getLabTechnicians = (): StaffMember[] =>
+  mockStaff.filter((s) => s.role === "Lab Technician");
+
+export const getStaffById = (id: string): StaffMember | undefined =>
+  mockStaff.find((s) => s.id === id);
+
+export const addStaffMember = (
+  staff: Omit<StaffMember, "id">
+): StaffMember => {
+  const newStaff: StaffMember = {
+    ...staff,
+    id: `staff-${Date.now()}`,
+  };
+  mockStaff.push(newStaff);
+  return newStaff;
+};
+
+export const updateStaffMember = (
+  id: string,
+  updates: Partial<StaffMember>
+): StaffMember | undefined => {
+  const index = mockStaff.findIndex((s) => s.id === id);
+  if (index === -1) return undefined;
+  mockStaff[index] = { ...mockStaff[index], ...updates };
+  return mockStaff[index];
+};
+
+export const archiveStaffMember = (id: string): boolean => {
+  const index = mockStaff.findIndex((s) => s.id === id);
+  if (index === -1) return false;
+  mockStaff.splice(index, 1);
+  return true;
+};

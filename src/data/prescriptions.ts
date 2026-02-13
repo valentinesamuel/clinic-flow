@@ -1,6 +1,6 @@
 // Mock Prescriptions Data
 
-import { Prescription } from '@/types/clinical.types';
+import { Prescription, DispensedItem, DispenseAuditEntry } from '@/types/clinical.types';
 
 export const mockPrescriptions: Prescription[] = [
   {
@@ -31,8 +31,54 @@ export const mockPrescriptions: Prescription[] = [
     status: 'dispensed',
     prescribedAt: '2024-02-01T10:30:00Z',
     dispensedAt: '2024-02-01T11:00:00Z',
-    dispensedBy: 'usr-008',
+    dispensedBy: 'phm-001',
     notes: 'Continue current BP medication regime',
+    dispensedItems: [
+      {
+        drugName: 'Lisinopril 10mg',
+        prescribedQuantity: 30,
+        dispensedQuantity: 30,
+        isSubstituted: false,
+      },
+      {
+        drugName: 'Amlodipine 5mg',
+        prescribedQuantity: 30,
+        dispensedQuantity: 30,
+        isSubstituted: false,
+      },
+    ],
+    auditLog: [
+      {
+        id: 'audit-001-1',
+        action: 'dispensed',
+        prescriptionId: 'rx-001',
+        itemDrugName: 'Lisinopril 10mg',
+        details: 'Dispensed 30 of 30 Lisinopril 10mg',
+        performedBy: 'phm-001',
+        performedByName: 'Pharm. Janet Okonkwo',
+        performedAt: '2024-02-01T11:00:00Z',
+      },
+      {
+        id: 'audit-001-2',
+        action: 'dispensed',
+        prescriptionId: 'rx-001',
+        itemDrugName: 'Amlodipine 5mg',
+        details: 'Dispensed 30 of 30 Amlodipine 5mg',
+        performedBy: 'phm-001',
+        performedByName: 'Pharm. Janet Okonkwo',
+        performedAt: '2024-02-01T11:00:00Z',
+      },
+      {
+        id: 'audit-001-3',
+        action: 'dispensed',
+        prescriptionId: 'rx-001',
+        itemDrugName: '',
+        details: 'All 2 items fully dispensed',
+        performedBy: 'phm-001',
+        performedByName: 'Pharm. Janet Okonkwo',
+        performedAt: '2024-02-01T11:00:00Z',
+      },
+    ],
   },
   {
     id: 'rx-002',
@@ -54,7 +100,50 @@ export const mockPrescriptions: Prescription[] = [
     status: 'dispensed',
     prescribedAt: '2024-02-01T12:00:00Z',
     dispensedAt: '2024-02-01T12:30:00Z',
-    dispensedBy: 'usr-008',
+    dispensedBy: 'phm-001',
+    dispensedItems: [
+      {
+        drugName: 'Metformin 500mg',
+        dispensedDrugName: 'Glucophage 500mg',
+        substitutionType: 'generic',
+        substitutionReason: 'Original brand out of stock',
+        prescribedQuantity: 60,
+        dispensedQuantity: 60,
+        isSubstituted: true,
+      },
+    ],
+    auditLog: [
+      {
+        id: 'audit-002-1',
+        action: 'substituted',
+        prescriptionId: 'rx-002',
+        itemDrugName: 'Metformin 500mg',
+        details: 'Substituted Metformin 500mg with Glucophage 500mg (generic). Reason: Original brand out of stock',
+        performedBy: 'phm-001',
+        performedByName: 'Pharm. Janet Okonkwo',
+        performedAt: '2024-02-01T12:30:00Z',
+      },
+      {
+        id: 'audit-002-2',
+        action: 'dispensed',
+        prescriptionId: 'rx-002',
+        itemDrugName: 'Glucophage 500mg',
+        details: 'Dispensed 60 of 60 Glucophage 500mg',
+        performedBy: 'phm-001',
+        performedByName: 'Pharm. Janet Okonkwo',
+        performedAt: '2024-02-01T12:30:00Z',
+      },
+      {
+        id: 'audit-002-3',
+        action: 'dispensed',
+        prescriptionId: 'rx-002',
+        itemDrugName: '',
+        details: 'All 1 items fully dispensed',
+        performedBy: 'phm-001',
+        performedByName: 'Pharm. Janet Okonkwo',
+        performedAt: '2024-02-01T12:30:00Z',
+      },
+    ],
   },
   {
     id: 'rx-003',
@@ -92,8 +181,70 @@ export const mockPrescriptions: Prescription[] = [
     status: 'dispensed',
     prescribedAt: '2024-02-01T16:00:00Z',
     dispensedAt: '2024-02-01T16:30:00Z',
-    dispensedBy: 'usr-008',
+    dispensedBy: 'phm-001',
     notes: 'For arthritis pain management',
+    dispensedItems: [
+      {
+        drugName: 'Diclofenac 50mg',
+        prescribedQuantity: 28,
+        dispensedQuantity: 28,
+        isSubstituted: false,
+      },
+      {
+        drugName: 'Omeprazole 20mg',
+        prescribedQuantity: 14,
+        dispensedQuantity: 14,
+        isSubstituted: false,
+      },
+      {
+        drugName: 'Glucosamine Sulphate 500mg',
+        prescribedQuantity: 90,
+        dispensedQuantity: 90,
+        isSubstituted: false,
+      },
+    ],
+    auditLog: [
+      {
+        id: 'audit-003-1',
+        action: 'dispensed',
+        prescriptionId: 'rx-003',
+        itemDrugName: 'Diclofenac 50mg',
+        details: 'Dispensed 28 of 28 Diclofenac 50mg',
+        performedBy: 'phm-001',
+        performedByName: 'Pharm. Janet Okonkwo',
+        performedAt: '2024-02-01T16:30:00Z',
+      },
+      {
+        id: 'audit-003-2',
+        action: 'dispensed',
+        prescriptionId: 'rx-003',
+        itemDrugName: 'Omeprazole 20mg',
+        details: 'Dispensed 14 of 14 Omeprazole 20mg',
+        performedBy: 'phm-001',
+        performedByName: 'Pharm. Janet Okonkwo',
+        performedAt: '2024-02-01T16:30:00Z',
+      },
+      {
+        id: 'audit-003-3',
+        action: 'dispensed',
+        prescriptionId: 'rx-003',
+        itemDrugName: 'Glucosamine Sulphate 500mg',
+        details: 'Dispensed 90 of 90 Glucosamine Sulphate 500mg',
+        performedBy: 'phm-001',
+        performedByName: 'Pharm. Janet Okonkwo',
+        performedAt: '2024-02-01T16:30:00Z',
+      },
+      {
+        id: 'audit-003-4',
+        action: 'dispensed',
+        prescriptionId: 'rx-003',
+        itemDrugName: '',
+        details: 'All 3 items fully dispensed',
+        performedBy: 'phm-001',
+        performedByName: 'Pharm. Janet Okonkwo',
+        performedAt: '2024-02-01T16:30:00Z',
+      },
+    ],
   },
   {
     id: 'rx-004',
@@ -169,6 +320,9 @@ export const getTodaysPrescriptions = (): Prescription[] => {
   return mockPrescriptions.filter(p => p.prescribedAt.startsWith(today));
 };
 
+export const getPrescriptionById = (id: string): Prescription | undefined =>
+  mockPrescriptions.find(p => p.id === id);
+
 export const createPrescription = (data: Omit<Prescription, 'id' | 'prescribedAt'>): Prescription => {
   const prescription: Prescription = {
     ...data,
@@ -176,5 +330,74 @@ export const createPrescription = (data: Omit<Prescription, 'id' | 'prescribedAt
     prescribedAt: new Date().toISOString(),
   };
   mockPrescriptions.push(prescription);
+  return prescription;
+};
+
+export const dispensePrescription = (
+  id: string,
+  dispensedItems: DispensedItem[],
+  dispensedById: string,
+  dispensedByName: string
+): Prescription | undefined => {
+  const prescription = mockPrescriptions.find(p => p.id === id);
+  if (!prescription) return undefined;
+
+  // Determine if fully or partially dispensed
+  const allFullyDispensed = dispensedItems.every(
+    item => item.dispensedQuantity >= item.prescribedQuantity
+  );
+  const prescribedCount = prescription.items.length;
+  const dispensedCount = dispensedItems.length;
+
+  prescription.status = (allFullyDispensed && dispensedCount >= prescribedCount)
+    ? 'dispensed'
+    : 'partially_dispensed';
+  prescription.dispensedItems = dispensedItems;
+  prescription.dispensedAt = new Date().toISOString();
+  prescription.dispensedBy = dispensedById;
+
+  // Create audit entries
+  if (!prescription.auditLog) prescription.auditLog = [];
+
+  for (const item of dispensedItems) {
+    if (item.isSubstituted) {
+      prescription.auditLog.push({
+        id: `audit-${Date.now()}-sub-${item.drugName}`,
+        action: 'substituted',
+        prescriptionId: id,
+        itemDrugName: item.drugName,
+        details: `Substituted ${item.drugName} with ${item.dispensedDrugName} (${item.substitutionType}). Reason: ${item.substitutionReason}`,
+        performedBy: dispensedById,
+        performedByName: dispensedByName,
+        performedAt: new Date().toISOString(),
+      });
+    }
+
+    prescription.auditLog.push({
+      id: `audit-${Date.now()}-disp-${item.drugName}`,
+      action: 'dispensed',
+      prescriptionId: id,
+      itemDrugName: item.dispensedDrugName || item.drugName,
+      details: `Dispensed ${item.dispensedQuantity} of ${item.prescribedQuantity} ${item.dispensedDrugName || item.drugName}`,
+      performedBy: dispensedById,
+      performedByName: dispensedByName,
+      performedAt: new Date().toISOString(),
+    });
+  }
+
+  // Add overall status entry
+  prescription.auditLog.push({
+    id: `audit-${Date.now()}-status`,
+    action: prescription.status === 'dispensed' ? 'dispensed' : 'partially_dispensed',
+    prescriptionId: id,
+    itemDrugName: '',
+    details: prescription.status === 'dispensed'
+      ? `All ${dispensedCount} items fully dispensed`
+      : `${dispensedCount} of ${prescribedCount} items dispensed`,
+    performedBy: dispensedById,
+    performedByName: dispensedByName,
+    performedAt: new Date().toISOString(),
+  });
+
   return prescription;
 };

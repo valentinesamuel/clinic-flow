@@ -77,9 +77,7 @@ export default function CMODashboard() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">CMO Dashboard</h1>
-            <p className="text-muted-foreground">
-              Executive overview of Deyon Clinic
-            </p>
+            <p className="text-muted-foreground">Executive overview</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={actions.viewAppointments}>

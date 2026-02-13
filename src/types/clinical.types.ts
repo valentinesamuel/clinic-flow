@@ -72,6 +72,8 @@ export interface Prescription {
   dispensedAt?: string;
   dispensedBy?: string;
   notes?: string;
+  dispensedItems?: DispensedItem[];
+  auditLog?: DispenseAuditEntry[];
 }
 
 export type LabOrderStatus = 'ordered' | 'sample_collected' | 'processing' | 'completed' | 'cancelled';
@@ -84,7 +86,22 @@ export interface LabTest {
   normalRange?: string;
   unit?: string;
   isAbnormal?: boolean;
-  metadata?: Partial<OrderMetadata>;
+  techNotes?: string;
+  images?: string[];
+  metadata?: Partial<OrderMetadata> & Record<string, string>;
+}
+
+export interface TestCatalogEntry {
+  testCode: string;
+  testName: string;
+  category: string;
+  defaultUnit: string;
+  defaultRange: string;
+  criticalLow?: number;
+  criticalHigh?: number;
+  methodology?: string;
+  preparationInstructions?: string;
+  sampleType?: string;
 }
 
 export interface LabOrder {
@@ -103,6 +120,8 @@ export interface LabOrder {
   collectedBy?: string;
   processedBy?: string;
   notes?: string;
+  isSubmittedToDoctor?: boolean;
+  submittedAt?: string;
 }
 
 export interface Consultation {
@@ -139,4 +158,28 @@ export interface StaffMember {
   shiftEnd?: string;
   isOnDuty: boolean;
   photoUrl?: string;
+}
+
+export type SubstitutionType = 'generic' | 'therapeutic';
+
+export interface DispensedItem {
+  drugName: string;
+  dispensedDrugName?: string;
+  substitutionType?: SubstitutionType;
+  substitutionReason?: string;
+  pharmacistNotes?: string;
+  prescribedQuantity: number;
+  dispensedQuantity: number;
+  isSubstituted: boolean;
+}
+
+export interface DispenseAuditEntry {
+  id: string;
+  action: 'dispensed' | 'partially_dispensed' | 'substituted' | 'cancelled';
+  prescriptionId: string;
+  itemDrugName: string;
+  details: string;
+  performedBy: string;
+  performedByName: string;
+  performedAt: string;
 }

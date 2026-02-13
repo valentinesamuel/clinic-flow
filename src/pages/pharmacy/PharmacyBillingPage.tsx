@@ -22,7 +22,7 @@ import { Bill, BillStatus, PaymentItem } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
 import { getBillsPaginated, getPendingBillsByDepartment } from '@/data/bills';
 import { getPatientById } from '@/data/patients';
-import { Search, Receipt, ArrowLeft, Plus, Pill, QrCode } from 'lucide-react';
+import { Search, Receipt, ArrowLeft, Plus, Pill, QrCode, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateBillingCode, getBillingCodeExpiry } from '@/utils/billingDepartment';
 
@@ -122,10 +122,16 @@ export default function PharmacyBillingPage() {
               <p className="text-muted-foreground">Manage pharmacy department bills</p>
             </div>
           </div>
-          <Button onClick={() => setShowBillCreation(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Bill
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setShowBillCreation(true)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Walk-in Sale
+            </Button>
+            <Button onClick={() => setShowBillCreation(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Bill
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}

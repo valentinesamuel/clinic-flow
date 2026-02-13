@@ -11,11 +11,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, History } from 'lucide-react';
 import { AmendmentReason } from '@/types/consultation.types';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ConsultationViewPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [amendDialogOpen, setAmendDialogOpen] = useState(false);
+  const canAmend = user?.role === 'doctor' || user?.role === 'clinical_lead';
 
   const consultation = id ? getConsultationById(id) : undefined;
   const patient = consultation ? getPatientById(consultation.patientId) : undefined;
@@ -25,7 +28,7 @@ export default function ConsultationViewPage() {
 
   if (!consultation || !patient) {
     return (
-      <DashboardLayout allowedRoles={['doctor', 'clinical_lead']}>
+      <DashboardLayout allowedRoles={['doctor', 'clinical_lead', 'cmo', 'hospital_admin', 'cashier', 'receptionist']}>
         <div className="p-6 text-center">
           <h1 className="text-xl font-bold mb-2">Consultation Not Found</h1>
           <p className="text-muted-foreground mb-4">
@@ -70,7 +73,7 @@ export default function ConsultationViewPage() {
                 v{consultation.currentVersion}
               </Badge>
             )}
-            {isFinalized && (
+            {isFinalized && canAmend && (
               <Button
                 variant="outline"
                 size="sm"

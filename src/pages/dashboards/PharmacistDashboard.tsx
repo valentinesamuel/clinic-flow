@@ -4,17 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   Pill,
   Package,
   AlertTriangle,
   Clock,
   CheckCircle,
-  Info,
   Receipt,
   ChevronRight,
+  ArrowRight,
 } from 'lucide-react';
 import { getPendingPrescriptions, getTodaysPrescriptions } from '@/data/prescriptions';
 import { getItemsByCategory, getLowStockItems } from '@/data/inventory';
@@ -36,16 +35,6 @@ export default function PharmacistDashboard() {
           <h1 className="text-2xl font-bold">Pharmacy Dashboard</h1>
           <p className="text-muted-foreground">Dispensing and stock management</p>
         </div>
-
-        {/* Coming Soon Banner */}
-        <Alert className="border-primary/50 bg-primary/5">
-          <Info className="h-4 w-4" />
-          <AlertTitle>Hybrid Module</AlertTitle>
-          <AlertDescription>
-            Full pharmacy integration coming soon. Stock management is functional with mock data.
-            Prescription queue and dispensing log will be enabled in the next phase.
-          </AlertDescription>
-        </Alert>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -104,46 +93,67 @@ export default function PharmacistDashboard() {
           </Card>
         </div>
 
-        {/* Billing Quick Access */}
-        <Card 
-          className="border-primary/30 hover:shadow-md transition-shadow cursor-pointer"
-          onClick={() => navigate('/pharmacist/billing')}
-        >
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <Receipt className="h-6 w-6 text-primary" />
+        {/* Quick Actions */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <Card
+            className="border-primary/30 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate('/pharmacist/billing')}
+          >
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                    <Receipt className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Pharmacy Billing</p>
+                    <p className="text-sm text-muted-foreground">
+                      {pendingPharmacyBills.length} pending bills
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">Pharmacy Billing</p>
-                  <p className="text-sm text-muted-foreground">
-                    {pendingPharmacyBills.length} pending bills
-                  </p>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate('/pharmacist/billing'); }}>
+                    Manage Bills
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate('/pharmacist/billing'); }}>
-                  Manage Bills
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
+            </CardContent>
+          </Card>
+
+          <Card
+            className="border-primary/30 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => navigate('/pharmacist/stock')}
+          >
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-lg bg-primary/10">
+                    <Package className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium">Stock Management</p>
+                    <p className="text-sm text-muted-foreground">
+                      {lowStockMedicines.length} low stock alerts
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); navigate('/pharmacist/stock'); }}>
+                    Check Stock
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Main Content */}
         <div className="grid md:grid-cols-2 gap-6">
-          {/* Prescription Queue - Coming Soon Overlay */}
-          <Card className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-              <div className="text-center p-4">
-                <Badge variant="secondary" className="mb-2">Coming Soon</Badge>
-                <p className="text-sm text-muted-foreground">
-                  Real-time prescription queue will be available after integration
-                </p>
-              </div>
-            </div>
+          {/* Prescription Queue */}
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Pill className="h-5 w-5 text-primary" />
@@ -152,8 +162,12 @@ export default function PharmacistDashboard() {
               <CardDescription>Pending prescriptions to dispense</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {pendingPrescriptions.slice(0, 3).map((rx) => (
-                <div key={rx.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
+              {pendingPrescriptions.slice(0, 5).map((rx) => (
+                <div
+                  key={rx.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-muted hover:bg-muted/80 cursor-pointer transition-colors"
+                  onClick={() => navigate(`/pharmacist/prescriptions/${rx.id}`)}
+                >
                   <div>
                     <p className="text-sm font-medium">{rx.patientName}</p>
                     <p className="text-xs text-muted-foreground">
@@ -163,6 +177,14 @@ export default function PharmacistDashboard() {
                   <Badge variant="outline">{rx.status}</Badge>
                 </div>
               ))}
+              <Button
+                variant="outline"
+                className="w-full mt-2"
+                onClick={() => navigate('/pharmacist/prescriptions')}
+              >
+                View All Prescriptions
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
             </CardContent>
           </Card>
 
@@ -201,23 +223,15 @@ export default function PharmacistDashboard() {
             </CardContent>
           </Card>
 
-          {/* Dispensing Log - Coming Soon */}
-          <Card className="relative overflow-hidden md:col-span-2">
-            <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-              <div className="text-center p-4">
-                <Badge variant="secondary" className="mb-2">Coming Soon</Badge>
-                <p className="text-sm text-muted-foreground">
-                  Dispensing log with barcode scanning will be enabled in the next phase
-                </p>
-              </div>
-            </div>
+          {/* Dispensing Log */}
+          <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle>Dispensing Log</CardTitle>
               <CardDescription>Today's dispensed medications</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {todaysPrescriptions.filter(p => p.status === 'dispensed').slice(0, 3).map((rx) => (
+                {todaysPrescriptions.filter(p => p.status === 'dispensed').slice(0, 5).map((rx) => (
                   <div key={rx.id} className="flex items-center justify-between p-3 rounded-lg bg-muted">
                     <div>
                       <p className="text-sm font-medium">{rx.patientName}</p>

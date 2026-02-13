@@ -122,7 +122,7 @@ export default function ClaimsListPage() {
   const claims = userDepartment === 'all'
     ? allClaims
     : allClaims.filter((claim) => {
-        const bill = getBillById(claim.billId);
+        const bill = claim.billIds.length > 0 ? getBillById(claim.billIds[0]) : null;
         return bill ? bill.department === userDepartment : true;
       });
   const total = userDepartment === 'all' ? rawTotal : claims.length;

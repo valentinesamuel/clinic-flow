@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ProtocolBundle } from '@/types/financial.types';
 import { BundleDeselectionRecord } from '@/types/consultation.types';
-import { Package, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, X } from 'lucide-react';
 
 interface BundleSuggestionProps {
   bundle: ProtocolBundle;
@@ -18,13 +18,10 @@ interface BundleSuggestionProps {
 }
 
 export function BundleSuggestion({ bundle, onApply, onDismiss, onDeselectionLog, doctorId }: BundleSuggestionProps) {
-  const [expanded, setExpanded] = useState(false);
   const [selectedLabs, setSelectedLabs] = useState<Set<string>>(
     new Set(bundle.labTests.map(t => t.testCode))
   );
-  const [selectedMeds, setSelectedMeds] = useState<Set<string>>(
-    new Set(bundle.medications.map(m => m.drugName))
-  );
+  const [selectedMeds, setSelectedMeds] = useState<Set<string>>(new Set());
 
   const toggleLab = (testCode: string) => {
     setSelectedLabs(prev => {
@@ -64,9 +61,9 @@ export function BundleSuggestion({ bundle, onApply, onDismiss, onDeselectionLog,
     };
   };
 
-  const handleApply = (applyAll: boolean) => {
-    const labsToApply = applyAll ? bundle.labTests : bundle.labTests.filter(t => selectedLabs.has(t.testCode));
-    const medsToApply = applyAll ? bundle.medications : bundle.medications.filter(m => selectedMeds.has(m.drugName));
+  const handleApply = () => {
+    const labsToApply = bundle.labTests.filter(t => selectedLabs.has(t.testCode));
+    const medsToApply = bundle.medications.filter(m => selectedMeds.has(m.drugName));
 
     const labs = labsToApply.map(t => ({
       testCode: t.testCode,
@@ -84,19 +81,13 @@ export function BundleSuggestion({ bundle, onApply, onDismiss, onDeselectionLog,
       instructions: m.instructions,
     }));
 
-    if (!applyAll) {
-      const deselection = buildDeselectionRecord();
-      if (deselection) {
-        onDeselectionLog?.(deselection);
-      }
+    const deselection = buildDeselectionRecord();
+    if (deselection) {
+      onDeselectionLog?.(deselection);
     }
 
     onApply(labs, meds);
   };
-
-  // Compact inline summary
-  const labNames = bundle.labTests.map(t => t.testName.replace(/\s*\(.*?\)\s*/g, '')).join(', ');
-  const medNames = bundle.medications.map(m => m.drugName.split(' ')[0]).join(', ');
 
   return (
     <Card className="border-primary/30 bg-primary/5">
@@ -106,13 +97,6 @@ export function BundleSuggestion({ bundle, onApply, onDismiss, onDeselectionLog,
             <Package className="h-4 w-4 mt-0.5 text-primary shrink-0" />
             <div className="min-w-0">
               <p className="text-sm font-medium">{bundle.name}</p>
-              {!expanded && (
-                <p className="text-xs text-muted-foreground truncate">
-                  {labNames && `Labs: ${labNames}`}
-                  {labNames && medNames && ' | '}
-                  {medNames && `Meds: ${medNames}`}
-                </p>
-              )}
             </div>
           </div>
           <button onClick={onDismiss} className="shrink-0 p-1 hover:bg-accent rounded" type="button">
@@ -120,76 +104,41 @@ export function BundleSuggestion({ bundle, onApply, onDismiss, onDeselectionLog,
           </button>
         </div>
 
-        {/* Compact mode actions */}
-        {!expanded && (
-          <div className="flex items-center gap-2">
-            <Button size="sm" className="h-7 text-xs" onClick={() => handleApply(true)}>
-              Apply All
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs"
-              onClick={() => setExpanded(true)}
-            >
-              Customize
-              <ChevronDown className="h-3 w-3 ml-1" />
-            </Button>
+        {bundle.labTests.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">Lab Tests</p>
+            {bundle.labTests.map(test => (
+              <label key={test.testCode} className="flex items-center gap-2 text-xs cursor-pointer">
+                <Checkbox
+                  checked={selectedLabs.has(test.testCode)}
+                  onCheckedChange={() => toggleLab(test.testCode)}
+                />
+                <span>{test.testName}</span>
+              </label>
+            ))}
           </div>
         )}
 
-        {/* Expanded mode — checkboxes */}
-        {expanded && (
-          <>
-            {bundle.labTests.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Lab Tests</p>
-                {bundle.labTests.map(test => (
-                  <label key={test.testCode} className="flex items-center gap-2 text-xs cursor-pointer">
-                    <Checkbox
-                      checked={selectedLabs.has(test.testCode)}
-                      onCheckedChange={() => toggleLab(test.testCode)}
-                    />
-                    <span>{test.testName}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            {bundle.medications.length > 0 && (
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground">Medications</p>
-                {bundle.medications.map(med => (
-                  <label key={med.drugName} className="flex items-center gap-2 text-xs cursor-pointer">
-                    <Checkbox
-                      checked={selectedMeds.has(med.drugName)}
-                      onCheckedChange={() => toggleMed(med.drugName)}
-                    />
-                    <span>{med.drugName} ({med.dosage}, {med.frequency})</span>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            <div className="flex items-center gap-2 pt-1">
-              <Button size="sm" className="h-7 text-xs" onClick={() => handleApply(false)}>
-                Apply Selected
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs"
-                onClick={() => setExpanded(false)}
-              >
-                Collapse
-                <ChevronUp className="h-3 w-3 ml-1" />
-              </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={onDismiss}>
-                Dismiss
-              </Button>
-            </div>
-          </>
+        {bundle.medications.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">Medications</p>
+            {bundle.medications.map(med => (
+              <label key={med.drugName} className="flex items-center gap-2 text-xs cursor-pointer">
+                <Checkbox
+                  checked={selectedMeds.has(med.drugName)}
+                  onCheckedChange={() => toggleMed(med.drugName)}
+                />
+                <span>{med.drugName} ({med.dosage}, {med.frequency})</span>
+              </label>
+            ))}
+          </div>
         )}
+
+        <div className="flex items-center gap-2 pt-1">
+          <Button size="sm" className="h-7 text-xs" onClick={handleApply}>
+            Apply Selected
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

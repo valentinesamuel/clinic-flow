@@ -1,10 +1,11 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Check, ChevronLeft, ChevronRight, Search, Plus, X, User } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Search, Plus, X, User, UserPlus, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -128,6 +129,9 @@ export function BillCreationForm({
   const [visitReason, setVisitReason] = useState('');
   const [showHMOClaimPopup, setShowHMOClaimPopup] = useState(false);
   const [existingClaim, setExistingClaim] = useState<typeof mockClaims[0] | null>(null);
+  const [isWalkIn, setIsWalkIn] = useState(false);
+  const [walkInName, setWalkInName] = useState('');
+  const [walkInPhone, setWalkInPhone] = useState('');
 
   // Search patients
   const patientResults = useMemo(() => {
@@ -152,6 +156,7 @@ export function BillCreationForm({
 
   // Calculate HMO coverage for items if patient is HMO
   const hmoCoverage = useMemo(() => {
+    if (isWalkIn) return null;
     if (!selectedPatient || selectedPatient.paymentType !== 'hmo' || selectedItems.length === 0) {
       return null;
     }
@@ -166,7 +171,7 @@ export function BillCreationForm({
     }));
     const hmoProviderId = selectedPatient.hmoDetails?.providerId || '';
     return calculateBillCoverage(billItems, hmoProviderId);
-  }, [selectedPatient, selectedItems]);
+  }, [selectedPatient, selectedItems, isWalkIn]);
 
   const handleSelectPatient = (patient: Patient) => {
     setSelectedPatient(patient);
@@ -232,7 +237,8 @@ export function BillCreationForm({
   };
 
   const handleGenerateBill = () => {
-    if (!selectedPatient) return;
+    if (!selectedPatient && !isWalkIn) return;
+    if (isWalkIn && !walkInName.trim()) return;
 
     const billItems = hmoCoverage
       ? hmoCoverage.items
@@ -247,9 +253,9 @@ export function BillCreationForm({
         }));
 
     const bill: Partial<Bill> = {
-      patientId: selectedPatient.id,
-      patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
-      patientMrn: selectedPatient.mrn,
+      patientId: isWalkIn ? 'walk-in' : selectedPatient!.id,
+      patientName: isWalkIn ? walkInName.trim() : `${selectedPatient!.firstName} ${selectedPatient!.lastName}`,
+      patientMrn: isWalkIn ? 'WALK-IN' : selectedPatient!.mrn,
       items: billItems,
       subtotal: totals.subtotal,
       discount: totals.discount,
@@ -260,8 +266,13 @@ export function BillCreationForm({
       status: 'pending',
       notes: notes || undefined,
       createdAt: new Date().toISOString(),
-      hmoTotalCoverage: hmoCoverage?.hmoTotalCoverage,
-      patientTotalLiability: hmoCoverage?.patientTotalLiability,
+      // Walk-in fields
+      isWalkIn: isWalkIn || undefined,
+      walkInCustomerName: isWalkIn ? walkInName.trim() : undefined,
+      walkInPhone: isWalkIn && walkInPhone.trim() ? walkInPhone.trim() : undefined,
+      // No HMO for walk-in
+      hmoTotalCoverage: isWalkIn ? undefined : hmoCoverage?.hmoTotalCoverage,
+      patientTotalLiability: isWalkIn ? undefined : hmoCoverage?.patientTotalLiability,
     };
 
     onComplete(bill);
@@ -273,6 +284,9 @@ export function BillCreationForm({
     setSelectedItems([]);
     setNotes('');
     setVisitReason('');
+    setIsWalkIn(false);
+    setWalkInName('');
+    setWalkInPhone('');
     onCancel();
   };
 
@@ -294,9 +308,68 @@ export function BillCreationForm({
           {/* Step 1: Select Patient */}
           {currentStep === 1 && (
             <div className="space-y-4 p-1">
-              <div className="space-y-2">
-                <Label>Search Patient</Label>
-                <Popover open={patientSearchOpen} onOpenChange={setPatientSearchOpen}>
+              <div className="flex gap-2 mb-4">
+                <Button
+                  variant={!isWalkIn ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => { setIsWalkIn(false); setWalkInName(''); setWalkInPhone(''); }}
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Registered Patient
+                </Button>
+                <Button
+                  variant={isWalkIn ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => { setIsWalkIn(true); setSelectedPatient(null); }}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Walk-in Customer
+                </Button>
+              </div>
+
+              {isWalkIn ? (
+                <div className="space-y-4">
+                  <Alert className="border-amber-200 bg-amber-50">
+                    <Info className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-800">
+                      Walk-in customers can only pay with cash, card, or bank transfer. HMO payment is not available for unregistered patients.
+                    </AlertDescription>
+                  </Alert>
+                  <div className="space-y-2">
+                    <Label>Customer Name *</Label>
+                    <Input
+                      value={walkInName}
+                      onChange={(e) => setWalkInName(e.target.value)}
+                      placeholder="Enter customer name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone Number (optional)</Label>
+                    <Input
+                      value={walkInPhone}
+                      onChange={(e) => setWalkInPhone(e.target.value)}
+                      placeholder="e.g. 08012345678"
+                    />
+                  </div>
+                  {walkInName.trim() && (
+                    <div className="p-4 rounded-lg border bg-muted/30">
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
+                          <UserPlus className="h-6 w-6 text-amber-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">{walkInName}</p>
+                          {walkInPhone && <p className="text-sm text-muted-foreground">{walkInPhone}</p>}
+                        </div>
+                        <Badge variant="outline" className="text-amber-600 border-amber-300">Walk-in</Badge>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Search Patient</Label>
+                  <Popover open={patientSearchOpen} onOpenChange={setPatientSearchOpen}>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start text-left font-normal">
                       <Search className="h-4 w-4 mr-2 text-muted-foreground" />
@@ -338,27 +411,28 @@ export function BillCreationForm({
                     </Command>
                   </PopoverContent>
                 </Popover>
-              </div>
 
-              {selectedPatient && (
-                <div className="p-4 rounded-lg border bg-muted/30">
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <User className="h-6 w-6 text-primary" />
+                {selectedPatient && (
+                  <div className="p-4 rounded-lg border bg-muted/30">
+                    <div className="flex items-center gap-4">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="h-6 w-6 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium">
+                          {selectedPatient.firstName} {selectedPatient.lastName}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{selectedPatient.mrn}</p>
+                      </div>
+                      <InsuranceBadge
+                        paymentType={selectedPatient.paymentType}
+                        hmoName={selectedPatient.hmoDetails?.providerName}
+                        compact={false}
+                      />
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium">
-                        {selectedPatient.firstName} {selectedPatient.lastName}
-                      </p>
-                      <p className="text-sm text-muted-foreground">{selectedPatient.mrn}</p>
-                    </div>
-                    <InsuranceBadge
-                      paymentType={selectedPatient.paymentType}
-                      hmoName={selectedPatient.hmoDetails?.providerName}
-                      compact={false}
-                    />
                   </div>
-                </div>
+                )}
+              </div>
               )}
             </div>
           )}
@@ -458,17 +532,18 @@ export function BillCreationForm({
             <ScrollArea className="h-[50vh]">
               <div className="space-y-4 p-1">
                 {/* Patient */}
-                {selectedPatient && (
+                {(selectedPatient || isWalkIn) && (
                   <div className="p-4 rounded-lg border">
                     <p className="text-xs text-muted-foreground mb-2">Patient</p>
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="h-5 w-5 text-primary" />
+                      <div className={`h-10 w-10 rounded-full ${isWalkIn ? 'bg-amber-100' : 'bg-primary/10'} flex items-center justify-center`}>
+                        {isWalkIn ? <UserPlus className="h-5 w-5 text-amber-600" /> : <User className="h-5 w-5 text-primary" />}
                       </div>
-                      <div>
-                        <p className="font-medium">{selectedPatient.firstName} {selectedPatient.lastName}</p>
-                        <p className="text-sm text-muted-foreground">{selectedPatient.mrn}</p>
+                      <div className="flex-1">
+                        <p className="font-medium">{isWalkIn ? walkInName : `${selectedPatient!.firstName} ${selectedPatient!.lastName}`}</p>
+                        <p className="text-sm text-muted-foreground">{isWalkIn ? (walkInPhone || 'No phone') : selectedPatient!.mrn}</p>
                       </div>
+                      {isWalkIn && <Badge variant="outline" className="text-amber-600 border-amber-300">Walk-in</Badge>}
                     </div>
                   </div>
                 )}
@@ -536,7 +611,7 @@ export function BillCreationForm({
               Cancel
             </Button>
           )}
-          {currentStep === 1 && selectedPatient && (
+          {currentStep === 1 && (selectedPatient || (isWalkIn && walkInName.trim())) && (
             <Button onClick={() => setCurrentStep(2)}>
               Continue
               <ChevronRight className="h-4 w-4 ml-1" />

@@ -1,3 +1,4 @@
+import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,7 +27,6 @@ import DoctorQueuePage from "./pages/queue/DoctorQueuePage";
 import BillsListPage from "./pages/billing/BillsListPage";
 import ClaimsListPage from "./pages/billing/ClaimsListPage";
 import PaymentsListPage from "./pages/billing/PaymentsListPage";
-import BillingSettings from "./pages/billing/BillingSettings";
 import CashierDashboardPage from "./pages/billing/CashierDashboardPage";
 import ServicePricingPage from "./pages/billing/ServicePricingPage";
 import PriceApprovalPage from "./pages/billing/PriceApprovalPage";
@@ -70,6 +70,7 @@ import PartnerLabSyncPage from "./pages/lab/PartnerLabSyncPage";
 import StockRequestsPage from "./pages/stock-requests/StockRequestsPage";
 import StockRequestAdminPage from "./pages/stock-requests/StockRequestAdminPage";
 import NewStockRequestPage from "./pages/stock-requests/NewStockRequestPage";
+import AppSettingsPage from "./pages/settings/AppSettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -84,12 +85,13 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="clinic-flow-theme">
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
           <Route
             path="/"
             element={<Navigate to="/login" replace />}
@@ -171,6 +173,7 @@ const App = () => (
           <Route path="/cmo/prescriptions" element={<PrescriptionListPage />} />
           <Route path="/cmo/prescriptions/:id" element={<PrescriptionDetailPage />} />
           <Route path="/cmo/stock-requests" element={<StockRequestAdminPage />} />
+          <Route path="/cmo/settings" element={<AppSettingsPage />} />
           <Route path="/cmo/*" element={<CMODashboard />} />
 
           {/* Hospital Admin Routes */}
@@ -234,6 +237,7 @@ const App = () => (
           <Route path="/hospital-admin/prescriptions" element={<PrescriptionListPage />} />
           <Route path="/hospital-admin/prescriptions/:id" element={<PrescriptionDetailPage />} />
           <Route path="/hospital-admin/stock-requests" element={<StockRequestAdminPage />} />
+          <Route path="/hospital-admin/settings" element={<AppSettingsPage />} />
           <Route
             path="/hospital-admin/*"
             element={<HospitalAdminDashboard />}
@@ -272,6 +276,7 @@ const App = () => (
           <Route path="/clinical-lead/lab-results/:id" element={<LabResultDetailPage />} />
           <Route path="/clinical-lead/staff" element={<MedicalStaffPage />} />
           <Route path="/clinical-lead/roster" element={<RosterPage />} />
+          <Route path="/clinical-lead/settings" element={<AppSettingsPage />} />
           <Route
             path="/clinical-lead/*"
             element={<ClinicalLeadDashboard />}
@@ -322,6 +327,7 @@ const App = () => (
           <Route path="/receptionist/prescriptions/:id" element={<PrescriptionDetailPage />} />
           <Route path="/receptionist/stock-requests" element={<StockRequestsPage />} />
           <Route path="/receptionist/stock-requests/new" element={<NewStockRequestPage />} />
+          <Route path="/receptionist/settings" element={<AppSettingsPage />} />
           <Route
             path="/receptionist/*"
             element={<ReceptionistDashboard />}
@@ -376,6 +382,7 @@ const App = () => (
           <Route path="/doctor/lab-results/:id" element={<LabResultDetailPage />} />
           <Route path="/doctor/stock-requests" element={<StockRequestsPage />} />
           <Route path="/doctor/stock-requests/new" element={<NewStockRequestPage />} />
+          <Route path="/doctor/settings" element={<AppSettingsPage />} />
           <Route path="/doctor/*" element={<DoctorDashboard />} />
 
           {/* Nurse Routes */}
@@ -401,6 +408,7 @@ const App = () => (
           <Route path="/nurse/vitals" element={<VitalsListPage />} />
           <Route path="/nurse/stock-requests" element={<StockRequestsPage />} />
           <Route path="/nurse/stock-requests/new" element={<NewStockRequestPage />} />
+          <Route path="/nurse/settings" element={<AppSettingsPage />} />
           <Route path="/nurse/*" element={<NurseDashboard />} />
 
           {/* Cashier Routes */}
@@ -428,7 +436,7 @@ const App = () => (
           />
           <Route
             path="/cashier/settings"
-            element={<BillingSettings />}
+            element={<AppSettingsPage />}
           />
           <Route
             path="/cashier/station"
@@ -463,6 +471,7 @@ const App = () => (
           <Route path="/pharmacist/stock" element={<PharmacyStockPage />} />
           <Route path="/pharmacist/stock-requests" element={<StockRequestsPage />} />
           <Route path="/pharmacist/stock-requests/new" element={<NewStockRequestPage />} />
+          <Route path="/pharmacist/settings" element={<AppSettingsPage />} />
           <Route
             path="/pharmacist/*"
             element={<PharmacistDashboard />}
@@ -480,18 +489,21 @@ const App = () => (
           <Route path="/lab-tech/partner-labs" element={<PartnerLabSyncPage />} />
           <Route path="/lab-tech/stock-requests" element={<StockRequestsPage />} />
           <Route path="/lab-tech/stock-requests/new" element={<NewStockRequestPage />} />
+          <Route path="/lab-tech/settings" element={<AppSettingsPage />} />
           <Route path="/lab-tech/*" element={<LabTechDashboard />} />
 
           {/* Patient Routes */}
           <Route path="/patient" element={<PatientDashboard />} />
           <Route path="/patient/results" element={<PatientLabResultsPage />} />
+          <Route path="/patient/settings" element={<AppSettingsPage />} />
           <Route path="/patient/*" element={<PatientDashboard />} />
 
           <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

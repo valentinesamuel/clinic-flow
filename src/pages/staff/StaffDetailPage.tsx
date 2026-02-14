@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { mockStaff, updateStaffMember } from '@/data/staff';
 import { getStaffRoster, updateRosterShiftWithTime, createRosterEntry, getEffectiveTime, DAYS, DAY_LABELS, PREDEFINED_SLOTS } from '@/data/roster';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import type { StaffMember } from '@/types/clinical.types';
 import type { ShiftType, CustomTimeOverride } from '@/types/roster.types';

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { CloudOff, Cloud, RefreshCw, AlertCircle, Check, X } from 'lucide-react';
-import { useSync, SyncStatus } from '@/contexts/SyncContext';
+import { onlineManager } from '@tanstack/react-query';
 import {
   Popover,
   PopoverContent,
@@ -8,6 +8,8 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+export type SyncStatus = 'online' | 'syncing' | 'offline' | 'error';
 
 const statusConfig: Record<SyncStatus, {
   icon: typeof Cloud;
@@ -47,17 +49,25 @@ const statusConfig: Record<SyncStatus, {
 };
 
 export function SyncStatusIndicator() {
-  const { status, pendingChanges, lastSyncTime, setStatus } = useSync();
+  const isOnline = useSyncExternalStore(
+    onlineManager.subscribe.bind(onlineManager),
+    () => onlineManager.isOnline(),
+  );
+  const [demoStatus, setDemoStatus] = useState<SyncStatus | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  
+  const [lastSyncTime] = useState<Date | null>(new Date());
+  const [pendingChanges] = useState(0);
+
+  const status: SyncStatus = demoStatus ?? (isOnline ? 'online' : 'offline');
+
   const config = statusConfig[status];
   const Icon = config.icon;
-  
+
   const formatLastSync = (date: Date | null) => {
     if (!date) return 'Never';
     const now = new Date();
     const diff = Math.floor((now.getTime() - date.getTime()) / 1000);
-    
+
     if (diff < 60) return 'Just now';
     if (diff < 3600) return `${Math.floor(diff / 60)} min ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)} hours ago`;
@@ -93,7 +103,7 @@ export function SyncStatusIndicator() {
               <p className="text-sm text-muted-foreground">{config.description}</p>
             </div>
           </div>
-          
+
           <div className="space-y-2 border-t pt-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Last sync</span>
@@ -117,7 +127,7 @@ export function SyncStatusIndicator() {
                   variant={status === s ? 'default' : 'outline'}
                   size="sm"
                   className="h-7 text-xs"
-                  onClick={() => setStatus(s)}
+                  onClick={() => setDemoStatus(s)}
                 >
                   {s}
                 </Button>

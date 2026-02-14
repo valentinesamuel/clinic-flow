@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/dialog';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { mockStaff, addStaffMember } from '@/data/staff';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 const ROLES = ['Doctor', 'Nurse', 'Receptionist', 'Pharmacist', 'Lab Technician', 'Security', 'Cleaner'];

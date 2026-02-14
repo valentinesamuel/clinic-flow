@@ -14,7 +14,7 @@ import { createLabOrder } from '@/data/lab-orders';
 import { createPrescription } from '@/data/prescriptions';
 import { logAuditEntry } from '@/data/audit-log';
 import { useFinancialSidebar } from '@/hooks/useFinancialSidebar';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Stethoscope, Search } from 'lucide-react';

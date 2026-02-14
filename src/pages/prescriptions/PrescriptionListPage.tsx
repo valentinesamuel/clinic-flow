@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/select';
 import { mockPrescriptions } from '@/data/prescriptions';
 import { getPatientById } from '@/data/patients';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Search, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';

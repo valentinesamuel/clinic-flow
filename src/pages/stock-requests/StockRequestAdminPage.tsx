@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Clock, AlertTriangle, CheckCircle, Package, MoreHorizontal, Check, X, MessageSquare, Forward, ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { getStockRequests, getPendingStockRequests, getUrgentPendingStockRequests, updateStockRequestStatus } from '@/data/stock-requests';

@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 import { Search, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Calendar, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LabResultsListPage() {
   const { toast } = useToast();

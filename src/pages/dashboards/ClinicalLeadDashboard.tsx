@@ -12,7 +12,7 @@ import {
   Stethoscope,
   TrendingUp,
 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { getMedicalStaff, getDoctors, getNurses } from '@/data/staff';
 import { getLabResultsForReview, getUrgentLabOrders } from '@/data/lab-orders';

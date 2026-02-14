@@ -7,7 +7,7 @@ import { Plus, Search, Clock, UserPlus, RefreshCw, Users, CheckCircle, Calendar 
 import { Appointment } from '@/types/clinical.types';
 import { getTodaysAppointments, markNoShow } from '@/data/appointments';
 import { getQueueByType } from '@/data/queue';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AppointmentTable } from '@/components/appointments/AppointmentTable';
 import { CheckInModal } from '@/components/queue/CheckInModal';

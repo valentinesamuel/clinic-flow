@@ -1,0 +1,112 @@
+export const queryKeys = {
+  auth: {
+    all: ['auth'] as const,
+    user: () => [...queryKeys.auth.all, 'user'] as const,
+  },
+  permissions: {
+    all: ['permissions'] as const,
+    toggles: () => [...queryKeys.permissions.all, 'toggles'] as const,
+    base: () => [...queryKeys.permissions.all, 'base'] as const,
+  },
+  patients: {
+    all: ['patients'] as const,
+    lists: () => [...queryKeys.patients.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.patients.lists(), filters] as const,
+    details: () => [...queryKeys.patients.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.patients.details(), id] as const,
+  },
+  queues: {
+    all: ['queues'] as const,
+    byType: (type: string) => [...queryKeys.queues.all, type] as const,
+    stats: (type: string) => [...queryKeys.queues.all, 'stats', type] as const,
+  },
+  bills: {
+    all: ['bills'] as const,
+    lists: () => [...queryKeys.bills.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.bills.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.bills.all, 'detail', id] as const,
+  },
+  claims: {
+    all: ['claims'] as const,
+    lists: () => [...queryKeys.claims.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.claims.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.claims.all, 'detail', id] as const,
+  },
+  appointments: {
+    all: ['appointments'] as const,
+    lists: () => [...queryKeys.appointments.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.appointments.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.appointments.all, 'detail', id] as const,
+  },
+  notifications: {
+    all: ['notifications'] as const,
+    lists: () => [...queryKeys.notifications.all, 'list'] as const,
+  },
+  episodes: {
+    all: ['episodes'] as const,
+    lists: () => [...queryKeys.episodes.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.episodes.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.episodes.all, 'detail', id] as const,
+  },
+  vitals: {
+    all: ['vitals'] as const,
+    lists: () => [...queryKeys.vitals.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.vitals.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.vitals.all, 'detail', id] as const,
+  },
+  prescriptions: {
+    all: ['prescriptions'] as const,
+    lists: () => [...queryKeys.prescriptions.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.prescriptions.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.prescriptions.all, 'detail', id] as const,
+  },
+  lab: {
+    all: ['lab'] as const,
+    lists: () => [...queryKeys.lab.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.lab.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.lab.all, 'detail', id] as const,
+  },
+  inventory: {
+    all: ['inventory'] as const,
+    lists: () => [...queryKeys.inventory.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.inventory.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.inventory.all, 'detail', id] as const,
+  },
+  staff: {
+    all: ['staff'] as const,
+    lists: () => [...queryKeys.staff.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.staff.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.staff.all, 'detail', id] as const,
+  },
+  consultations: {
+    all: ['consultations'] as const,
+    lists: () => [...queryKeys.consultations.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.consultations.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.consultations.all, 'detail', id] as const,
+  },
+  payments: {
+    all: ['payments'] as const,
+    lists: () => [...queryKeys.payments.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.payments.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.payments.all, 'detail', id] as const,
+  },
+  reports: {
+    all: ['reports'] as const,
+    lists: () => [...queryKeys.reports.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.reports.lists(), filters] as const,
+  },
+  servicePricing: {
+    all: ['servicePricing'] as const,
+    lists: () => [...queryKeys.servicePricing.all, 'list'] as const,
+    list: (filters: Record<string, unknown>) => [...queryKeys.servicePricing.lists(), filters] as const,
+    detail: (id: string) => [...queryKeys.servicePricing.all, 'detail', id] as const,
+  },
+  reference: {
+    icd10: () => ['reference', 'icd10'] as const,
+    locations: () => ['reference', 'locations'] as const,
+    banks: () => ['reference', 'banks'] as const,
+    names: () => ['reference', 'names'] as const,
+    hmo: () => ['reference', 'hmo'] as const,
+    protocols: () => ['reference', 'protocols'] as const,
+  },
+};

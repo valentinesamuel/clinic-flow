@@ -6,7 +6,7 @@ import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, is
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, LayoutGrid, RefreshCw, Search } from 'lucide-react';
 import { Appointment } from '@/types/clinical.types';
 import { mockAppointments, getAppointmentsByDate, getAppointmentsByDateRange, updateAppointmentStatus, cancelAppointment, markNoShow, rescheduleAppointment, checkInAppointment } from '@/data/appointments';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AppointmentCard } from '@/components/appointments/AppointmentCard';
 import { AppointmentTable } from '@/components/appointments/AppointmentTable';

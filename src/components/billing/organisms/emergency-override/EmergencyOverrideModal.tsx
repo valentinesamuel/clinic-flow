@@ -17,7 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Patient } from '@/types/patient.types';
 import { EmergencyOverride } from '@/types/cashier.types';
 import { AlertTriangle, Shield } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 interface EmergencyOverrideModalProps {

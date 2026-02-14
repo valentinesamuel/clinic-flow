@@ -2,16 +2,22 @@
 
 import { useMemo } from 'react';
 import { UserRole } from '@/types/user.types';
-import { usePermissionContext, ResourceType, basePermissions } from '@/contexts/PermissionContext';
+import { ResourceType, basePermissions } from '@/types/permission.types';
+import { usePermissionToggles } from './queries/usePermissionQueries';
 
 interface UsePermissionsProps {
   userRole: UserRole | undefined;
 }
 
 export function usePermissions({ userRole }: UsePermissionsProps) {
-  const { toggles } = usePermissionContext();
+  const { data: toggles } = usePermissionToggles();
 
   const permissions = useMemo(() => {
+    const safeToggles = toggles ?? {
+      hospitalAdminClinicalAccess: false,
+      clinicalLeadFinancialAccess: false,
+    };
+
     if (!userRole) {
       return {
         canViewClinicalData: false,
@@ -28,7 +34,7 @@ export function usePermissions({ userRole }: UsePermissionsProps) {
     const canViewClinicalData = (): boolean => {
       const clinicalRoles: UserRole[] = ['cmo', 'clinical_lead', 'doctor', 'nurse', 'pharmacist', 'lab_tech'];
       if (clinicalRoles.includes(userRole)) return true;
-      if (userRole === 'hospital_admin' && toggles.hospitalAdminClinicalAccess) return true;
+      if (userRole === 'hospital_admin' && safeToggles.hospitalAdminClinicalAccess) return true;
       return false;
     };
 
@@ -36,7 +42,7 @@ export function usePermissions({ userRole }: UsePermissionsProps) {
     const canViewFinancialData = (): boolean => {
       const financialRoles: UserRole[] = ['cmo', 'hospital_admin', 'cashier'];
       if (financialRoles.includes(userRole)) return true;
-      if (userRole === 'clinical_lead' && toggles.clinicalLeadFinancialAccess) return true;
+      if (userRole === 'clinical_lead' && safeToggles.clinicalLeadFinancialAccess) return true;
       return false;
     };
 
@@ -67,10 +73,10 @@ export function usePermissions({ userRole }: UsePermissionsProps) {
       if (rolePermissions.includes(resource)) return true;
 
       // Check toggle-based permissions
-      if (userRole === 'hospital_admin' && toggles.hospitalAdminClinicalAccess) {
+      if (userRole === 'hospital_admin' && safeToggles.hospitalAdminClinicalAccess) {
         if (['clinical_records', 'patient_emr'].includes(resource)) return true;
       }
-      if (userRole === 'clinical_lead' && toggles.clinicalLeadFinancialAccess) {
+      if (userRole === 'clinical_lead' && safeToggles.clinicalLeadFinancialAccess) {
         if (['financial_reports', 'revenue_data'].includes(resource)) return true;
       }
 
@@ -80,11 +86,11 @@ export function usePermissions({ userRole }: UsePermissionsProps) {
     // Get all resources this role can access
     const getAllowedResources = (): ResourceType[] => {
       const resources = [...(basePermissions[userRole] || [])];
-      
-      if (userRole === 'hospital_admin' && toggles.hospitalAdminClinicalAccess) {
+
+      if (userRole === 'hospital_admin' && safeToggles.hospitalAdminClinicalAccess) {
         resources.push('clinical_records', 'patient_emr');
       }
-      if (userRole === 'clinical_lead' && toggles.clinicalLeadFinancialAccess) {
+      if (userRole === 'clinical_lead' && safeToggles.clinicalLeadFinancialAccess) {
         resources.push('financial_reports', 'revenue_data');
       }
 

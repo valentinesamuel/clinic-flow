@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PatientRegistrationForm } from '@/components/patients/PatientRegistrationForm';
 import { Patient } from '@/types/patient.types';

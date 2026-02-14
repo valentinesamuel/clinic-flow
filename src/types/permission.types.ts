@@ -1,6 +1,3 @@
-// Permission Context - CMO-controlled access toggles
-
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 import { UserRole } from '@/types/user.types';
 
 export interface PermissionToggles {
@@ -8,47 +5,7 @@ export interface PermissionToggles {
   clinicalLeadFinancialAccess: boolean;
 }
 
-interface PermissionContextType {
-  toggles: PermissionToggles;
-  setToggle: (key: keyof PermissionToggles, value: boolean) => void;
-  resetToggles: () => void;
-}
-
-const defaultToggles: PermissionToggles = {
-  hospitalAdminClinicalAccess: false,
-  clinicalLeadFinancialAccess: false,
-};
-
-const PermissionContext = createContext<PermissionContextType | undefined>(undefined);
-
-export function PermissionProvider({ children }: { children: ReactNode }) {
-  const [toggles, setToggles] = useState<PermissionToggles>(defaultToggles);
-
-  const setToggle = useCallback((key: keyof PermissionToggles, value: boolean) => {
-    setToggles(prev => ({ ...prev, [key]: value }));
-  }, []);
-
-  const resetToggles = useCallback(() => {
-    setToggles(defaultToggles);
-  }, []);
-
-  return (
-    <PermissionContext.Provider value={{ toggles, setToggle, resetToggles }}>
-      {children}
-    </PermissionContext.Provider>
-  );
-}
-
-export function usePermissionContext() {
-  const context = useContext(PermissionContext);
-  if (context === undefined) {
-    throw new Error('usePermissionContext must be used within a PermissionProvider');
-  }
-  return context;
-}
-
-// Resource types for permission checks
-export type ResourceType = 
+export type ResourceType =
   | 'clinical_records'
   | 'patient_emr'
   | 'financial_reports'
@@ -65,7 +22,6 @@ export type ResourceType =
 
 export type ActionType = 'view' | 'create' | 'edit' | 'delete';
 
-// Define base permissions per role
 export const basePermissions: Record<UserRole, ResourceType[]> = {
   cmo: [
     'clinical_records', 'patient_emr', 'financial_reports', 'revenue_data',

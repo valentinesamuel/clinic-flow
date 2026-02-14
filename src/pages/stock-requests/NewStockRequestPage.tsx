@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import {
   ArrowLeft,
   Search,

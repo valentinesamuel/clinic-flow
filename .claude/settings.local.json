@@ -8,7 +8,15 @@
       "Bash(wc:*)",
       "Bash(xargs:*)",
       "mcp__ide__getDiagnostics",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm install:*)",
+      "Bash(while read file)",
+      "Bash(do sed -i '' \"s|from ''''@/contexts/AuthContext''''|from ''''@/hooks/useAuth''''|g\" \"$file\")",
+      "Bash(done)",
+      "Bash(npm run test:*)",
+      "Bash(npx tsx:*)",
+      "Bash(curl:*)",
+      "Bash(python3:*)"
     ]
   }
 }

@@ -17,7 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { VitalSigns } from '@/types/clinical.types';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { getVitalStatus, getBMICategory } from './VitalSignsCard';
 import { cn } from '@/lib/utils';
 

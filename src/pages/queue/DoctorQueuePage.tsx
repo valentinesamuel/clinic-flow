@@ -10,7 +10,7 @@ import { getQueueByType, startQueueEntry, completeQueueEntry, transferQueue, get
 import { getPatientById } from '@/data/patients';
 import { getVitalsByPatient } from '@/data/vitals';
 import { getDoctors } from '@/data/staff';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PAGINATION } from '@/constants/designSystem';
 

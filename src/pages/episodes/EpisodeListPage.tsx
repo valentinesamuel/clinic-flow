@@ -12,7 +12,7 @@ import { getEpisodesPaginated, createEpisode } from '@/data/episodes';
 import { EpisodeStatus } from '@/types/episode.types';
 import { Search, Activity, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 const statusTabs: { value: EpisodeStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },

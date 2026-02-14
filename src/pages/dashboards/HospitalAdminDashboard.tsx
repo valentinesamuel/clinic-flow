@@ -24,7 +24,7 @@ import {
   CreditCard,
   ChevronRight,
 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
 import { getLowStockItems, getCriticalItems } from "@/data/inventory";
 import {

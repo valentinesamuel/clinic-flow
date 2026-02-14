@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { UserRole, roleMetadata, roleCategories } from "@/types/user.types";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,14 +61,14 @@ export default function Login() {
     isHybrid = false,
   ) => (
     <div className="space-y-2">
-      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
         {title}
         {isHybrid && (
           <Badge variant="outline" className="text-[10px]">
             Coming Soon
           </Badge>
         )}
-      </p>
+      </div>
       {roles.map((role) => {
         const meta = roleMetadata[role];
         const Icon = roleIcons[role];

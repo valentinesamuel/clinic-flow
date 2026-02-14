@@ -29,7 +29,7 @@ import {
   Receipt,
   FileCheck,
 } from "lucide-react";
-import { usePermissionContext } from "@/contexts/PermissionContext";
+import { usePermissionToggles } from "@/hooks/queries/usePermissionQueries";
 import { Link } from "react-router-dom";
 import { searchPatients } from "@/data/patients";
 import {
@@ -46,7 +46,8 @@ import { RevenueStatsCards } from "@/components/billing/RevenueStatsCards";
 
 export default function CMODashboard() {
   const navigate = useNavigate();
-  const { toggles } = usePermissionContext();
+  const { data: toggles } = usePermissionToggles();
+  const safeToggles = toggles ?? { hospitalAdminClinicalAccess: false, clinicalLeadFinancialAccess: false };
   const { actions } = useDashboardActions("cmo");
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -384,12 +385,12 @@ export default function CMODashboard() {
                 </div>
                 <Badge
                   variant={
-                    toggles.hospitalAdminClinicalAccess
+                    safeToggles.hospitalAdminClinicalAccess
                       ? "default"
                       : "secondary"
                   }
                 >
-                  {toggles.hospitalAdminClinicalAccess ? "Enabled" : "Disabled"}
+                  {safeToggles.hospitalAdminClinicalAccess ? "Enabled" : "Disabled"}
                 </Badge>
               </div>
               <div className="flex justify-between items-center">
@@ -403,12 +404,12 @@ export default function CMODashboard() {
                 </div>
                 <Badge
                   variant={
-                    toggles.clinicalLeadFinancialAccess
+                    safeToggles.clinicalLeadFinancialAccess
                       ? "default"
                       : "secondary"
                   }
                 >
-                  {toggles.clinicalLeadFinancialAccess ? "Enabled" : "Disabled"}
+                  {safeToggles.clinicalLeadFinancialAccess ? "Enabled" : "Disabled"}
                 </Badge>
               </div>
               <Link to="/cmo/settings/permissions" className="block">

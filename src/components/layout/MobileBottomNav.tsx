@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, UserCog, FileText, ClipboardList, Stethoscope, Activity, Receipt, CreditCard, FileCheck, Calendar, TestTube, MoreHorizontal, Home, Pill, Package, UserPlus, Shield } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { UserRole } from '@/types/user.types';
 import { cn } from '@/lib/utils';
 

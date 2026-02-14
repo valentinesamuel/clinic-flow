@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { MetadataEditor } from '@/components/molecules/lab/MetadataEditor';
 import { LabQuickActionsDropdown } from '@/components/molecules/lab/LabQuickActionsDropdown';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { getLabOrderById, submitLabOrderToDoctor, updateLabTestResults, updateLabOrderStatus } from '@/data/lab-orders';
 import { getPatientById } from '@/data/patients';

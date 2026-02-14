@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, History } from 'lucide-react';
 import { AmendmentReason } from '@/types/consultation.types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function ConsultationViewPage() {
   const { id } = useParams<{ id: string }>();

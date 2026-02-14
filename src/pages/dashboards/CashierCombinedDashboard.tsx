@@ -34,7 +34,7 @@ import { Patient } from "@/types/patient.types";
 import { mockPatients } from "@/data/patients";
 import { getPendingBillsByDepartment } from "@/data/bills";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import {
   getUserBillingDepartment,
   getDepartmentLabel,

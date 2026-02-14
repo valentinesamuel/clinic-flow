@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getLabOrdersByPatient } from '@/data/lab-orders';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 
 const PatientLabResultsPage = () => {
   const { user } = useAuth();

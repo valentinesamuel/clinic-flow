@@ -28,7 +28,7 @@ import { mockPatients } from "@/data/patients";
 import { getPendingBills, getTodaysRevenue } from "@/data/bills";
 import { useToast } from "@/hooks/use-toast";
 import { RevenueStatsCards } from "@/components/billing/RevenueStatsCards";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 
 // Mock billing data
 const unpaidBills = getPendingBills()

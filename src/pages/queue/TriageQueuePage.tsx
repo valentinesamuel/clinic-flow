@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { RefreshCw, Stethoscope } from 'lucide-react';
 import { QueueEntry } from '@/types/patient.types';
 import { getQueueByType, startQueueEntry, getQueueStats } from '@/data/queue';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { QueueBoard } from '@/components/queue/QueueBoard';
 import { TriagePanel } from '@/components/queue/TriagePanel';

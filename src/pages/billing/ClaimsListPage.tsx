@@ -43,7 +43,7 @@ import {
 import { getBillById } from "@/data/bills";
 import { Search, FileCheck, ArrowLeft, Send, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { getUserBillingDepartment } from "@/utils/billingDepartment";
 
 function formatCurrency(value: number): string {

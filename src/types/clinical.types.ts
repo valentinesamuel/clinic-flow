@@ -122,6 +122,8 @@ export interface LabOrder {
   notes?: string;
   isSubmittedToDoctor?: boolean;
   submittedAt?: string;
+  referralId?: string;
+  sourceType?: 'internal' | 'inbound_referral' | 'outbound_referral';
 }
 
 export interface Consultation {

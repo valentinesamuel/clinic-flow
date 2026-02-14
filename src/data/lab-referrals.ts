@@ -1,6 +1,8 @@
 // Mock Lab Referral Data
 
-import { PartnerLab, LabReferral, ReferralDirection, ReferralStatus } from '@/types/lab-referral.types';
+import { PartnerLab, LabReferral, ReferralDirection, ReferralStatus, ReferralTest } from '@/types/lab-referral.types';
+import { LabOrder } from '@/types/clinical.types';
+import { mockLabOrders, createLabOrder } from '@/data/lab-orders';
 
 export const mockPartnerLabs: PartnerLab[] = [
   {
@@ -102,6 +104,7 @@ export const mockLabReferrals: LabReferral[] = [
     completedAt: '2024-01-29T16:00:00Z',
     notes: 'Travel requirement',
     priority: 'routine',
+    externalReferenceNumber: 'PC-RES-20240129-003',
   },
   // Outbound - Completed
   {
@@ -127,6 +130,7 @@ export const mockLabReferrals: LabReferral[] = [
     referredAt: '2024-01-25T11:00:00Z',
     completedAt: '2024-01-27T14:00:00Z',
     priority: 'routine',
+    externalReferenceNumber: 'SYN-RES-20240127-004',
   },
   // Inbound - Received
   {
@@ -148,6 +152,7 @@ export const mockLabReferrals: LabReferral[] = [
     receivedAt: '2024-02-01T15:00:00Z',
     notes: 'Referred from partner facility - neurology consult',
     priority: 'urgent',
+    patientPhone: '+234 812 345 6789',
   },
   // Inbound - Completed
   {
@@ -175,6 +180,7 @@ export const mockLabReferrals: LabReferral[] = [
     completedAt: '2024-01-30T11:00:00Z',
     notes: 'Referred from partner - cardiology assessment',
     priority: 'routine',
+    patientPhone: '+234 803 111 2222',
   },
 ];
 
@@ -219,5 +225,147 @@ export const updateReferralStatus = (
       referral.completedAt = now;
     }
   }
+  return referral;
+};
+
+// Creates an inbound referral AND a linked LabOrder so it appears in the sample queue.
+export const createInboundReferral = (data: {
+  patientName: string;
+  patientPhone: string;
+  partnerLabId: string;
+  partnerLabName: string;
+  tests: ReferralTest[];
+  priority: 'routine' | 'urgent';
+  notes?: string;
+  attachments?: string[];
+  referredBy: string;
+  referredByName: string;
+}): { referral: LabReferral; labOrder: LabOrder } => {
+  const patientMrn = `INB-${data.patientPhone.replace(/\D/g, '').slice(-10)}`;
+
+  const referral = createReferral({
+    direction: 'inbound',
+    patientId: `pat-inb-${Date.now()}`,
+    patientName: data.patientName,
+    patientMrn,
+    partnerLabId: data.partnerLabId,
+    partnerLabName: data.partnerLabName,
+    tests: data.tests,
+    status: 'received',
+    referredBy: data.referredBy,
+    referredByName: data.referredByName,
+    notes: data.notes,
+    priority: data.priority,
+    patientPhone: data.patientPhone,
+    attachments: data.attachments,
+  });
+
+  // Create a linked lab order so tests appear in the sample queue
+  const labOrder = createLabOrder({
+    patientId: referral.patientId,
+    patientName: referral.patientName,
+    patientMrn: referral.patientMrn,
+    doctorId: 'external',
+    doctorName: `Via ${data.partnerLabName}`,
+    tests: data.tests.map((t) => ({
+      testCode: t.testCode,
+      testName: t.testName,
+    })),
+    status: 'ordered',
+    priority: data.priority === 'urgent' ? 'urgent' : 'routine',
+    notes: `Inbound referral from ${data.partnerLabName}. ${data.notes || ''}`.trim(),
+    referralId: referral.id,
+    sourceType: 'inbound_referral',
+  });
+
+  referral.labOrderId = labOrder.id;
+
+  return { referral, labOrder };
+};
+
+// Updates an outbound referral with results data, sets status to results_received.
+export const receiveOutboundResults = (
+  referralId: string,
+  externalRefNumber: string,
+  testResults: ReferralTest[],
+  resultAttachments?: string[]
+): LabReferral | undefined => {
+  const referral = mockLabReferrals.find((ref) => ref.id === referralId);
+  if (!referral) return undefined;
+
+  referral.externalReferenceNumber = externalRefNumber;
+  referral.resultAttachments = resultAttachments;
+  referral.status = 'results_received';
+
+  // Merge results into existing tests
+  for (const result of testResults) {
+    const existing = referral.tests.find((t) => t.testCode === result.testCode);
+    if (existing) {
+      existing.result = result.result;
+      existing.unit = result.unit;
+      existing.normalRange = result.normalRange;
+      existing.isAbnormal = result.isAbnormal;
+    }
+  }
+
+  return referral;
+};
+
+// Takes an existing lab order and creates an outbound referral linked to it.
+export const makeLabOrderOutbound = (
+  labOrderId: string,
+  partnerLabId: string,
+  partnerLabName: string,
+  referredBy: string,
+  referredByName: string,
+  notes?: string
+): LabReferral | undefined => {
+  const labOrder = mockLabOrders.find((o) => o.id === labOrderId);
+  if (!labOrder) return undefined;
+
+  const referral = createReferral({
+    direction: 'outbound',
+    patientId: labOrder.patientId,
+    patientName: labOrder.patientName,
+    patientMrn: labOrder.patientMrn,
+    partnerLabId,
+    partnerLabName,
+    tests: labOrder.tests.map((t) => ({
+      testCode: t.testCode,
+      testName: t.testName,
+    })),
+    status: 'pending',
+    referredBy,
+    referredByName,
+    notes,
+    priority: labOrder.priority === 'stat' ? 'urgent' : labOrder.priority as 'routine' | 'urgent',
+    sourceLabOrderId: labOrderId,
+    orderingDoctorId: labOrder.doctorId,
+    orderingDoctorName: labOrder.doctorName,
+  });
+
+  // Link the lab order to the referral
+  labOrder.referralId = referral.id;
+  labOrder.sourceType = 'outbound_referral';
+
+  return referral;
+};
+
+// Marks an outbound referral as completed. If sourceLabOrderId exists, updates the linked lab order.
+export const completeOutboundReferral = (referralId: string): LabReferral | undefined => {
+  const referral = mockLabReferrals.find((ref) => ref.id === referralId);
+  if (!referral) return undefined;
+
+  referral.status = 'completed';
+  referral.completedAt = new Date().toISOString();
+
+  if (referral.sourceLabOrderId) {
+    const labOrder = mockLabOrders.find((o) => o.id === referral.sourceLabOrderId);
+    if (labOrder) {
+      labOrder.isSubmittedToDoctor = true;
+      labOrder.submittedAt = new Date().toISOString();
+    }
+  }
+
   return referral;
 };

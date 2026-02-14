@@ -214,3 +214,9 @@ export const createLabOrder = (data: Omit<LabOrder, 'id' | 'orderedAt'>): LabOrd
   mockLabOrders.push(labOrder);
   return labOrder;
 };
+
+// Returns lab orders eligible to be sent to a partner lab (ordered/sample_collected, not already linked to a referral).
+export const getLabOrdersForOutbound = (): LabOrder[] =>
+  mockLabOrders.filter(
+    (o) => ['ordered', 'sample_collected'].includes(o.status) && !o.referralId
+  );

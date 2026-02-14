@@ -2,7 +2,7 @@
 
 export type PartnerLabStatus = 'connected' | 'disconnected' | 'pending';
 export type ReferralDirection = 'outbound' | 'inbound';
-export type ReferralStatus = 'pending' | 'sent' | 'in_transit' | 'received' | 'processing' | 'completed' | 'cancelled';
+export type ReferralStatus = 'pending' | 'sent' | 'in_transit' | 'received' | 'processing' | 'results_received' | 'completed' | 'cancelled';
 
 export interface PartnerLab {
   id: string;
@@ -22,6 +22,7 @@ export interface ReferralTest {
   result?: string;
   unit?: string;
   normalRange?: string;
+  isAbnormal?: boolean;
 }
 
 export interface LabReferral {
@@ -42,4 +43,12 @@ export interface LabReferral {
   completedAt?: string;
   notes?: string;
   priority: 'routine' | 'urgent';
+  patientPhone?: string;
+  attachments?: string[];
+  resultAttachments?: string[];
+  externalReferenceNumber?: string;
+  labOrderId?: string;
+  sourceLabOrderId?: string;
+  orderingDoctorId?: string;
+  orderingDoctorName?: string;
 }

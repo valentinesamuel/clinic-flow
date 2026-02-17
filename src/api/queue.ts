@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { calculateWaitTime } from '@/data/queue';
+import { calculateWaitTime } from '@/utils/queueUtils';
 
 export const queueApi = {
   getAll: async () => (await apiClient.get('/queue-entries')).data,

@@ -14,10 +14,11 @@ import {
   CheckCircle,
   ChevronRight,
 } from 'lucide-react';
-import { getTodaysAppointments } from '@/data/appointments';
-import { getQueueByType, getWaitingCount, calculateWaitTime } from '@/data/queue';
-import { getDoctors } from '@/data/staff';
-import { searchPatients } from '@/data/patients';
+import { useAppointments } from '@/hooks/queries/useAppointmentQueries';
+import { useQueueByType } from '@/hooks/queries/useQueueQueries';
+import { calculateWaitTime } from '@/data/queue';
+import { useDoctors } from '@/hooks/queries/useStaffQueries';
+import { usePatientSearch } from '@/hooks/queries/usePatientQueries';
 import { useDashboardActions } from '@/hooks/useDashboardActions';
 import { CheckInModal } from '@/components/queue/CheckInModal';
 
@@ -28,12 +29,13 @@ export default function ReceptionistDashboard() {
   const [searchQuery, setSearchQuery] = useState('');
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
-  
-  const todaysAppointments = getTodaysAppointments();
-  const checkInQueue = getQueueByType('check_in');
-  const doctors = getDoctors();
-  
-  const searchResults = searchQuery.length >= 2 ? searchPatients(searchQuery).slice(0, 5) : [];
+
+  const { data: todaysAppointments = [] } = useAppointments();
+  const { data: checkInQueue = [] } = useQueueByType('check_in');
+  const { data: doctors = [] } = useDoctors();
+  const { data: searchResults = [] } = usePatientSearch(searchQuery);
+
+  const waitingCount = (checkInQueue as any[]).filter((e: any) => e.status === 'waiting').length;
 
   const getWaitTimeColor = (minutes: number) => {
     if (minutes < 20) return 'text-green-600 dark:text-green-400';
@@ -132,7 +134,7 @@ export default function ReceptionistDashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">{getWaitingCount('check_in')}</p>
+              <p className="text-2xl font-bold">{waitingCount}</p>
               <p className="text-xs text-muted-foreground">Waiting</p>
             </CardContent>
           </Card>

@@ -14,7 +14,7 @@ import { HMOVerificationCard } from '@/components/billing/molecules/hmo/HMOVerif
 import { HMOCoverageDisplay } from '@/components/billing/molecules/hmo/HMOCoverageDisplay';
 import { HMOVerification, ServiceCategory } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
-import { getHMOProviderById } from '@/data/hmo-providers';
+import { useHMOProviders } from '@/hooks/queries/useReferenceQueries';
 
 interface HMOVerificationFlowProps {
   patient: Patient;
@@ -38,8 +38,9 @@ export function HMOVerificationFlow({
   const [policyNumber, setPolicyNumber] = useState<string>('');
   const [verification, setVerification] = useState<HMOVerification | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const { data: hmoProviders = [] } = useHMOProviders();
 
-  const provider = providerId ? getHMOProviderById(providerId) : undefined;
+  const provider = providerId ? (hmoProviders as any[]).find((p: any) => p.id === providerId) : undefined;
 
   const handleVerify = async () => {
     if (!providerId || !policyNumber) return;

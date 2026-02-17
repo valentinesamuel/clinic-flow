@@ -29,7 +29,9 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { mockRoster, DAYS, DAY_LABELS, PREDEFINED_SLOTS, updateRosterShiftWithTime, getEffectiveTime, type ShiftType } from '@/data/roster';
+import { useRoster } from '@/hooks/queries/useStaffQueries';
+import { useUpdateRoster } from '@/hooks/mutations/useStaffMutations';
+import { DAYS, DAY_LABELS, PREDEFINED_SLOTS, getEffectiveTime, type ShiftType } from '@/data/roster';
 import { useToast } from '@/hooks/use-toast';
 
 interface ShiftEditState {
@@ -41,13 +43,14 @@ interface ShiftEditState {
 
 const RosterPage = () => {
   const { toast } = useToast();
+  const { data: rosterData = [], isLoading } = useRoster();
+  const updateRosterMutation = useUpdateRoster();
   const [weekOffset, setWeekOffset] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editState, setEditState] = useState<ShiftEditState | null>(null);
   const [selectedShiftType, setSelectedShiftType] = useState<ShiftType>('morning');
   const [customStartTime, setCustomStartTime] = useState('07:00');
   const [customEndTime, setCustomEndTime] = useState('15:00');
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const getShiftBadgeClasses = (shift: ShiftType): string => {
     const classMap: Record<ShiftType, string> = {
@@ -76,25 +79,25 @@ const RosterPage = () => {
   };
 
   const stats = useMemo(() => {
-    const totalSlots = mockRoster.length * DAYS.length;
-    const assignedShifts = mockRoster.reduce((count, entry) => {
+    const totalSlots = rosterData.length * DAYS.length;
+    const assignedShifts = rosterData.reduce((count, entry) => {
       return count + DAYS.filter(day => entry.shifts[day] !== 'off').length;
     }, 0);
     const unassignedSlots = totalSlots - assignedShifts;
-    const coveragePercentage = Math.round((assignedShifts / totalSlots) * 100);
+    const coveragePercentage = totalSlots > 0 ? Math.round((assignedShifts / totalSlots) * 100) : 0;
 
     return {
       coveragePercentage,
       unassignedSlots,
     };
-  }, []);
+  }, [rosterData]);
 
   const handleShiftClick = (staffId: string, staffName: string, day: string, currentShift: ShiftType) => {
     setEditState({ staffId, staffName, day, currentShift });
     setSelectedShiftType(currentShift);
 
     // Initialize from existing custom times if present, otherwise use predefined
-    const entry = mockRoster.find(e => e.staffId === staffId);
+    const entry = rosterData.find(e => e.staffId === staffId);
     const existingCustom = entry?.customTimes?.[day];
     if (existingCustom) {
       setCustomStartTime(existingCustom.startTime);
@@ -113,23 +116,40 @@ const RosterPage = () => {
   const handleSaveShift = () => {
     if (!editState) return;
 
+    const entry = rosterData.find(e => e.staffId === editState.staffId);
+    if (!entry) return;
+
     const customTime = selectedShiftType !== 'off'
       ? { startTime: customStartTime, endTime: customEndTime }
       : undefined;
 
-    updateRosterShiftWithTime(editState.staffId, editState.day, selectedShiftType, customTime);
+    const updatedShifts = { ...entry.shifts, [editState.day]: selectedShiftType };
+    const updatedCustomTimes = { ...entry.customTimes };
+    if (customTime) {
+      updatedCustomTimes[editState.day] = customTime;
+    } else {
+      delete updatedCustomTimes[editState.day];
+    }
 
-    const displayTime = customTime ? `${customTime.startTime} - ${customTime.endTime}` : '';
-    toast({
-      title: 'Shift updated',
-      description: `${editState.staffName}'s ${DAY_LABELS[editState.day]} shift has been set to ${getShiftLabel(selectedShiftType)}${
-        displayTime ? ` (${displayTime})` : ''
-      }`,
+    updateRosterMutation.mutate({
+      staffId: editState.staffId,
+      staffName: entry.staffName,
+      role: entry.role,
+      shifts: updatedShifts,
+      customTimes: Object.keys(updatedCustomTimes).length > 0 ? updatedCustomTimes : undefined,
+    }, {
+      onSuccess: () => {
+        const displayTime = customTime ? `${customTime.startTime} - ${customTime.endTime}` : '';
+        toast({
+          title: 'Shift updated',
+          description: `${editState.staffName}'s ${DAY_LABELS[editState.day]} shift has been set to ${getShiftLabel(selectedShiftType)}${
+            displayTime ? ` (${displayTime})` : ''
+          }`,
+        });
+        setIsDialogOpen(false);
+        setEditState(null);
+      },
     });
-
-    setRefreshKey(k => k + 1);
-    setIsDialogOpen(false);
-    setEditState(null);
   };
 
   const handleShiftTypeChange = (value: ShiftType) => {

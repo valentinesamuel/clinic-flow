@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { DashboardType } from '@/data/reports';
+import type { DashboardType } from '@/types/report.types';
 
 export const reportsApi = {
   getSummary: async () => {

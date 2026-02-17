@@ -37,7 +37,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { useToast } from '@/hooks/use-toast';
-import { mockLabOrders, updateLabOrderStatus, getTestCatalogEntry } from '@/data/lab-orders';
+import { useLabOrders, useTestCatalog } from '@/hooks/queries/useLabQueries';
+import { useUpdateLabOrderStatus } from '@/hooks/mutations/useLabMutations';
 import { LabOrder, LabPriority } from '@/types/clinical.types';
 import { MetadataEditor } from '@/components/molecules/lab/MetadataEditor';
 import { PAGINATION } from '@/constants/designSystem';
@@ -57,6 +58,9 @@ interface TestResult {
 export default function ResultsEntryPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { data: mockLabOrders = [] } = useLabOrders();
+  const { data: testCatalogData = [] } = useTestCatalog();
+  const updateLabOrderStatusMutation = useUpdateLabOrderStatus();
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -67,9 +71,13 @@ export default function ResultsEntryPage() {
   const [selectedOrder, setSelectedOrder] = useState<LabOrder | null>(null);
   const [resultsData, setResultsData] = useState<Record<string, TestResult>>({});
 
+  const getTestCatalogEntry = (testCode: string) => {
+    return (testCatalogData as any[]).find((t: any) => t.testCode === testCode);
+  };
+
   // Get lab orders with status 'processing' or 'sample_collected'
   const labOrders = useMemo(() => {
-    let filtered = mockLabOrders.filter(
+    let filtered = (mockLabOrders as any[]).filter(
       order => order.status === 'processing' || order.status === 'sample_collected'
     );
 
@@ -106,7 +114,7 @@ export default function ResultsEntryPage() {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const allOrders = mockLabOrders.filter(
+    const allOrders = (mockLabOrders as any[]).filter(
       order => order.status === 'processing' || order.status === 'sample_collected'
     );
     return {
@@ -117,7 +125,7 @@ export default function ResultsEntryPage() {
 
   // Completed results pending submission to doctor
   const pendingSubmission = useMemo(() => {
-    return mockLabOrders.filter(
+    return (mockLabOrders as any[]).filter(
       order => order.status === 'completed' && !order.isSubmittedToDoctor
     );
   }, [refreshKey]);

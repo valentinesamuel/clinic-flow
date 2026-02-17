@@ -33,21 +33,12 @@ import {
   FileText,
   ClipboardList,
 } from 'lucide-react';
-import {
-  getPartnerLabs,
-  getConnectedPartnerLabs,
-  getReferralsByDirection,
-  createReferral,
-  updateReferralStatus,
-  createInboundReferral,
-  receiveOutboundResults,
-  makeLabOrderOutbound,
-  completeOutboundReferral,
-} from '@/data/lab-referrals';
-import { testCatalog, getLabOrdersByPatient } from '@/data/lab-orders';
-import { getLabOrdersForOutbound } from '@/data/lab-orders';
-import { searchPatients, getPatientById } from '@/data/patients';
-import { LabReferral, PartnerLab, ReferralStatus, ReferralTest } from '@/types/lab-referral.types';
+import { usePartnerLabs, useLabReferrals } from '@/hooks/queries/useLabQueries';
+import { useCreateLabReferral, useUpdateLabReferralStatus } from '@/hooks/mutations/useLabMutations';
+import { usePatients, usePatient } from '@/hooks/queries/usePatientQueries';
+import { useLabOrders } from '@/hooks/queries/useLabQueries';
+import { useTestCatalog } from '@/hooks/queries/useLabQueries';
+import type { LabReferral, PartnerLab, ReferralStatus, ReferralTest } from '@/types/lab-referral.types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +50,13 @@ import { format } from 'date-fns';
 export default function PartnerLabSyncPage() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { data: testCatalog = [] } = useTestCatalog();
+  const { data: partnerLabs = [] } = usePartnerLabs();
+  const { data: allLabOrders = [] } = useLabOrders();
+  const { data: labReferrals = [] } = useLabReferrals();
+  const { data: allPatients = [] } = usePatients();
+  const createReferralMutation = useCreateLabReferral();
+  const updateReferralStatusMutation = useUpdateLabReferralStatus();
   const [activeTab, setActiveTab] = useState('outbound');
 
   // Dialog visibility
@@ -128,7 +126,7 @@ export default function PartnerLabSyncPage() {
     index: number,
     testCode: string
   ) => {
-    const entry = testCatalog.find((t) => t.testCode === testCode);
+    const entry = (testCatalog as any[]).find((t: any) => t.testCode === testCode);
     const updated = [...tests];
     updated[index] = {
       testCode,
@@ -372,7 +370,7 @@ export default function PartnerLabSyncPage() {
               <SelectValue placeholder="Select test..." />
             </SelectTrigger>
             <SelectContent>
-              {testCatalog.map((entry) => (
+              {(testCatalog as any[]).map((entry: any) => (
                 <SelectItem key={entry.testCode} value={entry.testCode}>
                   {entry.testCode} — {entry.testName}
                 </SelectItem>

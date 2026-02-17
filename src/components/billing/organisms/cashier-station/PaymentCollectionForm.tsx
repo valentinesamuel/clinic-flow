@@ -29,7 +29,7 @@ import { ThermalReceipt } from '@/components/billing/organisms/receipt/ThermalRe
 import { PaymentMethod, PaymentItem, PaymentClearance, PaymentSplit, HMOVerification } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
 import { useNigerianBanks } from '@/data/nigerian-banks';
-import { getHMOProviderById } from '@/data/hmo-providers';
+import { useHMOProviders } from '@/hooks/queries/useReferenceQueries';
 import { SplitPaymentManager } from '@/components/billing/molecules/payment/SplitPaymentManager';
 import { Switch } from '@/components/ui/switch';
 
@@ -107,6 +107,7 @@ export function PaymentCollectionForm({
   const [paymentSplits, setPaymentSplits] = useState<PaymentSplit[]>([]);
 
   const { banks } = useNigerianBanks();
+  const { data: hmoProviders = [] } = useHMOProviders();
 
   // Calculate totals
   const subtotal = items.reduce((sum, item) => sum + item.total, 0);
@@ -143,7 +144,7 @@ export function PaymentCollectionForm({
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const provider = getHMOProviderById(hmoProviderId);
+    const provider = (hmoProviders as any[]).find((p: any) => p.id === hmoProviderId);
     if (!provider) {
       setIsVerifying(false);
       return;

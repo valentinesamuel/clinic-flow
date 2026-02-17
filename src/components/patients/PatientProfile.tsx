@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Patient } from '@/types/patient.types';
-import { calculateAge } from '@/data/patients';
-import { getVitalsByPatient, getLatestVitals } from '@/data/vitals';
-import { getConsultationsByPatient } from '@/data/consultations';
-import { mockAppointments } from '@/data/appointments';
-import { mockPrescriptions } from '@/data/prescriptions';
-import { mockLabOrders } from '@/data/lab-orders';
-import { mockBills, getBillsByPatient } from '@/data/bills';
-import { mockStaff } from '@/data/staff';
+import { calculateAge } from '@/utils/patientUtils';
+import { useVitals } from '@/hooks/queries/useVitalQueries';
+import { useConsultationsByPatient } from '@/hooks/queries/useConsultationQueries';
+import { useAppointments } from '@/hooks/queries/useAppointmentQueries';
+import { usePrescriptionsByPatient } from '@/hooks/queries/usePrescriptionQueries';
+import { useLabOrdersByPatient } from '@/hooks/queries/useLabQueries';
+import { useBills } from '@/hooks/queries/useBillQueries';
+import { useStaff } from '@/hooks/queries/useStaffQueries';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -66,33 +66,37 @@ export function PatientProfile({
   const { toast } = useToast();
   const [copiedMrn, setCopiedMrn] = useState(false);
   const [showVitalsModal, setShowVitalsModal] = useState(false);
-  const [vitals, setVitals] = useState<VitalSigns[]>(() => getVitalsByPatient(patient.id));
-  
+
+  // Fetch data via hooks
+  const { data: vitalsData = [] } = useVitals({ patientId: patient.id });
+  const vitals = vitalsData as VitalSigns[];
+  const { data: consultations = [] } = useConsultationsByPatient(patient.id);
+  const { data: allAppointments = [] } = useAppointments({ patientId: patient.id });
+  const { data: prescriptions = [] } = usePrescriptionsByPatient(patient.id);
+  const { data: labOrders = [] } = useLabOrdersByPatient(patient.id);
+  const { data: bills = [] } = useBills({ patientId: patient.id });
+
   const age = calculateAge(patient.dateOfBirth);
   const initials = `${patient.firstName[0]}${patient.lastName[0]}`.toUpperCase();
   const genderIcon = patient.gender === 'male' ? '♂' : patient.gender === 'female' ? '♀' : '⚧';
 
-  // Data for tabs
-  const consultations = getConsultationsByPatient(patient.id);
-  const latestVitals = vitals.length > 0 ? vitals.sort((a, b) => 
+  // Derived data
+  const latestVitals = vitals.length > 0 ? [...vitals].sort((a: any, b: any) =>
     new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
   )[0] : null;
-  const patientAppointments = mockAppointments.filter(a => a.patientId === patient.id);
-  const upcomingAppointments = patientAppointments.filter(a => 
+  const patientAppointments = (allAppointments as any[]).filter((a: any) => a.patientId === patient.id);
+  const upcomingAppointments = patientAppointments.filter((a: any) =>
     isAfter(new Date(`${a.scheduledDate}T${a.scheduledTime}`), new Date()) &&
     !['cancelled', 'completed'].includes(a.status)
   );
-  const pastAppointments = patientAppointments.filter(a => 
+  const pastAppointments = patientAppointments.filter((a: any) =>
     isBefore(new Date(`${a.scheduledDate}T${a.scheduledTime}`), new Date()) ||
     a.status === 'completed'
   );
-  const prescriptions = mockPrescriptions.filter(p => p.patientId === patient.id);
-  const activePrescriptions = prescriptions.filter(p => p.status === 'dispensed' || p.status === 'pending');
-  const labOrders = mockLabOrders.filter(l => l.patientId === patient.id);
-  const pendingLabs = labOrders.filter(l => l.status !== 'completed' && l.status !== 'cancelled');
-  const completedLabs = labOrders.filter(l => l.status === 'completed');
-  const bills = getBillsByPatient(patient.id);
-  const outstandingBalance = bills.reduce((sum, b) => sum + b.balance, 0);
+  const activePrescriptions = (prescriptions as any[]).filter((p: any) => p.status === 'dispensed' || p.status === 'pending');
+  const pendingLabs = (labOrders as any[]).filter((l: any) => l.status !== 'completed' && l.status !== 'cancelled');
+  const completedLabs = (labOrders as any[]).filter((l: any) => l.status === 'completed');
+  const outstandingBalance = (bills as any[]).reduce((sum: number, b: any) => sum + (b.balance || 0), 0);
 
   const copyMrn = async () => {
     await navigator.clipboard.writeText(patient.mrn);

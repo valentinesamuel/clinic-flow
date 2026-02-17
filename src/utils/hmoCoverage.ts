@@ -1,5 +1,15 @@
 import { BillItem, Bill, ClaimItem, HMOItemStatus } from '@/types/billing.types';
-import { getCoverageForService } from '@/data/hmo-service-coverage';
+
+interface HMOServiceCoverage {
+  id: string;
+  serviceId: string;
+  hmoProviderId: string;
+  isActive: boolean;
+  coverageType: 'full' | 'partial_percent' | 'partial_flat' | 'none';
+  coveragePercentage?: number;
+  coverageFlatAmount?: number;
+  maxCoveredAmount?: number;
+}
 
 interface CoverageResult {
   hmoStatus: HMOItemStatus;
@@ -8,14 +18,25 @@ interface CoverageResult {
   hmoServiceCoverageId?: string;
 }
 
+function findCoverage(
+  coverages: HMOServiceCoverage[],
+  serviceId: string,
+  hmoProviderId: string,
+): HMOServiceCoverage | undefined {
+  return coverages.find(
+    (c) => c.serviceId === serviceId && c.hmoProviderId === hmoProviderId && c.isActive,
+  );
+}
+
 export function calculateItemCoverage(
   serviceId: string,
   hmoProviderId: string,
-  itemTotal: number
+  itemTotal: number,
+  coverages: HMOServiceCoverage[] = [],
 ): CoverageResult {
-  const coverage = getCoverageForService(serviceId, hmoProviderId);
+  const coverage = findCoverage(coverages, serviceId, hmoProviderId);
 
-  if (!coverage || !coverage.isActive || coverage.coverageType === 'none') {
+  if (!coverage || coverage.coverageType === 'none') {
     return {
       hmoStatus: 'not_covered',
       hmoCoveredAmount: 0,
@@ -54,7 +75,8 @@ export function calculateItemCoverage(
 
 export function calculateBillCoverage(
   items: BillItem[],
-  hmoProviderId: string
+  hmoProviderId: string,
+  coverages: HMOServiceCoverage[] = [],
 ): { items: BillItem[]; hmoTotalCoverage: number; patientTotalLiability: number } {
   let hmoTotalCoverage = 0;
   let patientTotalLiability = 0;
@@ -71,7 +93,7 @@ export function calculateBillCoverage(
     }
 
     const serviceId = item.id;
-    const result = calculateItemCoverage(serviceId, hmoProviderId, item.total);
+    const result = calculateItemCoverage(serviceId, hmoProviderId, item.total, coverages);
     hmoTotalCoverage += result.hmoCoveredAmount;
     patientTotalLiability += result.patientLiabilityAmount;
 
@@ -89,9 +111,10 @@ export function calculateBillCoverage(
 
 export function buildClaimItemsFromBill(
   bill: Bill,
-  hmoProviderId: string
+  hmoProviderId: string,
+  coverages: HMOServiceCoverage[] = [],
 ): { claimItems: ClaimItem[]; claimAmount: number } {
-  const { items } = calculateBillCoverage(bill.items, hmoProviderId);
+  const { items } = calculateBillCoverage(bill.items, hmoProviderId, coverages);
 
   const coveredItems = items.filter(
     (item) => !item.isOptedOutOfHMO && item.hmoStatus !== 'not_covered' && (item.hmoCoveredAmount || 0) > 0

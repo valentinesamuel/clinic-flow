@@ -9,12 +9,24 @@ export const apiClient = axios.create({
   },
 });
 
-// Request interceptor — attach auth token
+// Request interceptor — attach auth token + timestamps for conflict resolution
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('auth_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Add timestamps for last-write-wins conflict resolution
+  if (['post', 'patch', 'put'].includes(config.method?.toLowerCase() || '')) {
+    const userRaw = localStorage.getItem('auth_user');
+    const userId = userRaw ? JSON.parse(userRaw)?.id : 'unknown';
+    config.data = {
+      ...config.data,
+      _lastModified: new Date().toISOString(),
+      _modifiedBy: userId,
+    };
+  }
+
   return config;
 });
 

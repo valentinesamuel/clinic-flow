@@ -25,7 +25,8 @@ import {
 } from '@/components/ui/table';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { useToast } from '@/hooks/use-toast';
-import { mockLabOrders, updateLabOrderStatus } from '@/data/lab-orders';
+import { useLabOrders } from '@/hooks/queries/useLabQueries';
+import { useUpdateLabOrderStatus } from '@/hooks/mutations/useLabMutations';
 import { LabOrder, LabOrderStatus, LabPriority } from '@/types/clinical.types';
 import { PAGINATION } from '@/constants/designSystem';
 
@@ -34,6 +35,8 @@ type PriorityFilter = 'all' | 'stat' | 'urgent' | 'routine';
 
 export default function SampleQueuePage() {
   const { toast } = useToast();
+  const { data: mockLabOrders = [] } = useLabOrders();
+  const updateLabOrderStatusMutation = useUpdateLabOrderStatus();
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -43,7 +46,7 @@ export default function SampleQueuePage() {
 
   // Get lab orders with status 'ordered' or 'sample_collected'
   const labOrders = useMemo(() => {
-    let filtered = mockLabOrders.filter(
+    let filtered = (mockLabOrders as any[]).filter(
       order => order.status === 'ordered' || order.status === 'sample_collected'
     );
 
@@ -80,7 +83,7 @@ export default function SampleQueuePage() {
 
   // Calculate statistics
   const stats = useMemo(() => {
-    const allOrders = mockLabOrders.filter(
+    const allOrders = (mockLabOrders as any[]).filter(
       order => order.status === 'ordered' || order.status === 'sample_collected'
     );
     return {

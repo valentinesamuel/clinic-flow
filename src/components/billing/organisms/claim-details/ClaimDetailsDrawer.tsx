@@ -34,7 +34,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ClaimVersionHistory } from '@/components/billing/molecules/claim/ClaimVersionHistory';
 import { DocumentPreviewModal } from '@/components/billing/molecules/documents/DocumentPreviewModal';
 import { cn } from '@/lib/utils';
-import { getBillById } from '@/data/bills';
+import { useBills } from '@/hooks/queries/useBillQueries';
 
 interface ClaimDetailsDrawerProps {
   open: boolean;
@@ -87,6 +87,7 @@ export function ClaimDetailsDrawer({
 }: ClaimDetailsDrawerProps) {
   const [previewDoc, setPreviewDoc] = useState<ClaimDocument | null>(null);
   const [showDocPreview, setShowDocPreview] = useState(false);
+  const { data: allBills = [] } = useBills();
 
   if (!claim) return null;
 
@@ -100,7 +101,7 @@ export function ClaimDetailsDrawer({
   const canPayOutOfPocket = claim.status === 'denied';
 
   // Get linked bill details
-  const bills = (claim.billIds || []).map(id => getBillById(id)).filter(Boolean);
+  const bills = (claim.billIds || []).map(id => (allBills as any[]).find((b: any) => b.id === id)).filter(Boolean);
   const firstBill = bills[0];
   const displayItems = firstBill?.items.slice(0, 4) || [];
   const remainingItemsCount = (firstBill?.items.length || 0) - 4;

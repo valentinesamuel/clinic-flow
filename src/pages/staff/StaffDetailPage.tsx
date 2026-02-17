@@ -15,8 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockStaff, updateStaffMember } from '@/data/staff';
-import { getStaffRoster, updateRosterShiftWithTime, createRosterEntry, getEffectiveTime, DAYS, DAY_LABELS, PREDEFINED_SLOTS } from '@/data/roster';
+import { useStaffMember, useStaffRoster } from '@/hooks/queries/useStaffQueries';
+import { useUpdateStaffMember, useUpdateRoster } from '@/hooks/mutations/useStaffMutations';
+import { getEffectiveTime, DAYS, DAY_LABELS, PREDEFINED_SLOTS } from '@/data/roster';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import type { StaffMember } from '@/types/clinical.types';
@@ -41,17 +42,18 @@ const StaffDetailPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { data: staff, isLoading: isLoadingStaff } = useStaffMember(id || '');
+  const { data: rosterData, isLoading: isLoadingRoster } = useStaffRoster(id || '');
+  const updateStaffMutation = useUpdateStaffMember();
+  const updateRosterMutation = useUpdateRoster();
 
   const basePath = user?.role === 'cmo' ? 'cmo' : 'hospital-admin';
 
-  const [refreshKey, setRefreshKey] = useState(0);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isEditingSchedule, setIsEditingSchedule] = useState(false);
   const [editedStaff, setEditedStaff] = useState<StaffMember | null>(null);
   const [editedShifts, setEditedShifts] = useState<Record<string, ShiftType>>({});
   const [editedCustomTimes, setEditedCustomTimes] = useState<Record<string, CustomTimeOverride>>({});
-
-  const staff = useMemo(() => mockStaff.find(s => s.id === id), [id, refreshKey]);
 
   const handleBack = () => {
     navigate(`/${basePath}/staff`);
@@ -76,11 +78,13 @@ const StaffDetailPage = () => {
 
   const handleSaveProfile = () => {
     if (editedStaff && id) {
-      updateStaffMember(id, editedStaff);
-      setIsEditingProfile(false);
-      setEditedStaff(null);
-      setRefreshKey(k => k + 1);
-      toast({ title: 'Profile Updated', description: 'Staff profile has been saved.' });
+      updateStaffMutation.mutate({ id, data: editedStaff }, {
+        onSuccess: () => {
+          setIsEditingProfile(false);
+          setEditedStaff(null);
+          toast({ title: 'Profile Updated', description: 'Staff profile has been saved.' });
+        },
+      });
     }
   };
 
@@ -97,15 +101,14 @@ const StaffDetailPage = () => {
 
   // Schedule editing
   const handleEditSchedule = () => {
-    const roster = getStaffRoster(staff!.id);
-    if (roster) {
-      setEditedShifts({ ...roster.shifts });
+    if (rosterData) {
+      setEditedShifts({ ...rosterData.shifts });
       // Initialize custom times - use existing or fallback to predefined
       const times: Record<string, CustomTimeOverride> = {};
       DAYS.forEach(d => {
-        const shift = roster.shifts[d];
+        const shift = rosterData.shifts[d];
         if (shift !== 'off') {
-          const custom = roster.customTimes?.[d];
+          const custom = rosterData.customTimes?.[d];
           const predefined = PREDEFINED_SLOTS[shift];
           times[d] = custom
             ? { ...custom }
@@ -126,25 +129,28 @@ const StaffDetailPage = () => {
 
   const handleSaveSchedule = () => {
     if (!staff) return;
-    const roster = getStaffRoster(staff.id);
-    if (roster) {
-      DAYS.forEach(day => {
-        const shift = editedShifts[day];
-        const customTime = shift !== 'off' ? editedCustomTimes[day] : undefined;
-        updateRosterShiftWithTime(staff.id, day, shift, customTime);
-      });
-    } else {
-      createRosterEntry({
-        staffId: staff.id,
-        staffName: staff.name,
-        role: staff.role,
-        shifts: editedShifts,
-      });
-    }
-    setIsEditingSchedule(false);
-    setEditedCustomTimes({});
-    setRefreshKey(k => k + 1);
-    toast({ title: 'Schedule Updated', description: 'Weekly schedule has been saved.' });
+
+    const customTimes: Record<string, CustomTimeOverride> = {};
+    DAYS.forEach(day => {
+      const shift = editedShifts[day];
+      if (shift !== 'off' && editedCustomTimes[day]) {
+        customTimes[day] = editedCustomTimes[day];
+      }
+    });
+
+    updateRosterMutation.mutate({
+      staffId: staff.id,
+      staffName: staff.name,
+      role: staff.role,
+      shifts: editedShifts,
+      customTimes: Object.keys(customTimes).length > 0 ? customTimes : undefined,
+    }, {
+      onSuccess: () => {
+        setIsEditingSchedule(false);
+        setEditedCustomTimes({});
+        toast({ title: 'Schedule Updated', description: 'Weekly schedule has been saved.' });
+      },
+    });
   };
 
   const handleCancelSchedule = () => {
@@ -157,14 +163,16 @@ const StaffDetailPage = () => {
     if (!staff) return;
     const defaults: Record<string, ShiftType> = {};
     DAYS.forEach(d => { defaults[d] = 'off'; });
-    createRosterEntry({
+    updateRosterMutation.mutate({
       staffId: staff.id,
       staffName: staff.name,
       role: staff.role,
       shifts: defaults,
+    }, {
+      onSuccess: () => {
+        toast({ title: 'Schedule Created', description: 'A default schedule has been created. Click Edit to customize.' });
+      },
     });
-    setRefreshKey(k => k + 1);
-    toast({ title: 'Schedule Created', description: 'A default schedule has been created. Click Edit to customize.' });
   };
 
   const generatePerformanceMetrics = (role: string): PerformanceMetrics => {
@@ -182,6 +190,16 @@ const StaffDetailPage = () => {
         return { patientsSeenOrEquivalent: random(50, 100), consultationsOrActivities: random(40, 80), shiftsCompleted: random(15, 22) };
     }
   };
+
+  if (isLoadingStaff || isLoadingRoster) {
+    return (
+      <DashboardLayout allowedRoles={['cmo', 'hospital_admin']}>
+        <div className="flex min-h-[400px] items-center justify-center">
+          <p className="text-lg text-muted-foreground">Loading...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (!staff) {
     return (
@@ -202,7 +220,6 @@ const StaffDetailPage = () => {
   }
 
   const currentStaff = isEditingProfile ? editedStaff : staff;
-  const rosterData = getStaffRoster(staff.id);
   const metrics = generatePerformanceMetrics(staff.role);
 
   return (

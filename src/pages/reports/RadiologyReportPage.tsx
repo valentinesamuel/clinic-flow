@@ -1,8 +1,9 @@
 import ReportEmbedPage from './ReportEmbedPage';
-import { reportMetadata } from '@/data/reports';
+import { useReportMetadata } from '@/hooks/queries/useReportQueries';
 
 export default function RadiologyReportPage() {
-  const metadata = reportMetadata.radiology;
+  const { data: allMetadata } = useReportMetadata();
+  const metadata = (allMetadata as any)?.radiology ?? { title: 'Radiology Report', description: '', metrics: [] };
 
   return (
     <ReportEmbedPage

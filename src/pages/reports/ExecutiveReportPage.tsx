@@ -1,8 +1,9 @@
 import ReportEmbedPage from './ReportEmbedPage';
-import { reportMetadata } from '@/data/reports';
+import { useReportMetadata } from '@/hooks/queries/useReportQueries';
 
 export default function ExecutiveReportPage() {
-  const metadata = reportMetadata.executive;
+  const { data: allMetadata } = useReportMetadata();
+  const metadata = (allMetadata as any)?.executive ?? { title: 'Executive Report', description: '', metrics: [] };
 
   return (
     <ReportEmbedPage

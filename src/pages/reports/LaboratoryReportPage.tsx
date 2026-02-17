@@ -1,8 +1,9 @@
 import ReportEmbedPage from './ReportEmbedPage';
-import { reportMetadata } from '@/data/reports';
+import { useReportMetadata } from '@/hooks/queries/useReportQueries';
 
 export default function LaboratoryReportPage() {
-  const metadata = reportMetadata.laboratory;
+  const { data: allMetadata } = useReportMetadata();
+  const metadata = (allMetadata as any)?.laboratory ?? { title: 'Laboratory Report', description: '', metrics: [] };
 
   return (
     <ReportEmbedPage

@@ -4,9 +4,9 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ConsultationReadOnlyView } from '@/components/consultation/organisms/ConsultationReadOnlyView';
 import { ConsultationVersionHistory } from '@/components/consultation/molecules/ConsultationVersionHistory';
 import { AmendmentReasonDialog } from '@/components/consultation/molecules/AmendmentReasonDialog';
-import { getConsultationById } from '@/data/consultations';
-import { getPatientById } from '@/data/patients';
-import { mockStaff } from '@/data/staff';
+import { useConsultation } from '@/hooks/queries/useConsultationQueries';
+import { usePatient } from '@/hooks/queries/usePatientQueries';
+import { useStaff } from '@/hooks/queries/useStaffQueries';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Edit, History } from 'lucide-react';
@@ -20,10 +20,11 @@ export default function ConsultationViewPage() {
   const [amendDialogOpen, setAmendDialogOpen] = useState(false);
   const canAmend = user?.role === 'doctor' || user?.role === 'clinical_lead';
 
-  const consultation = id ? getConsultationById(id) : undefined;
-  const patient = consultation ? getPatientById(consultation.patientId) : undefined;
+  const { data: consultation } = useConsultation(id || '');
+  const { data: patient } = usePatient(consultation?.patientId || '');
+  const { data: staff = [] } = useStaff();
   const doctor = consultation
-    ? mockStaff.find(s => s.id === consultation.doctorId)
+    ? staff.find(s => s.id === consultation.doctorId)
     : undefined;
 
   if (!consultation || !patient) {

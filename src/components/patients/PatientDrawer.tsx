@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Patient, QueueEntry } from '@/types/patient.types';
 import { VitalSigns } from '@/types/clinical.types';
-import { getConsultationsByPatient } from '@/data/consultations';
+import { useConsultationsByPatient } from '@/hooks/queries/useConsultationQueries';
 
 // Molecule components
 import { PatientQuickInfo } from '@/components/molecules/patient/PatientQuickInfo';
@@ -53,9 +53,11 @@ export function PatientDrawer({
   onViewFullProfile,
   onComplete,
 }: PatientDrawerProps) {
+  const { data: consultationsData = [] } = useConsultationsByPatient(patient?.id ?? '');
+
   if (!patient) return null;
 
-  const recentConsultations = getConsultationsByPatient(patient.id).slice(0, 3);
+  const recentConsultations = (consultationsData as any[]).slice(0, 3);
   const hasAlerts = patient.allergies.length > 0 || patient.chronicConditions.length > 0;
 
   return (

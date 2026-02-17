@@ -3,7 +3,8 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { ClaimDetailView } from '@/components/billing/organisms/claim-details/ClaimDetailView';
 import { ClaimWithdrawalModal } from '@/components/billing/organisms/claim-details/ClaimWithdrawalModal';
 import { ClaimEditModal } from '@/components/billing/organisms/claim-submission/ClaimEditModal';
-import { getClaimById, updateClaimStatus, submitClaim } from '@/data/claims';
+import { useClaim } from '@/hooks/queries/useClaimQueries';
+import { useUpdateClaimStatus, useSubmitClaim } from '@/hooks/mutations/useClaimMutations';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -19,7 +20,10 @@ export default function ClaimDetailPage() {
   const [showEdit, setShowEdit] = useState(false);
   const [editMode, setEditMode] = useState<'edit' | 'resubmit'>('edit');
 
-  const claim = id ? getClaimById(id) : undefined;
+  const { data: claimData } = useClaim(id || '');
+  const updateClaimStatusMutation = useUpdateClaimStatus();
+  const submitClaimMutation = useSubmitClaim();
+  const claim = claimData as any;
 
   if (!claim) {
     return (
@@ -44,7 +48,7 @@ export default function ClaimDetailPage() {
   };
 
   const handleSubmit = () => {
-    submitClaim(claim.id);
+    submitClaimMutation.mutate(claim.id);
     toast({ title: 'Claim Submitted', description: `${claim.claimNumber} has been submitted` });
   };
 
@@ -54,12 +58,12 @@ export default function ClaimDetailPage() {
   };
 
   const handleMarkPaid = () => {
-    updateClaimStatus(claim.id, 'paid');
+    updateClaimStatusMutation.mutate({ id: claim.id, status: 'paid' });
     toast({ title: 'Claim Marked as Paid', description: `${claim.claimNumber} marked as paid` });
   };
 
   const handleWithdraw = (reason: WithdrawalReason) => {
-    updateClaimStatus(claim.id, 'withdrawn');
+    updateClaimStatusMutation.mutate({ id: claim.id, status: 'withdrawn' });
     toast({ title: 'Claim Withdrawn', description: `${claim.claimNumber} has been withdrawn` });
     setShowWithdrawal(false);
   };

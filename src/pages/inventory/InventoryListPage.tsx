@@ -23,7 +23,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { mockInventory, addInventoryItem, updateInventoryItem, archiveInventoryItem } from '@/data/inventory';
+import { useInventory } from '@/hooks/queries/useInventoryQueries';
+import { useCreateInventoryItem, useUpdateInventoryItem } from '@/hooks/mutations/useInventoryMutations';
 import { InventoryItem } from '@/types/billing.types';
 import { format } from 'date-fns';
 import { Search, Package, AlertTriangle, DollarSign, Layers, Plus, Edit2, Trash2 } from 'lucide-react';
@@ -34,6 +35,10 @@ type StockStatus = 'all' | 'in_stock' | 'low' | 'out';
 
 export default function InventoryListPage() {
   const { toast } = useToast();
+  const { data: inventoryData = [] } = useInventory();
+  const createInventoryItem = useCreateInventoryItem();
+  const updateInventoryItemMutation = useUpdateInventoryItem();
+  const mockInventory = inventoryData as any[];
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [stockStatusFilter, setStockStatusFilter] = useState<StockStatus>('all');
@@ -134,13 +139,13 @@ export default function InventoryListPage() {
 
   const handleSaveItem = () => {
     if (editingItem) {
-      updateInventoryItem(editingItem.id, itemForm);
+      updateInventoryItemMutation.mutate({ id: editingItem.id, ...itemForm } as any);
       toast({
         title: 'Item Updated',
         description: `${itemForm.name} has been updated successfully.`,
       });
     } else {
-      addInventoryItem(itemForm);
+      createInventoryItem.mutate(itemForm as any);
       toast({
         title: 'Item Added',
         description: `${itemForm.name} has been added to inventory.`,
@@ -158,7 +163,7 @@ export default function InventoryListPage() {
 
   const handleArchiveItem = () => {
     if (archiveInput === 'ARCHIVE' && archiveTarget) {
-      archiveInventoryItem(archiveTarget.id);
+      updateInventoryItemMutation.mutate({ id: archiveTarget.id, archived: true } as any);
       toast({
         title: 'Item Archived',
         description: `${archiveTarget.name} has been archived successfully.`,

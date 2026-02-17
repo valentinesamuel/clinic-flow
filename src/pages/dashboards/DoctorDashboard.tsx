@@ -20,8 +20,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { getTodaysAppointments } from '@/data/appointments';
-import { getQueueByType } from '@/data/queue';
+import { useAppointments } from '@/hooks/queries/useAppointmentQueries';
+import { useQueueByType } from '@/hooks/queries/useQueueQueries';
 import { useDashboardActions } from '@/hooks/useDashboardActions';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,14 +41,14 @@ export default function DoctorDashboard() {
   const navigate = useNavigate();
   const { actions } = useDashboardActions('doctor');
   const { toast } = useToast();
-  
-  const todaysAppointments = getTodaysAppointments();
-  const doctorQueue = getQueueByType('doctor');
-  const waitingCount = doctorQueue.filter(e => e.status === 'waiting').length;
-  const completedCount = doctorQueue.filter(e => e.status === 'completed').length;
-  
+
+  const { data: todaysAppointments = [] } = useAppointments();
+  const { data: doctorQueue = [] } = useQueueByType('doctor');
+  const waitingCount = doctorQueue.filter((e: any) => e.status === 'waiting').length;
+  const completedCount = doctorQueue.filter((e: any) => e.status === 'completed').length;
+
   // Get first waiting patient
-  const nextPatient = doctorQueue.find(e => e.status === 'waiting');
+  const nextPatient = doctorQueue.find((e: any) => e.status === 'waiting');
 
   const handleViewAllAppointments = () => {
     navigate('/doctor/appointments');

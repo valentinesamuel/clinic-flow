@@ -1,8 +1,9 @@
 import ReportEmbedPage from './ReportEmbedPage';
-import { reportMetadata } from '@/data/reports';
+import { useReportMetadata } from '@/hooks/queries/useReportQueries';
 
 export default function ClaimsReportPage() {
-  const metadata = reportMetadata.claims;
+  const { data: allMetadata } = useReportMetadata();
+  const metadata = (allMetadata as any)?.claims ?? { title: 'Claims Report', description: '', metrics: [] };
 
   return (
     <ReportEmbedPage

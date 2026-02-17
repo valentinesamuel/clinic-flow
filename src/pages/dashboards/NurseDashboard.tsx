@@ -12,20 +12,21 @@ import {
   AlertTriangle,
   ClipboardList,
 } from 'lucide-react';
-import { getQueueByType, calculateWaitTime } from '@/data/queue';
+import { useQueueByType } from '@/hooks/queries/useQueueQueries';
+import { calculateWaitTime } from '@/data/queue';
 import { useDashboardActions } from '@/hooks/useDashboardActions';
 
 export default function NurseDashboard() {
   const navigate = useNavigate();
   const { actions } = useDashboardActions('nurse');
-  
-  const triageQueue = getQueueByType('triage');
-  const waitingPatients = triageQueue.filter(e => e.status === 'waiting');
-  const inProgressPatients = triageQueue.filter(e => e.status === 'in_progress');
-  
+
+  const { data: triageQueue = [] } = useQueueByType('triage');
+  const waitingPatients = (triageQueue as any[]).filter(e => e.status === 'waiting');
+  const inProgressPatients = (triageQueue as any[]).filter(e => e.status === 'in_progress');
+
   const triageSummary = {
-    processed: triageQueue.filter(e => e.status === 'completed').length,
-    urgent: triageQueue.filter(e => e.priority === 'emergency').length,
+    processed: (triageQueue as any[]).filter(e => e.status === 'completed').length,
+    urgent: (triageQueue as any[]).filter(e => e.priority === 'emergency').length,
     pending: waitingPatients.length,
   };
 

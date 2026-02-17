@@ -4,7 +4,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PatientProfile } from '@/components/patients/PatientProfile';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { getPatientById } from '@/data/patients';
+import { usePatient } from '@/hooks/queries/usePatientQueries';
 
 export default function PatientProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -12,7 +12,7 @@ export default function PatientProfilePage() {
   const { user } = useAuth();
   const basePath = `/${user?.role?.replace('_', '-') || 'receptionist'}`;
 
-  const patient = id ? getPatientById(id) : undefined;
+  const { data: patient, isLoading } = usePatient(id ?? '');
 
   if (!patient) {
     return (

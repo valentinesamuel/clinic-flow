@@ -20,11 +20,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { useToast } from '@/hooks/use-toast';
-import {
-  mockQueueEntries,
-  calculateWaitTime,
-  cancelQueueEntry,
-} from '@/data/queue';
+import { useQueueByType } from '@/hooks/queries/useQueueQueries';
+import { useUpdateQueueEntry } from '@/hooks/mutations/useQueueMutations';
+import { calculateWaitTime } from '@/data/queue';
 import { QueueEntry, QueuePriority } from '@/types/patient.types';
 import { PAGINATION } from '@/constants/designSystem';
 
@@ -37,12 +35,13 @@ export default function WaitingRoomPage() {
   const [cancelTarget, setCancelTarget] = useState<QueueEntry | null>(null);
   const [cancelInput, setCancelInput] = useState('');
 
+  const { data: checkInQueue } = useQueueByType('check_in');
+  const updateQueue = useUpdateQueueEntry();
+
   // Get check-in queue entries
   const waitingPatients = useMemo(() => {
-    let filtered = mockQueueEntries.filter(
-      entry =>
-        entry.queueType === 'check_in' &&
-        entry.status === 'waiting'
+    let filtered = (checkInQueue ?? []).filter(
+      entry => entry.status === 'waiting'
     );
 
     // Apply search filter
@@ -69,7 +68,7 @@ export default function WaitingRoomPage() {
     });
 
     return filtered;
-  }, [searchTerm, refreshKey]);
+  }, [checkInQueue, searchTerm, refreshKey]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -104,17 +103,28 @@ export default function WaitingRoomPage() {
     setCancelInput('');
   };
 
-  const handleConfirmCancel = () => {
+  const handleConfirmCancel = async () => {
     if (!cancelTarget) return;
-    cancelQueueEntry(cancelTarget.id);
-    setRefreshKey(k => k + 1);
-    toast({
-      title: 'Appointment Cancelled',
-      description: `Cancelled appointment for ${cancelTarget.patientName}`,
-      variant: 'destructive',
-    });
-    setCancelTarget(null);
-    setCancelInput('');
+    try {
+      await updateQueue.mutateAsync({
+        entryId: cancelTarget.id,
+        updates: { status: 'cancelled' },
+      });
+      setRefreshKey(k => k + 1);
+      toast({
+        title: 'Appointment Cancelled',
+        description: `Cancelled appointment for ${cancelTarget.patientName}`,
+        variant: 'destructive',
+      });
+      setCancelTarget(null);
+      setCancelInput('');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to cancel appointment',
+        variant: 'destructive',
+      });
+    }
   };
 
   const getPriorityBadge = (priority: QueuePriority) => {

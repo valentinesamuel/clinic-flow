@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
-import { HMOAlertResult } from '@/data/hmo-rules';
+import type { HMOAlertResult } from '@/data/hmo-rules';
 
 interface HMOAlertBannerProps {
   alerts: HMOAlertResult[];

@@ -47,11 +47,8 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { PriceApproval, ServiceCategory } from '@/types/cashier.types';
-import {
-  getPendingApprovals,
-  getApprovalHistory,
-  updateApprovalStatus,
-} from '@/data/service-pricing';
+import { usePendingPriceApprovals, usePriceApprovals } from '@/hooks/queries/useServicePricingQueries';
+import { useUpdatePriceApproval } from '@/hooks/mutations/useServicePricingMutations';
 import {
   Check,
   X,
@@ -102,14 +99,12 @@ export function PriceApprovalQueue() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  const pendingApprovals = useMemo(
-    () => getPendingApprovals(),
-    [refreshKey]
-  );
-  const approvalHistory = useMemo(
-    () => getApprovalHistory(),
-    [refreshKey]
-  );
+  const { data: pendingApprovalsData = [] } = usePendingPriceApprovals();
+  const { data: allApprovals = [] } = usePriceApprovals();
+  const updateApprovalMutation = useUpdatePriceApproval();
+
+  const pendingApprovals = pendingApprovalsData as any[];
+  const approvalHistory = (allApprovals as any[]).filter((a: any) => a.status !== 'pending');
 
   const filteredPending = useMemo(() => {
     if (categoryFilter === 'all') return pendingApprovals;
@@ -164,13 +159,13 @@ export function PriceApprovalQueue() {
   const confirmApprove = () => {
     if (!selectedApproval) return;
 
-    updateApprovalStatus(
-      selectedApproval.id,
-      'approved',
-      approvalNotes || undefined,
-      'usr-cmo',
-      'Dr. Nwosu'
-    );
+    updateApprovalMutation.mutateAsync({
+      id: selectedApproval.id,
+      status: 'approved',
+      notes: approvalNotes || undefined,
+      reviewerId: 'usr-cmo',
+      reviewerName: 'Dr. Nwosu',
+    } as any);
 
     toast({
       title: 'Price Approved',
@@ -195,13 +190,13 @@ export function PriceApprovalQueue() {
       return;
     }
 
-    updateApprovalStatus(
-      selectedApproval.id,
-      'rejected',
-      rejectionReason,
-      'usr-cmo',
-      'Dr. Nwosu'
-    );
+    updateApprovalMutation.mutateAsync({
+      id: selectedApproval.id,
+      status: 'rejected',
+      notes: rejectionReason,
+      reviewerId: 'usr-cmo',
+      reviewerName: 'Dr. Nwosu',
+    } as any);
 
     toast({
       title: 'Price Rejected',
@@ -216,13 +211,13 @@ export function PriceApprovalQueue() {
 
   const handleApproveAll = () => {
     filteredPending.forEach((approval) => {
-      updateApprovalStatus(
-        approval.id,
-        'approved',
-        'Bulk approval',
-        'usr-cmo',
-        'Dr. Nwosu'
-      );
+      updateApprovalMutation.mutateAsync({
+        id: approval.id,
+        status: 'approved',
+        notes: 'Bulk approval',
+        reviewerId: 'usr-cmo',
+        reviewerName: 'Dr. Nwosu',
+      } as any);
     });
 
     toast({

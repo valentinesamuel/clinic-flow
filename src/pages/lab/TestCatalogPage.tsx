@@ -41,16 +41,12 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit2, Trash2, FlaskConical, Search } from 'lucide-react';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import {
-  testCatalog,
-  updateTestCatalog,
-  addTestCatalogEntry,
-  deleteTestCatalogEntry,
-} from '@/data/lab-orders';
+import { useTestCatalog } from '@/hooks/queries/useLabQueries';
 import type { TestCatalogEntry } from '@/types/clinical.types';
 
 export default function TestCatalogPage() {
   const { toast } = useToast();
+  const { data: testCatalogData = [] } = useTestCatalog();
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDialog, setShowDialog] = useState(false);
   const [editingTest, setEditingTest] = useState<TestCatalogEntry | null>(null);
@@ -76,8 +72,8 @@ export default function TestCatalogPage() {
 
   // Get all tests and categories
   const allTests = useMemo(() => {
-    return Object.values(testCatalog);
-  }, [refreshKey]);
+    return testCatalogData as any[];
+  }, [testCatalogData, refreshKey]);
 
   const categoryList = useMemo(() => {
     return Array.from(new Set(allTests.map((test) => test.category))).sort();

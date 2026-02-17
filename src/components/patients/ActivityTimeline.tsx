@@ -18,14 +18,14 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 
-// Import mock data
-import { getConsultationsByPatient } from '@/data/consultations';
-import { getVitalsByPatient } from '@/data/vitals';
-import { mockPrescriptions } from '@/data/prescriptions';
-import { mockLabOrders } from '@/data/lab-orders';
-import { mockBills } from '@/data/bills';
-import { mockStaff } from '@/data/staff';
-import { getAuditLogByPatient, AuditAction } from '@/data/audit-log';
+import { useConsultationsByPatient } from '@/hooks/queries/useConsultationQueries';
+import { useVitals } from '@/hooks/queries/useVitalQueries';
+import { usePrescriptionsByPatient } from '@/hooks/queries/usePrescriptionQueries';
+import { useLabOrdersByPatient } from '@/hooks/queries/useLabQueries';
+import { useBills } from '@/hooks/queries/useBillQueries';
+import { useStaff } from '@/hooks/queries/useStaffQueries';
+
+type AuditAction = 'consultation_started' | 'consultation_saved_draft' | 'consultation_finalized' | 'consultation_amended' | 'bundle_applied';
 
 type ActivityType = 'consultation' | 'vitals' | 'prescription' | 'lab' | 'payment' | 'audit';
 
@@ -83,13 +83,20 @@ export function ActivityTimeline({
   onViewAll,
   onActivityClick
 }: ActivityTimelineProps) {
+  const { data: consultationsData = [] } = useConsultationsByPatient(patientId);
+  const { data: vitalsData = [] } = useVitals({ patientId });
+  const { data: prescriptionsData = [] } = usePrescriptionsByPatient(patientId);
+  const { data: labOrdersData = [] } = useLabOrdersByPatient(patientId);
+  const { data: billsData = [] } = useBills({ patientId });
+  const { data: staffData = [] } = useStaff();
+
   const activities = useMemo(() => {
     const items: ActivityItem[] = [];
+    const staff = staffData as any[];
 
     // Consultations
-    const consultations = getConsultationsByPatient(patientId);
-    consultations.forEach(c => {
-      const doctor = mockStaff.find(s => s.id === c.doctorId);
+    (consultationsData as any[]).forEach((c: any) => {
+      const doctor = staff.find((s: any) => s.id === c.doctorId);
       items.push({
         id: c.id,
         type: 'consultation',
@@ -102,9 +109,8 @@ export function ActivityTimeline({
     });
 
     // Vitals
-    const vitals = getVitalsByPatient(patientId);
-    vitals.forEach(v => {
-      const nurse = mockStaff.find(s => s.id === v.recordedBy);
+    (vitalsData as any[]).forEach((v: any) => {
+      const nurse = staff.find((s: any) => s.id === v.recordedBy);
       items.push({
         id: v.id,
         type: 'vitals',
@@ -117,13 +123,12 @@ export function ActivityTimeline({
     });
 
     // Prescriptions
-    const prescriptions = mockPrescriptions.filter(p => p.patientId === patientId);
-    prescriptions.forEach(p => {
+    (prescriptionsData as any[]).forEach((p: any) => {
       items.push({
         id: p.id,
         type: 'prescription',
         title: p.status === 'dispensed' ? 'Prescription Dispensed' : 'Prescription Issued',
-        description: p.items.map(i => i.drugName).join(', '),
+        description: (p.items || []).map((i: any) => i.drugName).join(', '),
         timestamp: new Date(p.prescribedAt),
         icon: <Pill className="h-4 w-4" />,
         meta: p.doctorName,
@@ -131,23 +136,21 @@ export function ActivityTimeline({
     });
 
     // Lab Orders
-    const labOrders = mockLabOrders.filter(l => l.patientId === patientId);
-    labOrders.forEach(l => {
+    (labOrdersData as any[]).forEach((l: any) => {
       const statusText = l.status === 'completed' ? 'Lab Results Ready' :
         l.status === 'sample_collected' ? 'Sample Collected' : 'Lab Ordered';
       items.push({
         id: l.id,
         type: 'lab',
         title: statusText,
-        description: l.tests.map(t => t.testName).join(', '),
+        description: (l.tests || []).map((t: any) => t.testName).join(', '),
         timestamp: new Date(l.completedAt || l.orderedAt),
         icon: <FlaskConical className="h-4 w-4" />,
       });
     });
 
     // Bills/Payments
-    const bills = mockBills.filter(b => b.patientId === patientId);
-    bills.forEach(b => {
+    (billsData as any[]).forEach((b: any) => {
       if (b.amountPaid > 0) {
         items.push({
           id: b.id,
@@ -160,27 +163,11 @@ export function ActivityTimeline({
       }
     });
 
-    // Audit log entries (only high-level events)
-    const auditEntries = getAuditLogByPatient(patientId);
-    auditEntries
-      .filter(entry => TIMELINE_AUDIT_ACTIONS.includes(entry.action))
-      .forEach(entry => {
-        items.push({
-          id: entry.id,
-          type: 'audit',
-          title: getAuditTitle(entry.action),
-          description: entry.performedByName,
-          timestamp: new Date(entry.timestamp),
-          icon: getAuditIcon(entry.action),
-          meta: entry.performedByName,
-        });
-      });
-
     // Sort by timestamp descending and limit
     return items
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, limit);
-  }, [patientId, limit]);
+  }, [consultationsData, vitalsData, prescriptionsData, labOrdersData, billsData, staffData, patientId, limit]);
 
   const getTypeColor = (type: ActivityType) => {
     switch (type) {

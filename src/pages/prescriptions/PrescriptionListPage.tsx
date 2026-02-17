@@ -20,9 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { mockPrescriptions } from '@/data/prescriptions';
-import { getPatientById } from '@/data/patients';
 import { useAuth } from '@/hooks/useAuth';
+import { usePrescriptions } from '@/hooks/queries/usePrescriptionQueries';
+import { usePatients } from '@/hooks/queries/usePatientQueries';
 import { Search, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -32,20 +32,26 @@ type PrescriptionStatus = 'pending' | 'dispensed' | 'partially_dispensed' | 'can
 export default function PrescriptionListPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { data: allPrescriptions = [] } = usePrescriptions();
+  const { data: allPatients = [] } = usePatients();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const getPatientById = (patientId: string) => {
+    return (allPatients as any[]).find((p: any) => p.id === patientId);
+  };
+
   // Filter prescriptions based on role
   const prescriptions = useMemo(() => {
     if (user?.role === 'doctor') {
       // Show only prescriptions written by this doctor
-      return mockPrescriptions.filter((rx) => rx.doctorId === user.id);
+      return (allPrescriptions as any[]).filter((rx: any) => rx.doctorId === user.id);
     }
     // Pharmacist sees all prescriptions
-    return mockPrescriptions;
-  }, [user]);
+    return allPrescriptions as any[];
+  }, [user, allPrescriptions]);
 
   // Filter prescriptions
   const filteredPrescriptions = useMemo(() => {

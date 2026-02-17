@@ -18,7 +18,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ClaimDiagnosis } from '@/types/billing.types';
-import { ICD10Code, searchICD10, getCommonICD10Codes } from '@/data/icd10-codes';
+import { ICD10Code } from '@/data/icd10-codes';
+import { useICD10Search, useCommonICD10 } from '@/hooks/queries/useReferenceQueries';
 import { cn } from '@/lib/utils';
 
 interface DiagnosisSelectorProps {
@@ -36,19 +37,21 @@ export function DiagnosisSelector({
 }: DiagnosisSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const { data: icd10SearchResults = [] } = useICD10Search(searchQuery.length >= 2 ? searchQuery : '');
+  const { data: commonICD10Data = [] } = useCommonICD10();
 
   const searchResults = useMemo(() => {
     if (searchQuery.length < 2) return [];
-    return searchICD10(searchQuery).filter(
-      (code) => !selectedDiagnoses.some((d) => d.code === code.code)
+    return (icd10SearchResults as any[]).filter(
+      (code: any) => !selectedDiagnoses.some((d) => d.code === code.code)
     );
-  }, [searchQuery, selectedDiagnoses]);
+  }, [searchQuery, selectedDiagnoses, icd10SearchResults]);
 
   const commonCodes = useMemo(() => {
-    return getCommonICD10Codes().filter(
-      (code) => !selectedDiagnoses.some((d) => d.code === code.code)
+    return (commonICD10Data as any[]).filter(
+      (code: any) => !selectedDiagnoses.some((d) => d.code === code.code)
     );
-  }, [selectedDiagnoses]);
+  }, [selectedDiagnoses, commonICD10Data]);
 
   const availableSuggestions = useMemo(() => {
     return suggestedCodes.filter(

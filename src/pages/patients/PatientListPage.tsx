@@ -1,6 +1,6 @@
 // PatientListPage - Refactored to use atomic components
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
@@ -9,34 +9,27 @@ import { PatientTable } from '@/components/patients/PatientTable';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus } from 'lucide-react';
-import { getPatientsPaginated } from '@/data/patients';
 import { Patient, PaymentType } from '@/types/patient.types';
 import { PAGINATION } from '@/constants/designSystem';
+import { usePatientsPaginated } from '@/hooks/queries/usePatientQueries';
 
 export default function PatientListPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(PAGINATION.defaultPageSize);
   const [filter, setFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
   const basePath = `/${user?.role?.replace('_', '-') || 'receptionist'}`;
 
-  useEffect(() => {
-    setLoading(true);
-    const paymentFilter = filter !== 'all' ? filter as PaymentType : undefined;
-    const result = getPatientsPaginated(currentPage, itemsPerPage, { 
-      paymentType: paymentFilter,
-      search: searchQuery 
-    });
-    setPatients(result.patients);
-    setTotalPages(result.totalPages);
-    setLoading(false);
-  }, [currentPage, filter, searchQuery, itemsPerPage]);
+  const paymentFilter = filter !== 'all' ? filter as PaymentType : undefined;
+  const { data, isLoading: loading } = usePatientsPaginated(currentPage, itemsPerPage, {
+    paymentType: paymentFilter,
+    search: searchQuery,
+  });
+  const patients: Patient[] = (data as any)?.patients ?? (data as any)?.data ?? [];
+  const totalPages = (data as any)?.totalPages ?? 1;
 
   const handleViewPatient = (patient: Patient) => {
     navigate(`${basePath}/patients/${patient.id}`);

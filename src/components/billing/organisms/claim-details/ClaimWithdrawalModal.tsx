@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { getHMOProviderById } from '@/data/hmo-providers';
+import { useHMOProviders } from '@/hooks/queries/useReferenceQueries';
 
 interface ClaimWithdrawalModalProps {
   open: boolean;
@@ -45,10 +45,11 @@ export function ClaimWithdrawalModal({
   const [reason, setReason] = useState<WithdrawalReason>('patient_self_pay');
   const [notes, setNotes] = useState('');
   const [confirmContact, setConfirmContact] = useState(false);
+  const { data: hmoProviders = [] } = useHMOProviders();
 
   if (!claim) return null;
 
-  const provider = getHMOProviderById(claim.hmoProviderId);
+  const provider = (hmoProviders as any[]).find((p: any) => p.id === claim.hmoProviderId);
   const isSubmitted = claim.status === 'submitted';
   const isProcessing = claim.status === 'processing';
   const isApproved = claim.status === 'approved';

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import { Check, User, Stethoscope, Clock } from 'lucide-react';
 import { StaffMember } from '@/types/clinical.types';
-import { getDoctors } from '@/data/staff';
+import { useDoctors } from '@/hooks/queries/useStaffQueries';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,17 +43,16 @@ export function DoctorSelector({
   disabled = false,
 }: DoctorSelectorProps) {
   const [open, setOpen] = useState(false);
-  
+  const { data: allDoctors = [] } = useDoctors();
+
   const doctors = useMemo(() => {
-    const allDoctors = getDoctors();
-    
     // In a real app, we'd calculate available slots based on date
     // For now, we'll simulate availability
-    return allDoctors.map(doc => ({
+    return (allDoctors as any[]).map(doc => ({
       ...doc,
       availableSlots: Math.floor(Math.random() * 10) + 1,
     })) as DoctorOption[];
-  }, [date]);
+  }, [date, allDoctors]);
 
   const selectedDoctor = doctors.find(d => d.id === value);
 
@@ -159,7 +158,7 @@ export function DoctorList({
   onSelect: (doctorId: string | undefined, doctor?: StaffMember) => void;
   showAnyDoctor?: boolean;
 }) {
-  const doctors = getDoctors();
+  const { data: doctors = [] } = useDoctors();
 
   return (
     <div className="space-y-2">

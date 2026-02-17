@@ -15,7 +15,9 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
-import { DashboardType, mockAlerts, getSeverityColor } from '@/data/reports';
+import type { DashboardType } from '@/types/report.types';
+import { getSeverityColor } from '@/utils/reportUtils';
+import { useReportAlerts } from '@/hooks/queries/useReportQueries';
 import { format } from 'date-fns';
 
 interface ReportEmbedPageProps {
@@ -40,7 +42,8 @@ export default function ReportEmbedPage({
   const [selectedDateRange, setSelectedDateRange] = useState<DateRangeOption>('month');
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const alerts = mockAlerts[dashboardType] || [];
+  const { data: allAlerts = {} } = useReportAlerts();
+  const alerts = ((allAlerts as any)[dashboardType] || []) as any[];
 
   const dateRangeButtons: { value: DateRangeOption; label: string }[] = [
     { value: 'today', label: 'Today' },

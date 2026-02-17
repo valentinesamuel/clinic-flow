@@ -13,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getLabOrdersByPatient } from '@/data/lab-orders';
+import { useLabOrdersByPatient } from '@/hooks/queries/useLabQueries';
 import { useAuth } from '@/hooks/useAuth';
 
 const PatientLabResultsPage = () => {
@@ -23,10 +23,11 @@ const PatientLabResultsPage = () => {
   // For demo purposes, use hardcoded patient ID
   const patientId = 'pat-001';
 
+  const { data: patientLabOrders = [] } = useLabOrdersByPatient(patientId);
+
   const labOrders = useMemo(() => {
-    const orders = getLabOrdersByPatient(patientId);
-    return orders.filter(order => order.status === 'completed');
-  }, [patientId]);
+    return (patientLabOrders as any[]).filter(order => order.status === 'completed');
+  }, [patientLabOrders]);
 
   const toggleExpand = (orderId: string) => {
     setExpandedOrderId(prev => (prev === orderId ? null : orderId));

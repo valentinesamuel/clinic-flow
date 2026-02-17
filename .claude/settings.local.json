@@ -16,7 +16,8 @@
       "Bash(npm run test:*)",
       "Bash(npx tsx:*)",
       "Bash(curl:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(echo:*)"
     ]
   }
 }

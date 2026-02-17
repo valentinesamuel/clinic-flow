@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Episode } from '@/types/episode.types';
-import { getTimelineForEpisode, updateEpisode, completeEpisode } from '@/data/episodes';
-import { getBillById } from '@/data/bills';
-import { getConsultationById } from '@/data/consultations';
-import { getLabOrderById } from '@/data/lab-orders';
-import { getPrescriptionById } from '@/data/prescriptions';
-import { getClaimById } from '@/data/claims';
+import { useEpisodeTimeline } from '@/hooks/queries/useEpisodeQueries';
+import { useUpdateEpisode } from '@/hooks/mutations/useEpisodeMutations';
+import { useBills } from '@/hooks/queries/useBillQueries';
+import { useConsultations } from '@/hooks/queries/useConsultationQueries';
+import { useLabOrders } from '@/hooks/queries/useLabQueries';
+import { usePrescriptions } from '@/hooks/queries/usePrescriptionQueries';
+import { useClaims } from '@/hooks/queries/useClaimQueries';
 import { EpisodeBadge } from '@/components/atoms/display/EpisodeBadge';
 import { EpisodeTimerBadge } from '@/components/atoms/display/EpisodeTimerBadge';
 import { EpisodeTimeline } from '@/components/billing/molecules/episode/EpisodeTimeline';

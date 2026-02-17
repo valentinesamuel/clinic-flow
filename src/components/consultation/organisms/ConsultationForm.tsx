@@ -22,7 +22,7 @@ import { HMOAlertBanner } from '../molecules/HMOAlertBanner';
 import { FinalizeConfirmationDialog } from '../molecules/FinalizeConfirmationDialog';
 import { EditModeBanner } from '@/components/shared/EditModeBanner';
 import { VitalSignsCard } from '@/components/clinical/VitalSignsCard';
-import { PatientLabResult } from '@/data/conflict-rules';
+import type { PatientLabResult } from '@/data/conflict-rules';
 import { useEffect } from 'react';
 
 interface ConsultationFormProps {

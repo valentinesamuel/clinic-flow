@@ -1,9 +1,14 @@
+import { useEffect } from "react";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { createIDBPersister, CACHE_MAX_AGE } from "@/lib/queryPersister";
+import { offlineConfig } from "@/lib/offlineConfig";
+import { syncManager } from "@/lib/syncManager";
 import Login from "./pages/Login";
 import CMODashboard from "./pages/dashboards/CMODashboard";
 import HospitalAdminDashboard from "./pages/dashboards/HospitalAdminDashboard";
@@ -77,16 +82,35 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
-      gcTime: 5 * 60 * 1000,
+      gcTime: CACHE_MAX_AGE,
       retry: 2,
       refetchOnWindowFocus: true,
+      networkMode: 'offlineFirst',
+    },
+    mutations: {
+      networkMode: 'offlineFirst',
     },
   },
 });
 
-const App = () => (
+const persister = createIDBPersister();
+
+const persistOptions = {
+  persister,
+  maxAge: CACHE_MAX_AGE,
+  dehydrateOptions: {
+    shouldDehydrateQuery: offlineConfig.shouldDehydrateQuery,
+  },
+};
+
+function App() {
+  useEffect(() => {
+    syncManager.init();
+  }, []);
+
+  return (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="clinic-flow-theme">
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -502,8 +526,9 @@ const App = () => (
           </Routes>
         </BrowserRouter>
       </TooltipProvider>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   </ThemeProvider>
-);
+  );
+}
 
 export default App;

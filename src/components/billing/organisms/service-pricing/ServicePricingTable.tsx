@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ServicePrice } from '@/types/cashier.types';
-import { getServicePricesPaginated } from '@/data/service-pricing';
+import { useServicePricesPaginated } from '@/hooks/queries/useServicePricingQueries';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { Search, Plus, MoreVertical, Check, Clock, X, Pencil, Archive } from 'lucide-react';
 import { AddServiceModal } from './AddServiceModal';
@@ -66,7 +66,7 @@ export function ServicePricingTable() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedService, setSelectedService] = useState<ServicePrice | null>(null);
 
-  const { data: services, total, totalPages } = getServicePricesPaginated(
+  const { data: paginatedResult } = useServicePricesPaginated(
     currentPage,
     pageSize,
     {
@@ -75,6 +75,9 @@ export function ServicePricingTable() {
       search: searchQuery,
     }
   );
+  const services = ((paginatedResult as any)?.data || []) as ServicePrice[];
+  const total = (paginatedResult as any)?.total || 0;
+  const totalPages = (paginatedResult as any)?.totalPages || 1;
 
   const handleEdit = (service: ServicePrice) => {
     setSelectedService(service);

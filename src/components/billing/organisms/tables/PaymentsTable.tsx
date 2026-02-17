@@ -1,4 +1,14 @@
-import { PaymentRecord } from '@/data/payments';
+type PaymentRecord = {
+  id: string;
+  receiptNumber: string;
+  patientName: string;
+  patientMrn: string;
+  createdAt: string;
+  amount: number;
+  paymentMethod: 'cash' | 'card' | 'transfer' | 'hmo' | 'corporate';
+  referenceNumber?: string;
+  cashierName: string;
+};
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {

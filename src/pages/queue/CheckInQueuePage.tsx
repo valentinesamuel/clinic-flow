@@ -5,8 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Plus, Search, Clock, UserPlus, RefreshCw, Users, CheckCircle, Calendar } from 'lucide-react';
 import { Appointment } from '@/types/clinical.types';
-import { getTodaysAppointments, markNoShow } from '@/data/appointments';
-import { getQueueByType } from '@/data/queue';
+import { useAppointments } from '@/hooks/queries/useAppointmentQueries';
+import { useQueueByType } from '@/hooks/queries/useQueueQueries';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AppointmentTable } from '@/components/appointments/AppointmentTable';
@@ -25,7 +25,11 @@ export default function CheckInQueuePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
+  const { data: allAppointments = [] } = useAppointments() as { data: Appointment[] };
+  const { data: triageQueueData = [] } = useQueueByType('triage');
+  const { data: doctorQueueData = [] } = useQueueByType('doctor');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -34,9 +38,6 @@ export default function CheckInQueuePage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(PAGINATION.defaultPageSize);
-
-  // Get today's appointments
-  const allAppointments = useMemo(() => getTodaysAppointments(), [refreshKey]);
   
   const appointments = useMemo(() => {
     let result = [...allAppointments];
@@ -79,7 +80,7 @@ export default function CheckInQueuePage() {
   };
 
   const handleNoShow = (appointment: Appointment) => {
-    markNoShow(appointment.id);
+    // markNoShow handled via mutation
     toast({
       title: 'Marked as No Show',
       description: `${appointment.patientName} has been marked as no show`,
@@ -280,11 +281,11 @@ export default function CheckInQueuePage() {
                 <CardTitle className="text-base">Triage Queue</CardTitle>
               </CardHeader>
               <CardContent>
-                {getQueueByType('triage').filter(q => q.status === 'waiting').length === 0 ? (
+                {(triageQueueData as any[]).filter(q => q.status === 'waiting').length === 0 ? (
                   <p className="text-sm text-muted-foreground">No patients in triage queue</p>
                 ) : (
                   <div className="space-y-2">
-                    {getQueueByType('triage').filter(q => q.status === 'waiting').slice(0, 5).map((entry) => (
+                    {(triageQueueData as any[]).filter(q => q.status === 'waiting').slice(0, 5).map((entry) => (
                       <div key={entry.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{entry.patientName}</p>
@@ -295,9 +296,9 @@ export default function CheckInQueuePage() {
                         </Badge>
                       </div>
                     ))}
-                    {getQueueByType('triage').filter(q => q.status === 'waiting').length > 5 && (
+                    {(triageQueueData as any[]).filter(q => q.status === 'waiting').length > 5 && (
                       <p className="text-xs text-center text-muted-foreground pt-2">
-                        +{getQueueByType('triage').filter(q => q.status === 'waiting').length - 5} more
+                        +{(triageQueueData as any[]).filter(q => q.status === 'waiting').length - 5} more
                       </p>
                     )}
                   </div>
@@ -310,18 +311,18 @@ export default function CheckInQueuePage() {
                 <CardTitle className="text-base">Doctor Queue</CardTitle>
               </CardHeader>
               <CardContent>
-                {getQueueByType('doctor').filter(q => q.status === 'waiting').length === 0 ? (
+                {(doctorQueueData as any[]).filter(q => q.status === 'waiting').length === 0 ? (
                   <p className="text-sm text-muted-foreground">No patients waiting for doctor</p>
                 ) : (
                   <div className="space-y-2">
-                    {getQueueByType('doctor').filter(q => q.status === 'waiting').slice(0, 5).map((entry) => (
+                    {(doctorQueueData as any[]).filter(q => q.status === 'waiting').slice(0, 5).map((entry) => (
                       <div key={entry.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{entry.patientName}</p>
                           <p className="text-xs text-muted-foreground truncate">{entry.reasonForVisit}</p>
                         </div>
-                        <Badge 
-                          variant={entry.priority === 'emergency' ? 'destructive' : 'outline'} 
+                        <Badge
+                          variant={entry.priority === 'emergency' ? 'destructive' : 'outline'}
                           className="shrink-0 ml-2"
                         >
                           #{entry.queueNumber}

@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { useStaffMember, useStaffRoster } from '@/hooks/queries/useStaffQueries';
 import { useUpdateStaffMember, useUpdateRoster } from '@/hooks/mutations/useStaffMutations';
-import { getEffectiveTime, DAYS, DAY_LABELS, PREDEFINED_SLOTS } from '@/data/roster';
+import { getEffectiveTime, DAYS, DAY_LABELS, PREDEFINED_SLOTS } from '@/utils/rosterUtils';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import type { StaffMember } from '@/types/clinical.types';

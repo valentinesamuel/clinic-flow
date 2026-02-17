@@ -18,7 +18,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ClaimDiagnosis } from '@/types/billing.types';
-import { ICD10Code } from '@/data/icd10-codes';
+import { ICD10Code } from '@/types/clinical.types';
 import { useICD10Search, useCommonICD10 } from '@/hooks/queries/useReferenceQueries';
 import { cn } from '@/lib/utils';
 

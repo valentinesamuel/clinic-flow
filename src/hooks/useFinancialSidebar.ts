@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { PayerType, ResolvedPrice, FinancialSummary } from '@/types/financial.types';
 import { ConsultationLabOrder, ConsultationPrescriptionItem } from '@/types/consultation.types';
-import { resolvePrice } from '@/utils/priceResolver';
+import { usePriceResolver } from './usePriceResolver';
 
 export function useFinancialSidebar(
   labOrders: ConsultationLabOrder[],
@@ -9,17 +9,23 @@ export function useFinancialSidebar(
   payerType: PayerType,
   hmoProviderId?: string,
 ) {
+  const { resolver, isLoading, isError, isReady } = usePriceResolver();
+
   const resolvedPrices = useMemo(() => {
+    if (!isReady || !resolver) {
+      return [];
+    }
+
     const labPrices: ResolvedPrice[] = labOrders.map(order =>
-      resolvePrice(order.testCode, order.testName, 'lab', payerType, hmoProviderId)
+      resolver(order.testCode, order.testName, 'lab', payerType, hmoProviderId)
     );
 
     const pharmPrices: ResolvedPrice[] = prescriptionItems.map(item =>
-      resolvePrice(item.drugName, item.drugName, 'pharmacy', payerType, hmoProviderId)
+      resolver(item.drugName, item.drugName, 'pharmacy', payerType, hmoProviderId)
     );
 
     return [...labPrices, ...pharmPrices];
-  }, [labOrders, prescriptionItems, payerType, hmoProviderId]);
+  }, [labOrders, prescriptionItems, payerType, hmoProviderId, isReady, resolver]);
 
   const summary = useMemo((): FinancialSummary => {
     let labTotal = 0;
@@ -58,5 +64,12 @@ export function useFinancialSidebar(
     return map;
   }, [resolvedPrices]);
 
-  return { resolvedPrices, summary, priceSnapshotMap };
+  return {
+    resolvedPrices,
+    summary,
+    priceSnapshotMap,
+    isLoading,
+    isError,
+    isReady,
+  };
 }

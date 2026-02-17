@@ -31,10 +31,9 @@ import {
 import { cn } from '@/lib/utils';
 
 import { Patient } from '@/types/patient.types';
-import { BillItem, ServiceCategory, Bill } from '@/types/billing.types';
+import { BillItem, ServiceCategory, Bill, ServiceItem } from '@/types/billing.types';
 import { usePatientSearch } from '@/hooks/queries/usePatientQueries';
 import { useServiceItems } from '@/hooks/queries/useBillQueries';
-import type { ServiceItem } from '@/data/bill-items';
 
 const SERVICE_CATEGORY_LABELS: Record<string, string> = {
   consultation: 'Consultation',

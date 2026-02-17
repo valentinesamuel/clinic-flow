@@ -20,7 +20,8 @@
       "Bash(echo:*)",
       "Bash(npm run lint:*)",
       "Bash(npx eslint:*)",
-      "Bash(npm test:*)"
+      "Bash(npm test:*)",
+      "Bash(/Users/valentinesamuel/Desktop/clinic-flow/MIGRATION_SUMMARY.md:*)"
     ]
   }
 }

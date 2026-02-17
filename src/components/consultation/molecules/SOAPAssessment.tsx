@@ -8,7 +8,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { SOAPSectionHeader } from '../atoms/SOAPSectionHeader';
 import { DiagnosisBadge } from '../atoms/DiagnosisBadge';
 import { ConsultationDiagnosis } from '@/types/consultation.types';
-import type { ICD10Code } from '@/data/icd10-codes';
+import type { ICD10Code } from '@/types/clinical.types';
 import { useICD10Search, useCommonICD10 } from '@/hooks/queries/useReferenceQueries';
 import { Stethoscope, Plus, Search } from 'lucide-react';
 

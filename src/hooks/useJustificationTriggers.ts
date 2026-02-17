@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { ResolvedPrice } from '@/types/financial.types';
-import { ConsultationLabOrder, ConsultationPrescriptionItem, JustificationEntry, JustificationTrigger } from '@/types/consultation.types';
-import type { PatientLabResult } from '@/data/conflict-rules';
+import { ConsultationLabOrder, ConsultationPrescriptionItem, JustificationEntry, JustificationTrigger, PatientLabResult } from '@/types/consultation.types';
 import { useConflictRules } from '@/hooks/queries/useReferenceQueries';
 
 export interface JustificationTriggerInfo {

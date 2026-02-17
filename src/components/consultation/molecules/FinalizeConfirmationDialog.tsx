@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 import { ConsultationFormData } from '@/types/consultation.types';
-import type { HMOAlertResult } from '@/data/hmo-rules';
+import type { HMOAlertResult } from '@/types/consultation.types';
 
 interface FinalizeConfirmationDialogProps {
   open: boolean;

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { VitalSigns } from '@/types/clinical.types';
-import { ConsultationDiagnosis, ConsultationLabOrder } from '@/types/consultation.types';
-import type { HMOAlertResult } from '@/data/hmo-rules';
+import { ConsultationDiagnosis, ConsultationLabOrder, HMOAlertResult } from '@/types/consultation.types';
 import { useHMORules } from '@/hooks/queries/useReferenceQueries';
 
 export function useHMOAlerts(

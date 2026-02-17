@@ -42,7 +42,7 @@ import { DocumentUploadZone } from '@/components/billing/molecules/documents/Doc
 import { DocumentList } from '@/components/billing/molecules/documents/DocumentList';
 import { InsuranceBadge } from '@/components/atoms/display/InsuranceBadge';
 import { HMOItemStatusBadge } from '@/components/atoms/display/HMOItemStatusBadge';
-import { ICD10Code } from '@/data/icd10-codes';
+import { ICD10Code } from '@/types/clinical.types';
 import { useCommonICD10, useICD10ServiceMappings } from '@/hooks/queries/useReferenceQueries';
 import { buildClaimItemsFromBill } from '@/utils/hmoCoverage';
 

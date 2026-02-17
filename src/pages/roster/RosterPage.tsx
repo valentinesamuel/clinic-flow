@@ -31,7 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useRoster } from '@/hooks/queries/useStaffQueries';
 import { useUpdateRoster } from '@/hooks/mutations/useStaffMutations';
-import { DAYS, DAY_LABELS, PREDEFINED_SLOTS, getEffectiveTime, type ShiftType } from '@/data/roster';
+import { DAYS, DAY_LABELS, PREDEFINED_SLOTS, getEffectiveTime, type ShiftType } from '@/utils/rosterUtils';
 import { useToast } from '@/hooks/use-toast';
 
 interface ShiftEditState {

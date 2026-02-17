@@ -1,6 +1,9 @@
 // Roster Management Utility Functions
 
-import { RosterEntry, ShiftType, PREDEFINED_SLOTS } from '@/types/roster.types';
+import { RosterEntry, ShiftType, PREDEFINED_SLOTS as ROSTER_PREDEFINED_SLOTS } from '@/types/roster.types';
+
+// Re-export PREDEFINED_SLOTS for convenience
+export { PREDEFINED_SLOTS } from '@/types/roster.types';
 
 // Day constants
 export const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
@@ -32,7 +35,7 @@ export const getEffectiveTime = (
   const custom = entry.customTimes?.[day];
   if (custom) return custom;
 
-  const predefined = PREDEFINED_SLOTS[shift];
+  const predefined = ROSTER_PREDEFINED_SLOTS[shift];
   if (predefined) return { startTime: predefined.startTime, endTime: predefined.endTime };
 
   return null;

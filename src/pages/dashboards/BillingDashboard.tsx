@@ -24,23 +24,11 @@ import { QuickActionsDropdown } from "@/components/billing/molecules";
 import { PaymentCollectionForm } from "@/components/billing/organisms/cashier-station/PaymentCollectionForm";
 import { PaymentItem, PaymentClearance } from "@/types/billing.types";
 import { Patient } from "@/types/patient.types";
-import { getPendingBills, getTodaysRevenue } from "@/data/bills";
+import { useBills } from "@/hooks/queries/useBillQueries";
 import { useToast } from "@/hooks/use-toast";
 import { RevenueStatsCards } from "@/components/billing/RevenueStatsCards";
 import { useAuth } from "@/hooks/useAuth";
 import { usePatients } from "@/hooks/queries/usePatientQueries";
-
-// Mock billing data
-const unpaidBills = getPendingBills()
-  .slice(0, 4)
-  .map((bill, index) => ({
-    id: bill.id,
-    patient: bill.patientName,
-    patientId: bill.patientId,
-    amount: bill.balance,
-    daysOverdue: [15, 8, 3, 0][index] || 0,
-    bill,
-  }));
 
 const hmoClaimsStatus = {
   pending: 24,
@@ -119,11 +107,30 @@ export default function BillingDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const todaysRevenue = getTodaysRevenue();
 
-  // Fetch patients data
+  // Fetch bills and patients data
+  const { data: billsData = [] } = useBills();
   const { data: patientsData, isLoading: isPatientsLoading } = usePatients();
   const patients = patientsData?.data || [];
+
+  // Calculate pending bills and today's revenue client-side
+  const pendingBills = (billsData as any[]).filter(bill => bill.status === 'pending' || bill.balance > 0);
+  const unpaidBills = pendingBills
+    .slice(0, 4)
+    .map((bill, index) => ({
+      id: bill.id,
+      patient: bill.patientName,
+      patientId: bill.patientId,
+      amount: bill.balance,
+      daysOverdue: [15, 8, 3, 0][index] || 0,
+      bill,
+    }));
+
+  const today = new Date().toISOString().split('T')[0];
+  const todaysBills = (billsData as any[]).filter(bill =>
+    bill.createdAt && bill.createdAt.startsWith(today)
+  );
+  const todaysRevenue = todaysBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
 
   const basePath = user?.role === 'cashier' ? '/cashier'
     : user?.role === 'hospital_admin' ? '/hospital-admin/billing'

@@ -38,7 +38,7 @@ import {
   getTotalPendingAmount,
   getTodaysRevenue,
 } from "@/data/bills";
-import { getPendingClaims } from "@/data/claims";
+import { usePendingClaims } from "@/hooks/queries/useClaimQueries";
 import { AppointmentBookingModal } from "@/components/appointments/AppointmentBookingModal";
 import { useDashboardActions } from "@/hooks/useDashboardActions";
 import { BillingOverviewCard } from "@/components/billing/BillingOverviewCard";
@@ -64,7 +64,7 @@ export default function CMODashboard() {
   const recentBills = getRecentBills(5);
   const pendingBills = getPendingBills();
   const totalPendingAmount = getTotalPendingAmount();
-  const pendingClaims = getPendingClaims();
+  const { data: pendingClaims = [] } = usePendingClaims();
   const todaysRevenue = getTodaysRevenue();
 
   const handleBookAppointment = (patientId: string) => {

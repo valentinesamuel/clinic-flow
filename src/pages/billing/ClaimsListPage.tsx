@@ -40,7 +40,7 @@ import {
   submitClaim,
   updateClaimStatus,
 } from "@/data/claims";
-import { getBillById } from "@/data/bills";
+import { useBills } from "@/hooks/queries/useBillQueries";
 import { Search, FileCheck, ArrowLeft, Send, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -72,6 +72,10 @@ export default function ClaimsListPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const userDepartment = user ? getUserBillingDepartment(user) : 'all';
+
+  // Fetch bills data for bill lookups
+  const { data: billsData = [] } = useBills();
+  const getBillById = (billId: string) => (billsData as any[]).find((b: any) => b.id === billId);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ClaimStatus | "all">(

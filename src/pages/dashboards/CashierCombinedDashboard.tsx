@@ -31,7 +31,7 @@ import {
 } from "@/types/billing.types";
 import { CashierStation } from "@/types/cashier.types";
 import { Patient } from "@/types/patient.types";
-import { getPendingBillsByDepartment } from "@/data/bills";
+import { useBills } from "@/hooks/queries/useBillQueries";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -63,14 +63,18 @@ export default function CashierCombinedDashboard() {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Fetch patients data
+  // Fetch patients and bills data
   const { data: patientsData } = usePatients();
   const patients = patientsData?.data || [];
+  const { data: billsData = [] } = useBills();
 
   const department = user ? getUserBillingDepartment(user) : "front_desk";
   const station = deptToStation[department as BillingDepartment] || "main";
-  const pendingBills = getPendingBillsByDepartment(
-    department as BillingDepartment,
+
+  // Filter bills by department client-side
+  const pendingBills = (billsData as any[]).filter(bill =>
+    (bill.status === 'pending' || bill.balance > 0) &&
+    (department === 'all' || bill.department === department)
   );
 
   const unpaidBills = pendingBills.slice(0, 4).map((bill, index) => ({

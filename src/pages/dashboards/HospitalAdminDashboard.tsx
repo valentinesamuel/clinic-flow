@@ -26,14 +26,14 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
-import { getLowStockItems, getCriticalItems } from "@/data/inventory";
+import { useInventory } from "@/hooks/queries/useInventoryQueries";
 import {
   getPendingBills,
   getTotalPendingAmount,
   getRecentBills,
   getTodaysRevenue,
 } from "@/data/bills";
-import { getPendingClaims, getTotalPendingClaims } from "@/data/claims";
+import { usePendingClaims } from "@/hooks/queries/useClaimQueries";
 import { useStaff } from "@/hooks/queries/useStaffQueries";
 import { BillingOverviewCard } from "@/components/billing/BillingOverviewCard";
 
@@ -46,10 +46,21 @@ export default function HospitalAdminDashboard() {
   const { data: staffData } = useStaff();
   const allStaff = staffData || [];
 
-  const lowStockItems = getLowStockItems();
-  const criticalItems = getCriticalItems();
+  // Fetch inventory data
+  const { data: inventoryData = [] } = useInventory();
+  const lowStockItems = (inventoryData as any[]).filter(
+    item => item.currentStock <= item.reorderLevel
+  );
+  const criticalItems = (inventoryData as any[]).filter(
+    item =>
+      ['Diesel', 'Medical Oxygen'].includes(item.name) &&
+      item.currentStock <= item.reorderLevel
+  );
+
+  // Fetch claims data
+  const { data: pendingClaims = [] } = usePendingClaims();
+
   const pendingBills = getPendingBills();
-  const pendingClaims = getPendingClaims();
 
   // Compute non-medical staff and on-duty staff from fetched data
   const nonMedicalStaff = allStaff.filter(

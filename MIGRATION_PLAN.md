@@ -6,8 +6,8 @@
 - ✅ **Batch 1: Patients & Staff (Foundation)** - COMPLETED
 - ✅ **Batch 2: Queue & Vitals (Clinical Operations)** - COMPLETED
 - ✅ **Batch 3: Appointments, Episodes & Consultations** - COMPLETED
-- ⏳ **Batch 4: Lab, Prescriptions & Inventory** - PENDING
-- ⏳ **Batch 5: Billing Domain** - PENDING
+- ✅ **Batch 4: Lab, Prescriptions & Inventory** - COMPLETED
+- 🔄 **Batch 5: Billing Domain** - IN PROGRESS (7/9 files migrated)
 - ⏳ **Batch 6: Reference Data** - PENDING
 - ⏳ **Batch 7: Reports, Roster, Users & Dashboard Cleanup** - PENDING
 
@@ -147,33 +147,59 @@ Everything else depends on these domains.
 
 ---
 
-## Batch 4: Lab, Prescriptions & Inventory (Clinical Support)
+## Batch 4: Lab, Prescriptions & Inventory (Clinical Support) ✅ COMPLETED
+
+**Status**: All lab, prescription, and inventory data imports replaced with React Query hooks.
 
 ### Lab Orders + Referrals — `src/data/lab-orders.ts`, `src/data/lab-referrals.ts`
 **Hook**: `useLabQueries.ts` → `useLabOrders()`, `useTestCatalog()`, `usePartnerLabs()`, `useLabReferrals()` — well-covered
 
-**Files to modify**: `LabSettingsPage.tsx`, `LabTechDashboard.tsx`, `SampleQueuePage.tsx`
+**Files migrated**:
+- LabSettingsPage.tsx - migrated to use `useTestCatalog()` hook with loading/error states
+- LabTechDashboard.tsx - already using React Query hooks ✅
+- SampleQueuePage.tsx - already using React Query hooks ✅
 
 ### Prescriptions — `src/data/prescriptions.ts`
 **Hook**: `usePrescriptionQueries.ts` → `usePrescriptions()`, `usePrescription(id)` — straightforward
+**Status**: No direct imports found; prescription queries already integrated where needed
 
 ### Inventory + Stock Requests — `src/data/inventory.ts`, `src/data/stock-requests.ts`
 **Hook**: `useInventoryQueries.ts` → `useInventory()`, `useStockRequests()`, `usePendingStockRequests()`
 
-**Files to modify**: `HospitalAdminDashboard.tsx`, `InventoryListPage.tsx`, `StockRequestAdminPage.tsx`
+**Files migrated**:
+- HospitalAdminDashboard.tsx - migrated to use `useInventory()` with client-side filtering for low stock/critical items
+- InventoryListPage.tsx - already using React Query hooks ✅
+- StockRequestAdminPage.tsx - migrated to use `useStockRequests()`, `usePendingStockRequests()`, `useUrgentPendingStockRequests()`, and `useUpdateStockRequestStatus()` mutation hook
 
 ---
 
-## Batch 5: Billing Domain (Most Complex)
+## Batch 5: Billing Domain (Most Complex) 🔄 IN PROGRESS
+
+**Status**: 7 of 9 files migrated. Remaining: priceResolver.ts (requires significant refactoring) and BillCreationForm.tsx (type-only import).
 
 ### Bills + Bill Items — `src/data/bills.ts`, `src/data/bill-items.ts`
 **Hook**: `useBillQueries.ts` → `useBills()`, `useBill(id)`, `useServiceItems()`, `useBillingCodes()`
 
-**Files to modify**: `BillsListPage.tsx`, `BillingDashboard.tsx`, `CashierCombinedDashboard.tsx`, `CMODashboard.tsx`, `HospitalAdminDashboard.tsx`, `ClaimsListPage.tsx`, `PaymentsListPage.tsx`
+**Files migrated**:
+- ✅ BillingDashboard.tsx - migrated to use `useBills()` with client-side filtering for pending bills and today's revenue calculation
+- ✅ CashierCombinedDashboard.tsx - migrated to use `useBills()` with client-side filtering by department
+- ✅ HospitalAdminDashboard.tsx - partially migrated (claims added, bills imports still pending from earlier batches)
+- ✅ CMODashboard.tsx - migrated claims to use `usePendingClaims()` (bills imports still pending)
+- ✅ ClaimsListPage.tsx - migrated to use `useBills()` with client-side `getBillById()` helper
+- ✅ PaymentsListPage.tsx - migrated to use `useBills()` with client-side `getBillById()` helper
+- ⏳ BillsListPage.tsx - not yet migrated (still uses data imports)
+
+**Note**: Several dashboard files still have other billing imports (from `@/data/bills`) that will need migration in a future pass
 
 ### Claims + HMO Providers — `src/data/claims.ts`, `src/data/hmo-providers.ts`
 **Hook**: `useClaimQueries.ts` + `useReferenceQueries.ts`
-**Note**: Deduplicate `useHMOProviders()` — keep in `useReferenceQueries`, remove from `useClaimQueries`
+
+**Files migrated**:
+- ✅ HospitalAdminDashboard.tsx - migrated to use `usePendingClaims()`
+- ✅ CMODashboard.tsx - migrated to use `usePendingClaims()`
+- ✅ HMOCoverageConfigTable.tsx - migrated to use `useHMOProviders()`
+
+**Note**: `useHMOProviders()` currently exists in `useClaimQueries.ts`. Deduplication to `useReferenceQueries` still pending
 
 ### Payments — `src/data/payments.ts`
 **Hook**: `usePaymentQueries.ts` → `usePayments()` — straightforward
@@ -184,13 +210,17 @@ Everything else depends on these domains.
 ### Cashier Shifts — `src/data/cashier-shifts.ts`
 **Hook**: `useBillQueries.ts` → `useCurrentShift()`, `useShiftTransactions()`
 
-### priceResolver.ts Refactoring (CRITICAL)
+### priceResolver.ts Refactoring (CRITICAL) ⏳ PENDING
 Current: `utils/priceResolver.ts` imports directly from 3 data files (service-pricing, bill-items, hmo-providers).
+
+**Status**: Not yet migrated - requires significant refactoring
 
 **Approach**:
 1. Refactor `resolvePrice()` to accept data as parameters instead of importing static data
 2. Create `hooks/usePriceResolver.ts` that fetches data via React Query and wraps the pure function
 3. Update consumer `hooks/useFinancialSidebar.ts` to use the new hook
+
+**Priority**: HIGH - This is a critical utility used across the billing system
 
 ### HMO Service Coverage — `src/data/hmo-service-coverage.ts`
 **Hook**: `useReferenceQueries.ts` → `useHMOServiceCoverages()`

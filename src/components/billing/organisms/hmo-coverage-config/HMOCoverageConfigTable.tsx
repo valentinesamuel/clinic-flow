@@ -30,7 +30,7 @@ import {
   getAllCoveragesPaginated,
   updateCoverage,
 } from "@/data/hmo-service-coverage";
-import { mockHMOProviders } from "@/data/claims";
+import { useHMOProviders } from "@/hooks/queries/useClaimQueries";
 
 const CATEGORIES: { value: ServiceCategory | "All"; label: string }[] = [
   { value: "All", label: "All Categories" },
@@ -42,6 +42,9 @@ const CATEGORIES: { value: ServiceCategory | "All"; label: string }[] = [
 ];
 
 export function HMOCoverageConfigTable() {
+  const { data: hmoProviders = [] } = useHMOProviders();
+  const mockHMOProviders = hmoProviders as any[];
+
   const [selectedProvider, setSelectedProvider] = useState<string>(
     mockHMOProviders[0]?.id || "",
   );

@@ -23,6 +23,11 @@ import { useCreatePatient, useUpdatePatient } from '@/hooks/mutations/usePatient
 import { calculateAge } from '@/utils/patientUtils';
 import { Patient, BloodGroup, Gender, MaritalStatus, PaymentType } from '@/types/patient.types';
 import { format } from 'date-fns';
+
+interface NigerianState {
+  value: string;
+  label: string;
+}
 // HMO Providers
 const hmoProviders = [
   { id: 'hyg-001', name: 'Hygeia HMO', defaultCopay: 5000 },
@@ -99,7 +104,7 @@ export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }:
 
   // Find the state value from the label for edit mode
   const getStateValue = (stateLabel: string) => {
-    const found = (nigerianStates as any[]).find((s: any) => s.label === stateLabel || s.value === stateLabel);
+    const found = (nigerianStates as NigerianState[]).find((s) => s.label === stateLabel || s.value === stateLabel);
     return found?.value || stateLabel;
   };
 

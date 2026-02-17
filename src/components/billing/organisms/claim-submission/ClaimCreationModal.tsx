@@ -158,13 +158,13 @@ export function ClaimCreationModal({
   // Search patients
   const patientResults = useMemo(() => {
     if (patientSearchQuery.length < 2) return [];
-    return (patientSearchResults as Patient[]).filter((p: Patient) => p.paymentType === 'hmo').slice(0, 10);
+    return (patientSearchResults as Patient[]).filter((p) => p.paymentType === 'hmo').slice(0, 10);
   }, [patientSearchQuery, patientSearchResults]);
 
   // Get patient's pending bills
   const patientBills = useMemo(() => {
     if (!selectedPatient) return [];
-    return (billsData as Bill[]).filter((b: Bill) =>
+    return (billsData as Bill[]).filter((b) =>
       b.patientId === selectedPatient.id &&
       (b.status === 'pending' || b.status === 'partial') && b.paymentMethod === 'hmo'
     );
@@ -185,7 +185,7 @@ export function ClaimCreationModal({
   const diagnosisServiceMappings = useMemo(() => {
     if (diagnoses.length === 0) return [];
     const diagnosisCodes = diagnoses.map((d) => d.code);
-    return (icd10ServiceMappingsData as ICD10ServiceMapping[]).filter((mapping: ICD10ServiceMapping) =>
+    return (icd10ServiceMappingsData as ICD10ServiceMapping[]).filter((mapping) =>
       diagnosisCodes.includes(mapping.icd10Code)
     );
   }, [diagnoses, icd10ServiceMappingsData]);
@@ -206,7 +206,7 @@ export function ClaimCreationModal({
 
   // Get HMO provider name
   const selectedProvider = useMemo(() => {
-    return (hmoProvidersData as HMOProvider[]).find((p: HMOProvider) => p.id === hmoProviderId);
+    return (hmoProvidersData as HMOProvider[]).find((p) => p.id === hmoProviderId);
   }, [hmoProviderId, hmoProvidersData]);
 
   // Get suggested diagnoses based on common codes

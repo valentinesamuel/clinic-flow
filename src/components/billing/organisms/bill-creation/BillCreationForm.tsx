@@ -31,7 +31,7 @@ import {
 import { cn } from '@/lib/utils';
 
 import { Patient } from '@/types/patient.types';
-import { BillItem, ServiceCategory, Bill, ServiceItem } from '@/types/billing.types';
+import { BillItem, ServiceCategory, Bill, ServiceItem, HMOClaim } from '@/types/billing.types';
 import { usePatientSearch } from '@/hooks/queries/usePatientQueries';
 import { useServiceItems } from '@/hooks/queries/useBillQueries';
 
@@ -120,7 +120,7 @@ export function BillCreationForm({
   const [notes, setNotes] = useState('');
   const [visitReason, setVisitReason] = useState('');
   const [showHMOClaimPopup, setShowHMOClaimPopup] = useState(false);
-  const [existingClaim, setExistingClaim] = useState<any | null>(null);
+  const [existingClaim, setExistingClaim] = useState<HMOClaim | null>(null);
   const [isWalkIn, setIsWalkIn] = useState(false);
   const [walkInName, setWalkInName] = useState('');
   const [walkInPhone, setWalkInPhone] = useState('');
@@ -133,19 +133,19 @@ export function BillCreationForm({
   // Search patients
   const patientResults = useMemo(() => {
     if (patientSearchQuery.length < 2) return [];
-    return (patientSearchResults as any[]).slice(0, 10);
+    return (patientSearchResults as Patient[]).slice(0, 10);
   }, [patientSearchQuery, patientSearchResults]);
 
   // Build category items from hook data
   const categoryItems: Record<ServiceCategory, ServiceItem[]> = useMemo(() => {
-    const items = serviceItemsData as any[];
+    const items = serviceItemsData as ServiceItem[];
     return {
-      consultation: items.filter((i: any) => i.category === 'consultation'),
-      lab: items.filter((i: any) => i.category === 'lab'),
-      pharmacy: items.filter((i: any) => i.category === 'pharmacy'),
-      procedure: items.filter((i: any) => i.category === 'procedure'),
+      consultation: items.filter((i: ServiceItem) => i.category === 'consultation'),
+      lab: items.filter((i: ServiceItem) => i.category === 'lab'),
+      pharmacy: items.filter((i: ServiceItem) => i.category === 'pharmacy'),
+      procedure: items.filter((i: ServiceItem) => i.category === 'procedure'),
       admission: [],
-      other: items.filter((i: any) => i.category === 'other'),
+      other: items.filter((i: ServiceItem) => i.category === 'other'),
     };
   }, [serviceItemsData]);
 
@@ -190,8 +190,8 @@ export function BillCreationForm({
 
     // Check for existing pending HMO claims
     if (patient.paymentType === 'hmo') {
-      const pendingClaim = (claimsData as any[]).find(
-        (c: any) => c.patientId === patient.id && ['draft', 'submitted', 'processing'].includes(c.status)
+      const pendingClaim = (claimsData as HMOClaim[]).find(
+        (c: HMOClaim) => c.patientId === patient.id && ['draft', 'submitted', 'processing'].includes(c.status)
       );
       if (pendingClaim) {
         setExistingClaim(pendingClaim);

@@ -24,6 +24,7 @@ import { usePrescriptionsByPatient } from '@/hooks/queries/usePrescriptionQuerie
 import { useLabOrdersByPatient } from '@/hooks/queries/useLabQueries';
 import { useBills } from '@/hooks/queries/useBillQueries';
 import { useStaff } from '@/hooks/queries/useStaffQueries';
+import { Consultation, VitalSigns, Prescription, LabOrder, Bill, Staff } from '@/types/clinical.types';
 
 type AuditAction = 'consultation_started' | 'consultation_saved_draft' | 'consultation_finalized' | 'consultation_amended' | 'bundle_applied';
 
@@ -92,11 +93,11 @@ export function ActivityTimeline({
 
   const activities = useMemo(() => {
     const items: ActivityItem[] = [];
-    const staff = staffData as any[];
+    const staff = staffData as Staff[];
 
     // Consultations
-    (consultationsData as any[]).forEach((c: any) => {
-      const doctor = staff.find((s: any) => s.id === c.doctorId);
+    (consultationsData as Consultation[]).forEach((c) => {
+      const doctor = staff.find((s) => s.id === c.doctorId);
       items.push({
         id: c.id,
         type: 'consultation',
@@ -109,8 +110,8 @@ export function ActivityTimeline({
     });
 
     // Vitals
-    (vitalsData as any[]).forEach((v: any) => {
-      const nurse = staff.find((s: any) => s.id === v.recordedBy);
+    (vitalsData as VitalSigns[]).forEach((v) => {
+      const nurse = staff.find((s) => s.id === v.recordedBy);
       items.push({
         id: v.id,
         type: 'vitals',
@@ -123,12 +124,12 @@ export function ActivityTimeline({
     });
 
     // Prescriptions
-    (prescriptionsData as any[]).forEach((p: any) => {
+    (prescriptionsData as Prescription[]).forEach((p) => {
       items.push({
         id: p.id,
         type: 'prescription',
         title: p.status === 'dispensed' ? 'Prescription Dispensed' : 'Prescription Issued',
-        description: (p.items || []).map((i: any) => i.drugName).join(', '),
+        description: (p.items || []).map((i) => i.drugName).join(', '),
         timestamp: new Date(p.prescribedAt),
         icon: <Pill className="h-4 w-4" />,
         meta: p.doctorName,
@@ -136,21 +137,21 @@ export function ActivityTimeline({
     });
 
     // Lab Orders
-    (labOrdersData as any[]).forEach((l: any) => {
+    (labOrdersData as LabOrder[]).forEach((l) => {
       const statusText = l.status === 'completed' ? 'Lab Results Ready' :
         l.status === 'sample_collected' ? 'Sample Collected' : 'Lab Ordered';
       items.push({
         id: l.id,
         type: 'lab',
         title: statusText,
-        description: (l.tests || []).map((t: any) => t.testName).join(', '),
+        description: (l.tests || []).map((t) => t.testName).join(', '),
         timestamp: new Date(l.completedAt || l.orderedAt),
         icon: <FlaskConical className="h-4 w-4" />,
       });
     });
 
     // Bills/Payments
-    (billsData as any[]).forEach((b: any) => {
+    (billsData as Bill[]).forEach((b) => {
       if (b.amountPaid > 0) {
         items.push({
           id: b.id,

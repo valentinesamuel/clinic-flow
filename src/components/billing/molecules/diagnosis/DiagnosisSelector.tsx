@@ -42,14 +42,14 @@ export function DiagnosisSelector({
 
   const searchResults = useMemo(() => {
     if (searchQuery.length < 2) return [];
-    return (icd10SearchResults as any[]).filter(
-      (code: any) => !selectedDiagnoses.some((d) => d.code === code.code)
+    return (icd10SearchResults as ICD10Code[]).filter(
+      (code) => !selectedDiagnoses.some((d) => d.code === code.code)
     );
   }, [searchQuery, selectedDiagnoses, icd10SearchResults]);
 
   const commonCodes = useMemo(() => {
-    return (commonICD10Data as any[]).filter(
-      (code: any) => !selectedDiagnoses.some((d) => d.code === code.code)
+    return (commonICD10Data as ICD10Code[]).filter(
+      (code) => !selectedDiagnoses.some((d) => d.code === code.code)
     );
   }, [selectedDiagnoses, commonICD10Data]);
 

@@ -29,6 +29,12 @@ import {
 import { ServicePrice } from '@/types/cashier.types';
 import { useServicePricesPaginated } from '@/hooks/queries/useServicePricingQueries';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
+
+interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  totalPages: number;
+}
 import { Search, Plus, MoreVertical, Check, Clock, X, Pencil, Archive } from 'lucide-react';
 import { AddServiceModal } from './AddServiceModal';
 import { EditServiceModal } from './EditServiceModal';
@@ -75,9 +81,9 @@ export function ServicePricingTable() {
       search: searchQuery,
     }
   );
-  const services = ((paginatedResult as any)?.data || []) as ServicePrice[];
-  const total = (paginatedResult as any)?.total || 0;
-  const totalPages = (paginatedResult as any)?.totalPages || 1;
+  const services = (paginatedResult as PaginatedResponse<ServicePrice>)?.data || [];
+  const total = (paginatedResult as PaginatedResponse<ServicePrice>)?.total || 0;
+  const totalPages = (paginatedResult as PaginatedResponse<ServicePrice>)?.totalPages || 1;
 
   const handleEdit = (service: ServicePrice) => {
     setSelectedService(service);

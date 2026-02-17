@@ -4,6 +4,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Check } from 'lucide-react';
 import { useICD10ServiceMappings } from '@/hooks/queries/useReferenceQueries';
 import { useServiceItems } from '@/hooks/queries/useBillQueries';
+import { ICD10ServiceMapping } from '@/types/financial.types';
 
 interface DiagnosisServiceSuggestionProps {
   diagnosisCodes: string[];
@@ -30,8 +31,8 @@ export function DiagnosisServiceSuggestion({
   const { data: serviceItemsData = [] } = useServiceItems();
 
   const mappings = useMemo(() => {
-    const allMappings = icd10ServiceMappingsData as any[];
-    return allMappings.filter((m: any) => diagnosisCodes.includes(m.diagnosisCode));
+    const allMappings = icd10ServiceMappingsData as ICD10ServiceMapping[];
+    return allMappings.filter((m) => diagnosisCodes.includes(m.icd10Code));
   }, [diagnosisCodes, icd10ServiceMappingsData]);
 
   const allSuggestedServices = useMemo(() => {

@@ -77,7 +77,7 @@ export function CashierDashboard({ station }: CashierDashboardProps) {
   // Sync shift from query on first load
   useState(() => {
     if (currentShiftData && !shift) {
-      setShift(currentShiftData as any);
+      setShift(currentShiftData as CashierShift);
     }
   });
 
@@ -86,7 +86,7 @@ export function CashierDashboard({ station }: CashierDashboardProps) {
   const { data: pendingBills = [] } = useBills(
     station === 'main'
       ? { status: 'pending' }
-      : { department: department as any, status: 'pending' }
+      : { department, status: 'pending' }
   );
 
   // Calculate shift stats
@@ -95,7 +95,7 @@ export function CashierDashboard({ station }: CashierDashboardProps) {
     totalCollected: shift.transactions.reduce((sum, t) => sum + t.amount, 0),
     cashCollected: shift.transactions.filter(t => t.paymentMethod === 'cash').reduce((sum, t) => sum + t.amount, 0),
     cardCollected: shift.transactions.filter(t => t.paymentMethod === 'card').reduce((sum, t) => sum + t.amount, 0),
-    transferCollected: shift.transactions.filter(t => (t as any).paymentMethod === 'transfer').reduce((sum: number, t: any) => sum + t.amount, 0),
+    transferCollected: shift.transactions.filter((t: ShiftTransaction) => t.paymentMethod === 'transfer').reduce((sum: number, t: ShiftTransaction) => sum + t.amount, 0),
   } : null;
 
   const handleStartShift = () => {

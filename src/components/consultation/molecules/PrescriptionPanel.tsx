@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ConsultationPrescriptionItem } from '@/types/consultation.types';
+import { ServiceItem } from '@/types/billing.types';
 import { useServiceItems } from '@/hooks/queries/useBillQueries';
 import { Search, Plus, X, Pill, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -28,7 +29,7 @@ export function PrescriptionPanel({ open, onOpenChange, items, onAdd, onRemove, 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
 
-  const PHARMACY_ITEMS = (serviceItems as any[]).filter((item: any) => item.category === 'pharmacy' || item.type === 'pharmacy');
+  const PHARMACY_ITEMS = (serviceItems as ServiceItem[]).filter((item) => item.category === 'pharmacy' || item.type === 'pharmacy');
 
   // Auto-expand the most recently added item
   useEffect(() => {
@@ -37,7 +38,7 @@ export function PrescriptionPanel({ open, onOpenChange, items, onAdd, onRemove, 
     }
   }, [items.length]);
 
-  const filteredDrugs = PHARMACY_ITEMS.filter((item: any) =>
+  const filteredDrugs = PHARMACY_ITEMS.filter((item) =>
     item.isActive && item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

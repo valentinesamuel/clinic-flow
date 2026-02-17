@@ -26,7 +26,7 @@ import { HMOProviderSelector } from '@/components/billing/molecules/hmo/HMOProvi
 import { HMOVerificationCard } from '@/components/billing/molecules/hmo/HMOVerificationCard';
 import { ThermalReceipt } from '@/components/billing/organisms/receipt/ThermalReceipt';
 
-import { PaymentMethod, PaymentItem, PaymentClearance, PaymentSplit, HMOVerification } from '@/types/billing.types';
+import { PaymentMethod, PaymentItem, PaymentClearance, PaymentSplit, HMOVerification, HMOProvider } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
 import { useHMOProviders, useNigerianBanks } from '@/hooks/queries/useReferenceQueries';
 import { SplitPaymentManager } from '@/components/billing/molecules/payment/SplitPaymentManager';
@@ -143,7 +143,7 @@ export function PaymentCollectionForm({
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
-    const provider = (hmoProviders as any[]).find((p: any) => p.id === hmoProviderId);
+    const provider = (hmoProviders as HMOProvider[]).find((p) => p.id === hmoProviderId);
     if (!provider) {
       setIsVerifying(false);
       return;

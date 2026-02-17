@@ -28,10 +28,10 @@ export function SOAPAssessment({ selectedDiagnoses, onAdd, onRemove, onSetPrimar
   const { data: commonICD10Codes = [] } = useCommonICD10();
 
   const searchResults = searchQuery.length >= 2
-    ? (icd10SearchResults as any[]).filter(c => !selectedDiagnoses.some(d => d.code === c.code))
+    ? (icd10SearchResults as ICD10Code[]).filter(c => !selectedDiagnoses.some(d => d.code === c.code))
     : [];
 
-  const commonCodes = (commonICD10Codes as any[]).filter(
+  const commonCodes = (commonICD10Codes as ICD10Code[]).filter(
     c => !selectedDiagnoses.some(d => d.code === c.code)
   );
 

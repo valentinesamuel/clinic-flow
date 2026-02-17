@@ -7,6 +7,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useHMOProviders } from '@/hooks/queries/useReferenceQueries';
+import { HMOProvider } from '@/types/billing.types';
 
 interface HMOProviderSelectorProps {
   selected?: string;
@@ -15,7 +16,7 @@ interface HMOProviderSelectorProps {
 
 export function HMOProviderSelector({ selected, onChange }: HMOProviderSelectorProps) {
   const { data: hmoProviders = [] } = useHMOProviders();
-  const selectedProvider = selected ? (hmoProviders as any[]).find((p: any) => p.id === selected) : undefined;
+  const selectedProvider = selected ? (hmoProviders as HMOProvider[]).find((p) => p.id === selected) : undefined;
 
   return (
     <Select value={selected} onValueChange={onChange}>
@@ -28,7 +29,7 @@ export function HMOProviderSelector({ selected, onChange }: HMOProviderSelectorP
         </div>
       </SelectTrigger>
       <SelectContent>
-        {(hmoProviders as any[]).filter((p: any) => p.isActive).map((provider: any) => (
+        {(hmoProviders as HMOProvider[]).filter((p) => p.isActive).map((provider) => (
           <SelectItem key={provider.id} value={provider.id}>
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-primary" />

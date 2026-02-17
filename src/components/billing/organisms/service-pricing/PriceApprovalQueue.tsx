@@ -104,7 +104,7 @@ export function PriceApprovalQueue() {
   const updateApprovalMutation = useUpdatePriceApproval();
 
   const pendingApprovals = pendingApprovalsData as PriceApproval[];
-  const approvalHistory = (allApprovals as PriceApproval[]).filter((a: PriceApproval) => a.status !== 'pending');
+  const approvalHistory = (allApprovals as PriceApproval[]).filter((a) => a.status !== 'pending');
 
   const filteredPending = useMemo(() => {
     if (categoryFilter === 'all') return pendingApprovals;

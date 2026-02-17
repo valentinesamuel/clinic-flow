@@ -74,3 +74,15 @@ export function useTransferQueue() {
     },
   });
 }
+
+export function useUpdateQueueEntry() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Record<string, unknown> }) =>
+      queueApi.update(id, updates),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.queues.all });
+    },
+  });
+}

@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { mockLabOrders } from '@/data/lab-orders';
+import { useLabOrders } from '@/hooks/queries/useLabQueries';
 import { LabOrder } from '@/types/clinical.types';
 import { format } from 'date-fns';
 import { Search, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Calendar, ExternalLink } from 'lucide-react';
@@ -24,6 +24,8 @@ export default function LabResultsListPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
+
+  const { data: allLabOrders = [] } = useLabOrders();
 
   const basePath = user
     ? user.role === 'hospital_admin'
@@ -38,11 +40,11 @@ export default function LabResultsListPage() {
   const [showAbnormalOnly, setShowAbnormalOnly] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
-  const completedOrders = useMemo(() => {
-    return mockLabOrders.filter(o => o.status === 'completed');
-  }, []);
+  const completedOrders = useMemo((): LabOrder[] => {
+    return allLabOrders.filter(o => o.status === 'completed');
+  }, [allLabOrders]);
 
-  const filteredOrders = useMemo(() => {
+  const filteredOrders = useMemo((): LabOrder[] => {
     let filtered = [...completedOrders];
 
     if (searchQuery) {
@@ -79,7 +81,7 @@ export default function LabResultsListPage() {
     return order.tests.some(test => test.isAbnormal);
   };
 
-  const toggleExpand = (orderId: string) => {
+  const toggleExpand = (orderId: string): void => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 

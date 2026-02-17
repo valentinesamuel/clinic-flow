@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { format, addDays, subDays, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
 import { Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon, List, LayoutGrid, RefreshCw, Search } from 'lucide-react';
 import { Appointment } from '@/types/clinical.types';
-import { mockAppointments, getAppointmentsByDate, getAppointmentsByDateRange, updateAppointmentStatus, cancelAppointment, markNoShow, rescheduleAppointment, checkInAppointment } from '@/data/appointments';
+import { useAppointments } from '@/hooks/queries/useAppointmentQueries';
+import { useUpdateAppointment, useCancelAppointment, useCheckInAppointment } from '@/hooks/mutations/useAppointmentMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { AppointmentCard } from '@/components/appointments/AppointmentCard';
@@ -49,7 +50,7 @@ export default function AppointmentListPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
-  
+
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -65,21 +66,30 @@ export default function AppointmentListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(PAGINATION.defaultPageSize);
 
+  const { data: appointmentsData } = useAppointments();
+  const updateAppointment = useUpdateAppointment();
+  const cancelAppointmentMutation = useCancelAppointment();
+  const checkInAppointmentMutation = useCheckInAppointment();
+
+  const allAppointments = appointmentsData ?? [];
+
   // Get appointments based on view mode
   const appointments = useMemo(() => {
     let result: Appointment[] = [];
-    
+
     if (viewMode === 'day') {
-      result = getAppointmentsByDate(format(selectedDate, 'yyyy-MM-dd'));
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      result = allAppointments.filter(a => a.scheduledDate === dateStr);
     } else if (viewMode === 'week') {
       const start = startOfWeek(selectedDate, { weekStartsOn: 1 });
       const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
-      result = getAppointmentsByDateRange(
-        format(start, 'yyyy-MM-dd'),
-        format(end, 'yyyy-MM-dd')
+      const startStr = format(start, 'yyyy-MM-dd');
+      const endStr = format(end, 'yyyy-MM-dd');
+      result = allAppointments.filter(a =>
+        a.scheduledDate >= startStr && a.scheduledDate <= endStr
       );
     } else {
-      result = [...mockAppointments];
+      result = [...allAppointments];
     }
 
     // Filter by status
@@ -105,7 +115,7 @@ export default function AppointmentListPage() {
     });
 
     return result;
-  }, [viewMode, selectedDate, statusFilter, searchQuery, refreshKey]);
+  }, [allAppointments, viewMode, selectedDate, statusFilter, searchQuery, refreshKey]);
 
   // Week days for week view
   const weekDays = useMemo(() => {
@@ -140,16 +150,30 @@ export default function AppointmentListPage() {
     setRescheduleDialogOpen(true);
   };
 
-  const confirmReschedule = () => {
+  const confirmReschedule = async () => {
     if (selectedAppointment && newDate && newTime) {
-      rescheduleAppointment(selectedAppointment.id, format(newDate, 'yyyy-MM-dd'), newTime);
-      setRescheduleDialogOpen(false);
-      setSelectedAppointment(null);
-      setRefreshKey(k => k + 1);
-      toast({
-        title: 'Appointment Rescheduled',
-        description: `Rescheduled to ${format(newDate, 'MMMM d, yyyy')} at ${newTime}`,
-      });
+      try {
+        await updateAppointment.mutateAsync({
+          id: selectedAppointment.id,
+          updates: {
+            scheduledDate: format(newDate, 'yyyy-MM-dd'),
+            scheduledTime: newTime,
+          },
+        });
+        setRescheduleDialogOpen(false);
+        setSelectedAppointment(null);
+        setRefreshKey(k => k + 1);
+        toast({
+          title: 'Appointment Rescheduled',
+          description: `Rescheduled to ${format(newDate, 'MMMM d, yyyy')} at ${newTime}`,
+        });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to reschedule appointment',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
@@ -158,26 +182,48 @@ export default function AppointmentListPage() {
     setCancelDialogOpen(true);
   };
 
-  const confirmCancel = () => {
+  const confirmCancel = async () => {
     if (selectedAppointment) {
-      cancelAppointment(selectedAppointment.id, 'Cancelled by staff');
-      setCancelDialogOpen(false);
-      setSelectedAppointment(null);
-      setRefreshKey(k => k + 1);
-      toast({
-        title: 'Appointment Cancelled',
-        description: `Appointment for ${selectedAppointment.patientName} has been cancelled.`,
-      });
+      try {
+        await cancelAppointmentMutation.mutateAsync({
+          id: selectedAppointment.id,
+          reason: 'Cancelled by staff',
+        });
+        setCancelDialogOpen(false);
+        setSelectedAppointment(null);
+        setRefreshKey(k => k + 1);
+        toast({
+          title: 'Appointment Cancelled',
+          description: `Appointment for ${selectedAppointment.patientName} has been cancelled.`,
+        });
+      } catch (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to cancel appointment',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
-  const handleNoShow = (appointment: Appointment) => {
-    markNoShow(appointment.id);
-    setRefreshKey(k => k + 1);
-    toast({
-      title: 'Marked as No Show',
-      description: `${appointment.patientName} has been marked as no show.`,
-    });
+  const handleNoShow = async (appointment: Appointment) => {
+    try {
+      await updateAppointment.mutateAsync({
+        id: appointment.id,
+        updates: { status: 'no_show' },
+      });
+      setRefreshKey(k => k + 1);
+      toast({
+        title: 'Marked as No Show',
+        description: `${appointment.patientName} has been marked as no show.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to mark as no show',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleViewProfile = (patientId: string) => {

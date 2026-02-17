@@ -13,8 +13,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { CashierShift } from '@/types/cashier.types';
-import { calculateShiftStats } from '@/data/cashier-shifts';
+import { CashierShift, ShiftTransaction } from '@/types/cashier.types';
+// Shift stats calculated inline
 import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -60,7 +60,13 @@ export function CashierShiftReport({
   onEndShift,
 }: CashierShiftReportProps) {
   const [closingBalance, setClosingBalance] = useState('');
-  const stats = calculateShiftStats(shift);
+  const stats = {
+    transactionCount: shift.transactions.length,
+    totalCollected: shift.transactions.reduce((sum, t) => sum + t.amount, 0),
+    cashCollected: shift.transactions.filter(t => t.paymentMethod === 'cash').reduce((sum, t) => sum + t.amount, 0),
+    cardCollected: shift.transactions.filter(t => t.paymentMethod === 'card').reduce((sum, t) => sum + t.amount, 0),
+    transferCollected: shift.transactions.filter((t: ShiftTransaction) => t.paymentMethod === 'transfer').reduce((sum: number, t: ShiftTransaction) => sum + t.amount, 0),
+  };
 
   const expectedBalance = shift.openingBalance + stats.cashCollected;
   const actualClosing = parseFloat(closingBalance) || 0;

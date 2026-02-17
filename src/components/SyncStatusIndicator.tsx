@@ -1,6 +1,5 @@
-import { useState, useSyncExternalStore } from 'react';
-import { CloudOff, Cloud, RefreshCw, AlertCircle, Check, X } from 'lucide-react';
-import { onlineManager } from '@tanstack/react-query';
+import { useState } from 'react';
+import { CloudOff, Cloud, RefreshCw, AlertCircle, Check } from 'lucide-react';
 import {
   Popover,
   PopoverContent,
@@ -8,8 +7,7 @@ import {
 } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-
-export type SyncStatus = 'online' | 'syncing' | 'offline' | 'error';
+import { useSyncStatus, SyncStatus } from '@/hooks/useSyncStatus';
 
 const statusConfig: Record<SyncStatus, {
   icon: typeof Cloud;
@@ -49,16 +47,8 @@ const statusConfig: Record<SyncStatus, {
 };
 
 export function SyncStatusIndicator() {
-  const isOnline = useSyncExternalStore(
-    onlineManager.subscribe.bind(onlineManager),
-    () => onlineManager.isOnline(),
-  );
-  const [demoStatus, setDemoStatus] = useState<SyncStatus | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [lastSyncTime] = useState<Date | null>(new Date());
-  const [pendingChanges] = useState(0);
-
-  const status: SyncStatus = demoStatus ?? (isOnline ? 'online' : 'offline');
+  const { status, pendingChanges, lastSyncTime, retryFailed } = useSyncStatus();
 
   const config = statusConfig[status];
   const Icon = config.icon;
@@ -81,12 +71,17 @@ export function SyncStatusIndicator() {
           variant="ghost"
           size="icon"
           className={cn(
-            'h-10 w-10 rounded-full border transition-colors',
+            'h-10 w-10 rounded-full border transition-colors relative',
             config.className
           )}
           aria-label={`Sync status: ${config.label}`}
         >
           <Icon className={cn('h-5 w-5', config.iconClassName)} />
+          {pendingChanges > 0 && (
+            <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-orange-500 text-white text-xs flex items-center justify-center">
+              {pendingChanges}
+            </span>
+          )}
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-72" align="end">
@@ -117,23 +112,18 @@ export function SyncStatusIndicator() {
             )}
           </div>
 
-          {/* Demo controls - for testing */}
-          <div className="border-t pt-3">
-            <p className="mb-2 text-xs text-muted-foreground">Demo: Change status</p>
-            <div className="flex flex-wrap gap-1">
-              {(['online', 'syncing', 'offline', 'error'] as SyncStatus[]).map((s) => (
-                <Button
-                  key={s}
-                  variant={status === s ? 'default' : 'outline'}
-                  size="sm"
-                  className="h-7 text-xs"
-                  onClick={() => setDemoStatus(s)}
-                >
-                  {s}
-                </Button>
-              ))}
+          {status === 'error' && (
+            <div className="border-t pt-3">
+              <Button
+                onClick={retryFailed}
+                className="w-full"
+                variant="outline"
+                size="sm"
+              >
+                Retry Failed Syncs
+              </Button>
             </div>
-          </div>
+          )}
         </div>
       </PopoverContent>
     </Popover>

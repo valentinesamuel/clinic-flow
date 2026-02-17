@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { ResolvedPrice } from '@/types/financial.types';
-import { ConsultationLabOrder, ConsultationPrescriptionItem, JustificationEntry, JustificationTrigger } from '@/types/consultation.types';
-import { findConflicts, PatientLabResult } from '@/data/conflict-rules';
+import { ConsultationLabOrder, ConsultationPrescriptionItem, JustificationEntry, JustificationTrigger, PatientLabResult, ConflictRule } from '@/types/consultation.types';
+import { useConflictRules } from '@/hooks/queries/useReferenceQueries';
 
 export interface JustificationTriggerInfo {
   triggerId: string;
@@ -18,6 +18,8 @@ export function useJustificationTriggers(
   patientLabResults: PatientLabResult[],
   justifications: JustificationEntry[],
 ) {
+  const { data: conflictRules = [] } = useConflictRules();
+
   const triggers = useMemo(() => {
     const result: JustificationTriggerInfo[] = [];
 
@@ -41,7 +43,10 @@ export function useJustificationTriggers(
 
     // Conflict triggers: drug-lab conflicts
     for (const rxItem of prescriptionItems) {
-      const conflicts = findConflicts(rxItem.drugName, patientLabResults);
+      const conflicts = (conflictRules as ConflictRule[]).filter((rule: ConflictRule) =>
+        rule.drugNamePattern?.toLowerCase() === rxItem.drugName.toLowerCase() &&
+        patientLabResults.some((lab: PatientLabResult) => rule.conflictingLabTestCode === lab.testCode)
+      );
       for (const conflict of conflicts) {
         result.push({
           triggerId: `cf-${rxItem.id}-${conflict.id}`,
@@ -54,7 +59,7 @@ export function useJustificationTriggers(
     }
 
     return result;
-  }, [labOrders, prescriptionItems, resolvedPrices, patientLabResults]);
+  }, [labOrders, prescriptionItems, resolvedPrices, patientLabResults, conflictRules]);
 
   const unresolvedCount = useMemo(() => {
     return triggers.filter(

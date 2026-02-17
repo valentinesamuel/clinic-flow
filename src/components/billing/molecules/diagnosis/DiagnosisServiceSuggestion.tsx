@@ -2,8 +2,10 @@ import { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Check } from 'lucide-react';
-import { getServicesForMultipleDiagnoses } from '@/data/icd10-service-mappings';
-import { getServiceItemById } from '@/data/bill-items';
+import { useICD10ServiceMappings } from '@/hooks/queries/useReferenceQueries';
+import { useServiceItems } from '@/hooks/queries/useBillQueries';
+import { ICD10ServiceMapping } from '@/types/financial.types';
+import { ServiceItem } from '@/types/billing.types';
 
 interface DiagnosisServiceSuggestionProps {
   diagnosisCodes: string[];
@@ -26,10 +28,13 @@ export function DiagnosisServiceSuggestion({
   const [removalJustification, setRemovalJustification] = useState('');
   const [pendingAddId, setPendingAddId] = useState<string | null>(null);
   const [addJustification, setAddJustification] = useState('');
+  const { data: icd10ServiceMappingsData = [] } = useICD10ServiceMappings();
+  const { data: serviceItemsData = [] } = useServiceItems();
 
   const mappings = useMemo(() => {
-    return getServicesForMultipleDiagnoses(diagnosisCodes);
-  }, [diagnosisCodes]);
+    const allMappings = icd10ServiceMappingsData as ICD10ServiceMapping[];
+    return allMappings.filter((m) => diagnosisCodes.includes(m.icd10Code));
+  }, [diagnosisCodes, icd10ServiceMappingsData]);
 
   const allSuggestedServices = useMemo(() => {
     const serviceMap = new Map<string, string>();
@@ -100,7 +105,7 @@ export function DiagnosisServiceSuggestion({
       <div className="flex flex-wrap gap-2">
         {allSuggestedServices.map(([serviceId, serviceName]) => {
           const isSelected = selectedServiceIds.includes(serviceId);
-          const serviceItem = getServiceItemById(serviceId);
+          const serviceItem = (serviceItemsData as ServiceItem[]).find((s) => s.id === serviceId);
           return (
             <button
               key={serviceId}

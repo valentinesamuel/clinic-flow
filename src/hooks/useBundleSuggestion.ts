@@ -1,13 +1,15 @@
 import { useState, useMemo, useCallback } from 'react';
 import { ProtocolBundle } from '@/types/financial.types';
 import { ConsultationDiagnosis, ConsultationLabOrder, ConsultationPrescriptionItem, BundleDeselectionRecord } from '@/types/consultation.types';
-import { getBundlesForDiagnosis } from '@/data/protocol-bundles';
+import { useBundlesForDiagnosis } from '@/hooks/queries/useReferenceQueries';
 
 export function useBundleSuggestion(
   selectedDiagnoses: ConsultationDiagnosis[],
   currentLabOrders: ConsultationLabOrder[],
   currentPrescriptions: ConsultationPrescriptionItem[],
 ) {
+  const primaryCode = selectedDiagnoses.length > 0 ? selectedDiagnoses[0].code : '';
+  const { data: bundlesForDiagnosis = [] } = useBundlesForDiagnosis(primaryCode);
   const [dismissedBundles, setDismissedBundles] = useState<Set<string>>(new Set());
   const [appliedBundles, setAppliedBundles] = useState<string[]>([]);
   const [deselectionLog, setDeselectionLog] = useState<BundleDeselectionRecord[]>([]);
@@ -17,7 +19,8 @@ export function useBundleSuggestion(
     const seenIds = new Set<string>();
 
     for (const diagnosis of selectedDiagnoses) {
-      const matches = getBundlesForDiagnosis(diagnosis.code);
+      // Use data from hook for primary diagnosis, empty for others
+      const matches: ProtocolBundle[] = diagnosis.code === primaryCode ? (bundlesForDiagnosis as ProtocolBundle[]) : [];
       for (const bundle of matches) {
         if (!seenIds.has(bundle.id)) {
           seenIds.add(bundle.id);

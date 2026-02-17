@@ -25,10 +25,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { getPrescriptionById, dispensePrescription } from '@/data/prescriptions';
-import { getPatientById } from '@/data/patients';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { usePrescription } from '@/hooks/queries/usePrescriptionQueries';
+import { useDispensePrescription } from '@/hooks/mutations/usePrescriptionMutations';
+import { usePatients } from '@/hooks/queries/usePatientQueries';
+import { useStaff } from '@/hooks/queries/useStaffQueries';
+import { Patient } from '@/types/patient.types';
+import { Prescription } from '@/types/clinical.types';
+import { Staff } from '@/types/staff.types';
 import {
   ArrowLeft,
   FileText,
@@ -44,7 +49,6 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { getStaffById } from '@/data/staff';
 import { DispensedItem, SubstitutionType } from '@/types/clinical.types';
 
 type PrescriptionStatus = 'pending' | 'dispensed' | 'partially_dispensed' | 'cancelled';
@@ -68,6 +72,11 @@ export default function PrescriptionDetailPage() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const { data: prescriptionData } = usePrescription(id || '');
+  const { data: allPatients = [] } = usePatients();
+  const { data: allStaff = [] } = useStaff();
+  const dispensePrescriptionMutation = useDispensePrescription();
+
   const [refreshKey, setRefreshKey] = useState(0);
   const [showDispenseDialog, setShowDispenseDialog] = useState(false);
   const [showSubstituteDialog, setShowSubstituteDialog] = useState(false);
@@ -81,9 +90,15 @@ export default function PrescriptionDetailPage() {
   const [substitutionReason, setSubstitutionReason] = useState('');
   const [substitutePharmacistNotes, setSubstitutePharmacistNotes] = useState('');
 
-  const prescription = useMemo(() => {
-    return id ? getPrescriptionById(id) : null;
-  }, [id, refreshKey]);
+  const prescription = prescriptionData as Prescription | undefined;
+
+  const getPatientById = (patientId: string): Patient | undefined => {
+    return (allPatients as Patient[]).find((p) => p.id === patientId);
+  };
+
+  const getStaffById = (staffId: string): Staff | undefined => {
+    return (allStaff as Staff[]).find((s) => s.id === staffId);
+  };
 
   const patient = prescription ? getPatientById(prescription.patientId) : null;
   const doctorName = prescription?.doctorName ?? 'Unknown';
@@ -188,7 +203,7 @@ export default function PrescriptionDetailPage() {
       isSubstituted: item.isSubstituted,
     }));
 
-    const result = dispensePrescription(prescription.id, dispensedItems, user.id, user.name);
+    const result = dispensePrescriptionMutation.mutate({ prescriptionId: prescription.id, dispensedItems, pharmacistId: user.id, pharmacistName: user.name });
 
     if (result) {
       setRefreshKey((k) => k + 1);

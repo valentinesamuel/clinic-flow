@@ -9,7 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConsultationLabOrder } from '@/types/consultation.types';
 import { LabPriority } from '@/types/clinical.types';
-import { LAB_ITEMS } from '@/data/bill-items';
+import { ServiceItem } from '@/types/billing.types';
+import { useServiceItems } from '@/hooks/queries/useBillQueries';
 import { Search, Plus, X, FlaskConical } from 'lucide-react';
 
 interface LabOrderPanelProps {
@@ -22,10 +23,13 @@ interface LabOrderPanelProps {
 }
 
 export function LabOrderPanel({ open, onOpenChange, labOrders, onAdd, onRemove, onUpdate }: LabOrderPanelProps) {
+  const { data: serviceItems = [] } = useServiceItems();
   const [searchQuery, setSearchQuery] = useState('');
   const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
 
-  const filteredTests = LAB_ITEMS.filter(item =>
+  const LAB_ITEMS = (serviceItems as ServiceItem[]).filter((item) => item.category === 'lab' || item.type === 'lab');
+
+  const filteredTests = LAB_ITEMS.filter((item) =>
     item.isActive && item.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, Phone, Mail, Globe, CheckCircle2, XCircle } from 'lucide-react';
-import { HMOClaim, WithdrawalReason } from '@/types/billing.types';
+import { HMOClaim, WithdrawalReason, HMOProviderExtended } from '@/types/billing.types';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { getHMOProviderById } from '@/data/hmo-providers';
+import { useHMOProviders } from '@/hooks/queries/useReferenceQueries';
 
 interface ClaimWithdrawalModalProps {
   open: boolean;
@@ -45,10 +45,11 @@ export function ClaimWithdrawalModal({
   const [reason, setReason] = useState<WithdrawalReason>('patient_self_pay');
   const [notes, setNotes] = useState('');
   const [confirmContact, setConfirmContact] = useState(false);
+  const { data: hmoProviders = [] } = useHMOProviders();
 
   if (!claim) return null;
 
-  const provider = getHMOProviderById(claim.hmoProviderId);
+  const provider = (hmoProviders as HMOProviderExtended[]).find((p) => p.id === claim.hmoProviderId);
   const isSubmitted = claim.status === 'submitted';
   const isProcessing = claim.status === 'processing';
   const isApproved = claim.status === 'approved';
@@ -58,7 +59,7 @@ export function ClaimWithdrawalModal({
   const needsRetraction = isProcessing || isApproved;
   const canInstantCancel = isSubmitted;
 
-  const handleSubmit = () => {
+  const handleSubmit = (): void => {
     if (needsRetraction) {
       onRequestRetraction(reason, notes);
     } else {
@@ -68,7 +69,7 @@ export function ClaimWithdrawalModal({
     resetForm();
   };
 
-  const resetForm = () => {
+  const resetForm = (): void => {
     setReason('patient_self_pay');
     setNotes('');
     setConfirmContact(false);

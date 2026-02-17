@@ -14,21 +14,22 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
-import { getMedicalStaff, getDoctors, getNurses } from '@/data/staff';
-import { getLabResultsForReview, getUrgentLabOrders } from '@/data/lab-orders';
-import { getQueueByType, getWaitingCount } from '@/data/queue';
+import { useStaff, useDoctors, useNurses } from '@/hooks/queries/useStaffQueries';
+import { useLabResultsForReview, useUrgentLabOrders } from '@/hooks/queries/useLabQueries';
+import { useQueueByType } from '@/hooks/queries/useQueueQueries';
+import { getWaitingCount } from '@/data/queue';
 
 export default function ClinicalLeadDashboard() {
   const { user } = useAuth();
   const { canViewFinancialData } = usePermissions({ userRole: user?.role });
 
-  const medicalStaff = getMedicalStaff();
-  const doctors = getDoctors();
-  const nurses = getNurses();
-  const labResultsForReview = getLabResultsForReview();
-  const urgentLabOrders = getUrgentLabOrders();
-  const triageQueue = getQueueByType('triage');
-  const doctorQueue = getQueueByType('doctor');
+  const { data: medicalStaff = [] } = useStaff();
+  const { data: doctors = [] } = useDoctors();
+  const { data: nurses = [] } = useNurses();
+  const { data: labResultsForReview = [] } = useLabResultsForReview();
+  const { data: urgentLabOrders = [] } = useUrgentLabOrders();
+  const { data: triageQueue = [] } = useQueueByType('triage');
+  const { data: doctorQueue = [] } = useQueueByType('doctor');
 
   return (
     <DashboardLayout allowedRoles={['clinical_lead']}>

@@ -2,7 +2,6 @@
 
 import { format, formatDistanceToNow } from 'date-fns';
 import { Patient } from '@/types/patient.types';
-import { calculateAge } from '@/data/patients';
 import { PAGINATION } from '@/constants/designSystem';
 
 // Atomic components

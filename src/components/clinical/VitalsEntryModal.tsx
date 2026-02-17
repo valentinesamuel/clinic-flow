@@ -142,13 +142,13 @@ export function VitalsEntryModal({
     }
   };
 
-  const getStatusBadge = (field: string, value: number | undefined) => {
+  const getStatusBadge = (field: string, value: number | undefined): JSX.Element | null => {
     if (value === undefined) return null;
-    const status = getVitalStatus(field as any, value);
+    const status = getVitalStatus(field as keyof Pick<VitalSigns, 'bloodPressureSystolic' | 'bloodPressureDiastolic' | 'temperature' | 'pulse' | 'respiratoryRate' | 'oxygenSaturation'>, value);
     if (status.status === 'normal') return null;
     return (
-      <Badge 
-        variant="outline" 
+      <Badge
+        variant="outline"
         className={cn(
           "text-[10px] ml-2",
           status.status === 'warning' && "text-yellow-600 border-yellow-600",

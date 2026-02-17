@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PatientRegistrationForm } from '@/components/patients/PatientRegistrationForm';
 import { Patient } from '@/types/patient.types';
-import { getPatientById } from '@/data/patients';
+import { usePatient } from '@/hooks/queries/usePatientQueries';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, ArrowLeft } from 'lucide-react';
@@ -14,7 +14,7 @@ export default function PatientEditPage() {
   const { user } = useAuth();
   const basePath = `/${user?.role?.replace('_', '-') || 'receptionist'}`;
 
-  const patient = id ? getPatientById(id) : undefined;
+  const { data: patient } = usePatient(id ?? '');
 
   const handleSuccess = (updatedPatient: Patient) => {
     navigate(`${basePath}/patients/${updatedPatient.id}`);

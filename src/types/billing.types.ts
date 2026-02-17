@@ -266,3 +266,87 @@ export interface NigerianBank {
   name: string;
   code: string;
 }
+
+// Service Item Types
+export interface ServiceItem {
+  id: string;
+  name: string;
+  category: ServiceCategory;
+  defaultPrice: number;
+  isActive: boolean;
+  description?: string;
+  isPremium?: boolean;
+  isRestricted?: boolean;
+  restrictionReason?: string;
+}
+
+// Filter Types
+export interface BillFilters {
+  status?: Bill['status'];
+  department?: BillingDepartment;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+}
+
+export interface ClaimFilters {
+  status?: HMOClaim['status'];
+  providerId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+}
+
+export interface PaymentFilters {
+  method?: PaymentMethod;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+}
+
+// Payment Record Types
+export interface PaymentRecord {
+  id: string;
+  receiptNumber: string;
+  patientId: string;
+  patientName: string;
+  patientMrn: string;
+  billId: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+  referenceNumber?: string;
+  bank?: string;
+  cashierId: string;
+  cashierName: string;
+  createdAt: string;
+  items: {
+    description: string;
+    category: ServiceCategory;
+    amount: number;
+  }[];
+}
+
+// HMO Provider Extended Types
+export interface HMOProviderExtended extends HMOProvider {
+  portalUrl?: string;
+  relationshipManagerPhone?: string;
+  claimsEmail?: string;
+  retractionEmail?: string;
+}
+
+// HMO Service Coverage Filter Types
+export interface CoverageFilters {
+  hmoProviderId?: string;
+  serviceCategory?: ServiceCategory;
+  search?: string;
+  coverageType?: HMOCoverageType;
+  requiresPreAuth?: boolean;
+}
+
+export interface PaginatedCoverageResponse {
+  data: HMOServiceCoverage[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  pageSize: number;
+}

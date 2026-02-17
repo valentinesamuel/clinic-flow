@@ -37,8 +37,9 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { useToast } from '@/hooks/use-toast';
-import { mockLabOrders, updateLabOrderStatus, getTestCatalogEntry } from '@/data/lab-orders';
-import { LabOrder, LabPriority } from '@/types/clinical.types';
+import { useLabOrders, useTestCatalog } from '@/hooks/queries/useLabQueries';
+import { useUpdateLabOrderStatus } from '@/hooks/mutations/useLabMutations';
+import { LabOrder, LabPriority, TestCatalogEntry } from '@/types/clinical.types';
 import { MetadataEditor } from '@/components/molecules/lab/MetadataEditor';
 import { PAGINATION } from '@/constants/designSystem';
 
@@ -57,6 +58,9 @@ interface TestResult {
 export default function ResultsEntryPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { data: mockLabOrders = [] } = useLabOrders();
+  const { data: testCatalogData = [] } = useTestCatalog();
+  const updateLabOrderStatusMutation = useUpdateLabOrderStatus();
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -67,8 +71,12 @@ export default function ResultsEntryPage() {
   const [selectedOrder, setSelectedOrder] = useState<LabOrder | null>(null);
   const [resultsData, setResultsData] = useState<Record<string, TestResult>>({});
 
+  const getTestCatalogEntry = (testCode: string): TestCatalogEntry | undefined => {
+    return testCatalogData.find((t) => t.testCode === testCode);
+  };
+
   // Get lab orders with status 'processing' or 'sample_collected'
-  const labOrders = useMemo(() => {
+  const labOrders = useMemo((): LabOrder[] => {
     let filtered = mockLabOrders.filter(
       order => order.status === 'processing' || order.status === 'sample_collected'
     );
@@ -102,7 +110,7 @@ export default function ResultsEntryPage() {
     });
 
     return filtered;
-  }, [searchTerm, statusFilter, priorityFilter, refreshKey]);
+  }, [mockLabOrders, searchTerm, statusFilter, priorityFilter, refreshKey]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -113,21 +121,21 @@ export default function ResultsEntryPage() {
       awaitingResults: allOrders.filter(order => order.status === 'sample_collected').length,
       inProcessing: allOrders.filter(order => order.status === 'processing').length,
     };
-  }, [refreshKey]);
+  }, [mockLabOrders, refreshKey]);
 
   // Completed results pending submission to doctor
-  const pendingSubmission = useMemo(() => {
+  const pendingSubmission = useMemo((): LabOrder[] => {
     return mockLabOrders.filter(
       order => order.status === 'completed' && !order.isSubmittedToDoctor
     );
-  }, [refreshKey]);
+  }, [mockLabOrders, refreshKey]);
 
   // Pagination
   const totalPages = Math.ceil(labOrders.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedOrders = labOrders.slice(startIndex, startIndex + itemsPerPage);
 
-  const handleOpenResultsDialog = (order: LabOrder) => {
+  const handleOpenResultsDialog = (order: LabOrder): void => {
     setSelectedOrder(order);
 
     // Initialize results data with existing results, falling back to catalog defaults
@@ -153,7 +161,7 @@ export default function ResultsEntryPage() {
     setResultsDialogOpen(true);
   };
 
-  const handleResultChange = (testCode: string, field: keyof TestResult, value: string | boolean) => {
+  const handleResultChange = (testCode: string, field: keyof TestResult, value: string | boolean): void => {
     setResultsData(prev => ({
       ...prev,
       [testCode]: {
@@ -163,7 +171,7 @@ export default function ResultsEntryPage() {
     }));
   };
 
-  const handleMetadataChange = (testCode: string, metadata: Record<string, string>) => {
+  const handleMetadataChange = (testCode: string, metadata: Record<string, string>): void => {
     setResultsData(prev => ({
       ...prev,
       [testCode]: {
@@ -173,7 +181,7 @@ export default function ResultsEntryPage() {
     }));
   };
 
-  const handleSubmitResults = () => {
+  const handleSubmitResults = (): void => {
     if (!selectedOrder) return;
 
     // Update the order's tests with the results
@@ -189,7 +197,10 @@ export default function ResultsEntryPage() {
       }
     });
 
-    updateLabOrderStatus(selectedOrder.id, 'completed');
+    updateLabOrderStatusMutation.mutate({
+      orderId: selectedOrder.id,
+      status: 'completed'
+    });
     selectedOrder.isSubmittedToDoctor = false;
     setRefreshKey(k => k + 1);
     setResultsDialogOpen(false);
@@ -201,7 +212,7 @@ export default function ResultsEntryPage() {
     });
   };
 
-  const getPriorityBadge = (priority: LabPriority) => {
+  const getPriorityBadge = (priority: LabPriority): JSX.Element => {
     switch (priority) {
       case 'stat':
         return <Badge variant="destructive">STAT</Badge>;
@@ -212,7 +223,7 @@ export default function ResultsEntryPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string): JSX.Element => {
     switch (status) {
       case 'sample_collected':
         return <Badge variant="outline" className="bg-blue-50">Sample Collected</Badge>;
@@ -223,12 +234,12 @@ export default function ResultsEntryPage() {
     }
   };
 
-  const handlePageSizeChange = (size: number) => {
+  const handlePageSizeChange = (size: number): void => {
     setItemsPerPage(size);
     setCurrentPage(1);
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = (): void => {
     setRefreshKey(k => k + 1);
     toast({
       title: 'Refreshed',

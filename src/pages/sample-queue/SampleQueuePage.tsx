@@ -25,7 +25,8 @@ import {
 } from '@/components/ui/table';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { useToast } from '@/hooks/use-toast';
-import { mockLabOrders, updateLabOrderStatus } from '@/data/lab-orders';
+import { useLabOrders } from '@/hooks/queries/useLabQueries';
+import { useUpdateLabOrderStatus } from '@/hooks/mutations/useLabMutations';
 import { LabOrder, LabOrderStatus, LabPriority } from '@/types/clinical.types';
 import { PAGINATION } from '@/constants/designSystem';
 
@@ -34,6 +35,8 @@ type PriorityFilter = 'all' | 'stat' | 'urgent' | 'routine';
 
 export default function SampleQueuePage() {
   const { toast } = useToast();
+  const { data: mockLabOrders = [] } = useLabOrders();
+  const updateLabOrderStatusMutation = useUpdateLabOrderStatus();
   const [refreshKey, setRefreshKey] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -42,7 +45,7 @@ export default function SampleQueuePage() {
   const [itemsPerPage, setItemsPerPage] = useState<number>(PAGINATION.defaultPageSize);
 
   // Get lab orders with status 'ordered' or 'sample_collected'
-  const labOrders = useMemo(() => {
+  const labOrders = useMemo((): LabOrder[] => {
     let filtered = mockLabOrders.filter(
       order => order.status === 'ordered' || order.status === 'sample_collected'
     );
@@ -76,7 +79,7 @@ export default function SampleQueuePage() {
     });
 
     return filtered;
-  }, [searchTerm, statusFilter, priorityFilter, refreshKey]);
+  }, [mockLabOrders, searchTerm, statusFilter, priorityFilter, refreshKey]);
 
   // Calculate statistics
   const stats = useMemo(() => {
@@ -88,15 +91,18 @@ export default function SampleQueuePage() {
       samplesCollected: allOrders.filter(order => order.status === 'sample_collected').length,
       statOrders: allOrders.filter(order => order.priority === 'stat').length,
     };
-  }, [refreshKey]);
+  }, [mockLabOrders, refreshKey]);
 
   // Pagination
   const totalPages = Math.ceil(labOrders.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedOrders = labOrders.slice(startIndex, startIndex + itemsPerPage);
 
-  const handleCollectSample = (order: LabOrder) => {
-    updateLabOrderStatus(order.id, 'sample_collected');
+  const handleCollectSample = (order: LabOrder): void => {
+    updateLabOrderStatusMutation.mutate({
+      orderId: order.id,
+      status: 'sample_collected'
+    });
     setRefreshKey(k => k + 1);
     toast({
       title: 'Sample Collected',
@@ -104,8 +110,11 @@ export default function SampleQueuePage() {
     });
   };
 
-  const handleProcess = (order: LabOrder) => {
-    updateLabOrderStatus(order.id, 'processing');
+  const handleProcess = (order: LabOrder): void => {
+    updateLabOrderStatusMutation.mutate({
+      orderId: order.id,
+      status: 'processing'
+    });
     setRefreshKey(k => k + 1);
     toast({
       title: 'Processing Started',
@@ -113,7 +122,7 @@ export default function SampleQueuePage() {
     });
   };
 
-  const getPriorityBadge = (priority: LabPriority) => {
+  const getPriorityBadge = (priority: LabPriority): JSX.Element => {
     switch (priority) {
       case 'stat':
         return <Badge variant="destructive">STAT</Badge>;
@@ -124,7 +133,7 @@ export default function SampleQueuePage() {
     }
   };
 
-  const getStatusBadge = (status: LabOrderStatus) => {
+  const getStatusBadge = (status: LabOrderStatus): JSX.Element => {
     switch (status) {
       case 'ordered':
         return <Badge variant="outline">Ordered</Badge>;
@@ -135,12 +144,12 @@ export default function SampleQueuePage() {
     }
   };
 
-  const handlePageSizeChange = (size: number) => {
+  const handlePageSizeChange = (size: number): void => {
     setItemsPerPage(size);
     setCurrentPage(1);
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = (): void => {
     setRefreshKey(k => k + 1);
     toast({
       title: 'Refreshed',

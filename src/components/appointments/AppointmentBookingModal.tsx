@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, User, Clock, AlertCircle } from 'lucide-react';
-import { Appointment, AppointmentType } from '@/types/clinical.types';
+import { Appointment, AppointmentType, AppointmentInput } from '@/types/clinical.types';
 import { Patient } from '@/types/patient.types';
-import { searchPatients, getPatientById } from '@/data/patients';
-import { mockAppointments, createAppointment } from '@/data/appointments';
-import { getDoctors } from '@/data/staff';
+import { usePatientSearch, usePatient } from '@/hooks/queries/usePatientQueries';
+import { useDoctors } from '@/hooks/queries/useStaffQueries';
+import { useAppointments } from '@/hooks/queries/useAppointmentQueries';
+import { useCreateAppointment } from '@/hooks/mutations/useAppointmentMutations';
 import { TimeSlotPicker } from './TimeSlotPicker';
 import { DoctorSelector } from './DoctorSelector';
 import { Button } from '@/components/ui/button';
@@ -73,11 +74,28 @@ export function AppointmentBookingModal({
   onSuccess,
 }: AppointmentBookingModalProps) {
   const { toast } = useToast();
-  
+
   // Form state
   const [step, setStep] = useState(1);
   const [patientSearch, setPatientSearch] = useState('');
-  const [searchResults, setSearchResults] = useState<Patient[]>([]);
+
+  // Fetch patient by ID if provided
+  const { data: initialPatient } = usePatient(initialPatientId || '');
+
+  // Fetch patient search results
+  const { data: patientSearchResults } = usePatientSearch(patientSearch);
+  const searchResults = patientSearchResults || [];
+
+  // Fetch doctors
+  const { data: doctorsData } = useDoctors();
+  const doctors = doctorsData || [];
+
+  // Fetch all appointments for time slot checking
+  const { data: appointmentsData } = useAppointments();
+  const appointments = appointmentsData || [];
+
+  // Create appointment mutation
+  const createAppointmentMutation = useCreateAppointment();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(initialDate || new Date());
   const [selectedTime, setSelectedTime] = useState<string | undefined>(initialTime);
@@ -92,24 +110,11 @@ export function AppointmentBookingModal({
 
   // Load initial patient if provided
   useEffect(() => {
-    if (initialPatientId) {
-      const patient = getPatientById(initialPatientId);
-      if (patient) {
-        setSelectedPatient(patient);
-        setStep(2);
-      }
+    if (initialPatient) {
+      setSelectedPatient(initialPatient);
+      setStep(2);
     }
-  }, [initialPatientId]);
-
-  // Search patients
-  useEffect(() => {
-    if (patientSearch.length >= 2) {
-      const results = searchPatients(patientSearch);
-      setSearchResults(results);
-    } else {
-      setSearchResults([]);
-    }
-  }, [patientSearch]);
+  }, [initialPatient]);
 
   // Update duration when type changes
   useEffect(() => {
@@ -122,7 +127,6 @@ export function AppointmentBookingModal({
   const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient);
     setPatientSearch('');
-    setSearchResults([]);
     setPatientPopoverOpen(false);
   };
 
@@ -137,11 +141,11 @@ export function AppointmentBookingModal({
     }
 
     setIsSubmitting(true);
-    
+
     try {
-      const doctor = getDoctors().find(d => d.id === selectedDoctorId);
-      
-      const newAppointment = createAppointment({
+      const doctor = doctors.find(d => d.id === selectedDoctorId);
+
+      const appointmentData: AppointmentInput = {
         patientId: selectedPatient.id,
         patientName: `${selectedPatient.firstName} ${selectedPatient.lastName}`,
         patientMrn: selectedPatient.mrn,
@@ -153,7 +157,9 @@ export function AppointmentBookingModal({
         duration,
         reasonForVisit,
         notes: notes || undefined,
-      });
+      };
+
+      const newAppointment = await createAppointmentMutation.mutateAsync(appointmentData);
 
       toast({
         title: 'Appointment Booked',
@@ -162,7 +168,7 @@ export function AppointmentBookingModal({
 
       onSuccess?.(newAppointment);
       onOpenChange(false);
-      
+
       // Reset form
       setStep(1);
       setSelectedPatient(null);
@@ -328,7 +334,7 @@ export function AppointmentBookingModal({
                     doctorId={selectedDoctorId}
                     duration={duration}
                     selectedTime={selectedTime}
-                    existingAppointments={mockAppointments}
+                    existingAppointments={appointments}
                     onSelect={setSelectedTime}
                   />
                 </div>

@@ -153,3 +153,15 @@ export function getDepartmentVariant(department: BillingDepartment): 'default' |
   };
   return variants[department];
 }
+
+/**
+ * Service category display labels
+ */
+export const SERVICE_CATEGORY_LABELS: Record<ServiceCategory, string> = {
+  consultation: 'Consultation',
+  lab: 'Lab & Imaging',
+  pharmacy: 'Pharmacy',
+  procedure: 'Procedures',
+  admission: 'Admission',
+  other: 'Other',
+};

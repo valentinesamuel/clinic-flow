@@ -8,7 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { nigerianStates } from '@/data/nigerian-locations';
+import { useNigerianStates } from '@/hooks/queries/useReferenceQueries';
+import { StateOption } from '@/data/nigerian-locations';
 
 interface StateSelectorProps {
   label?: string;
@@ -35,6 +36,8 @@ export const StateSelector = forwardRef<HTMLButtonElement, StateSelectorProps>(
     },
     ref
   ) => {
+    const { data: nigerianStates = [] } = useNigerianStates();
+
     return (
       <div className="space-y-2">
         {label && (
@@ -51,7 +54,7 @@ export const StateSelector = forwardRef<HTMLButtonElement, StateSelectorProps>(
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent className="max-h-[300px] bg-popover">
-            {nigerianStates.map((state) => (
+            {nigerianStates.map((state: StateOption) => (
               <SelectItem key={state.value} value={state.value}>
                 {state.label}
               </SelectItem>

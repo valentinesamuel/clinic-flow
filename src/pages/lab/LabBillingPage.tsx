@@ -20,8 +20,8 @@ import { BillCreationForm } from '@/components/billing/organisms/bill-creation/B
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { Bill, BillStatus } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
-import { getBillsPaginated, getPendingBillsByDepartment } from '@/data/bills';
-import { getPatientById } from '@/data/patients';
+import { useBills } from '@/hooks/queries/useBillQueries';
+import { usePatient } from '@/hooks/queries/usePatientQueries';
 import { Search, Receipt, ArrowLeft, Plus, TestTube, QrCode } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateBillingCode } from '@/utils/billingDepartment';
@@ -53,35 +53,37 @@ export default function LabBillingPage() {
   const [showBillCreation, setShowBillCreation] = useState(false);
 
   // Fetch bills with department filter
-  const { data: bills, total, totalPages } = getBillsPaginated(currentPage, pageSize, {
+  const { data: allBills = [] } = useBills({
     department: 'lab',
     status: statusFilter !== 'all' ? statusFilter : undefined,
     search: searchQuery || undefined,
   });
+  const total = allBills.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const bills = allBills.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Stats for lab
-  const pendingLabBills = getPendingBillsByDepartment('lab');
-  const totalPending = pendingLabBills.reduce((sum, b) => sum + b.balance, 0);
+  const { data: pendingLabBills = [] } = useBills({ department: 'lab', status: 'pending' });
+  const totalPending = pendingLabBills.reduce((sum: number, b: Bill) => sum + b.balance, 0);
 
-  const handleView = (bill: Bill) => {
-    const patient = getPatientById(bill.patientId) || null;
+  const handleView = (bill: Bill): void => {
     setDetailsBill(bill);
-    setDetailsPatient(patient);
+    setDetailsPatient(null);
     setShowBillDetails(true);
   };
 
-  const handleRowClick = (bill: Bill) => {
+  const handleRowClick = (bill: Bill): void => {
     handleView(bill);
   };
 
-  const handlePrint = (bill: Bill) => {
+  const handlePrint = (bill: Bill): void => {
     toast({
       title: 'Print',
       description: `Printing ${bill.billNumber}`,
     });
   };
 
-  const handleGenerateCode = (bill: Bill) => {
+  const handleGenerateCode = (bill: Bill): void => {
     const code = generateBillingCode();
     toast({
       title: 'Billing Code Generated',
@@ -96,7 +98,7 @@ export default function LabBillingPage() {
     });
   };
 
-  const handleBillCreated = (bill: Partial<Bill>) => {
+  const handleBillCreated = (bill: Partial<Bill>): void => {
     toast({
       title: 'Bill Created',
       description: `Bill for ${bill.patientName} has been created`,

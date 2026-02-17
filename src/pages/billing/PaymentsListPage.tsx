@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { PaymentsTable } from "@/components/billing/organisms/tables/PaymentsTable";
 import { QueuePagination } from "@/components/molecules/queue/QueuePagination";
-import { PaymentMethod } from "@/types/billing.types";
+import { PaymentMethod, Bill } from "@/types/billing.types";
 import {
   PaymentRecord,
   getPaymentsPaginated,
@@ -41,7 +41,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { getUserBillingDepartment } from "@/utils/billingDepartment";
-import { getBillById } from "@/data/bills";
+import { useBills } from "@/hooks/queries/useBillQueries";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-NG", {
@@ -58,6 +58,10 @@ export default function PaymentsListPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const userDepartment = user ? getUserBillingDepartment(user) : 'all';
+
+  // Fetch bills data for bill lookups
+  const { data: billsData = [] } = useBills();
+  const getBillById = (billId: string) => (billsData as Bill[]).find((b: Bill) => b.id === billId);
 
   const initialMethod = searchParams.get("method") as PaymentMethod | null;
   const [searchQuery, setSearchQuery] = useState("");

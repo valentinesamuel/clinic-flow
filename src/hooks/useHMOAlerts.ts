@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { VitalSigns } from '@/types/clinical.types';
-import { ConsultationDiagnosis, ConsultationLabOrder } from '@/types/consultation.types';
-import { evaluateHMORules, HMOAlertResult } from '@/data/hmo-rules';
+import { ConsultationDiagnosis, ConsultationLabOrder, HMOAlertResult, HMORule } from '@/types/consultation.types';
+import { useHMORules } from '@/hooks/queries/useReferenceQueries';
 
 export function useHMOAlerts(
   hmoProviderId: string | undefined,
@@ -9,10 +9,26 @@ export function useHMOAlerts(
   vitals: VitalSigns | null | undefined,
   labOrders: ConsultationLabOrder[],
 ) {
+  const { data: hmoRules = [] } = useHMORules();
+
   const alerts = useMemo((): HMOAlertResult[] => {
     if (!hmoProviderId) return [];
-    return evaluateHMORules(hmoProviderId, diagnoses, vitals, labOrders);
-  }, [hmoProviderId, diagnoses, vitals, labOrders]);
+    // Evaluate rules from hook data
+    return (hmoRules as HMORule[]).map((rule: HMORule) => {
+      let passed = true;
+      let actualValue: unknown;
+
+      if (rule.type === 'diagnosis_required' && diagnoses.length === 0) {
+        passed = false;
+      } else if (rule.type === 'vitals_required' && !vitals) {
+        passed = false;
+      } else if (rule.type === 'lab_required' && labOrders.length === 0) {
+        passed = false;
+      }
+
+      return { rule, passed, actualValue };
+    });
+  }, [hmoProviderId, diagnoses, vitals, labOrders, hmoRules]);
 
   return { alerts };
 }

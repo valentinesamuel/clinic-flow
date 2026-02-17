@@ -13,8 +13,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getLabOrdersByPatient } from '@/data/lab-orders';
+import { useLabOrdersByPatient } from '@/hooks/queries/useLabQueries';
 import { useAuth } from '@/hooks/useAuth';
+import type { LabOrder } from '@/types/clinical.types';
 
 const PatientLabResultsPage = () => {
   const { user } = useAuth();
@@ -23,16 +24,17 @@ const PatientLabResultsPage = () => {
   // For demo purposes, use hardcoded patient ID
   const patientId = 'pat-001';
 
-  const labOrders = useMemo(() => {
-    const orders = getLabOrdersByPatient(patientId);
-    return orders.filter(order => order.status === 'completed');
-  }, [patientId]);
+  const { data: patientLabOrders = [] } = useLabOrdersByPatient(patientId);
 
-  const toggleExpand = (orderId: string) => {
+  const labOrders = useMemo((): LabOrder[] => {
+    return patientLabOrders.filter(order => order.status === 'completed');
+  }, [patientLabOrders]);
+
+  const toggleExpand = (orderId: string): void => {
     setExpandedOrderId(prev => (prev === orderId ? null : orderId));
   };
 
-  const hasAbnormalResults = (orderId: string) => {
+  const hasAbnormalResults = (orderId: string): boolean => {
     const order = labOrders.find(o => o.id === orderId);
     return order?.tests.some(test => test.isAbnormal) ?? false;
   };

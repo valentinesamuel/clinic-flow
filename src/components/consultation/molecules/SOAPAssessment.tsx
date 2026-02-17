@@ -8,7 +8,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { SOAPSectionHeader } from '../atoms/SOAPSectionHeader';
 import { DiagnosisBadge } from '../atoms/DiagnosisBadge';
 import { ConsultationDiagnosis } from '@/types/consultation.types';
-import { searchICD10, getCommonICD10Codes, ICD10Code } from '@/data/icd10-codes';
+import type { ICD10Code } from '@/types/clinical.types';
+import { useICD10Search, useCommonICD10 } from '@/hooks/queries/useReferenceQueries';
 import { Stethoscope, Plus, Search } from 'lucide-react';
 
 interface SOAPAssessmentProps {
@@ -23,11 +24,14 @@ export function SOAPAssessment({ selectedDiagnoses, onAdd, onRemove, onSetPrimar
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const { data: icd10SearchResults = [] } = useICD10Search(searchQuery.length >= 2 ? searchQuery : '');
+  const { data: commonICD10Codes = [] } = useCommonICD10();
+
   const searchResults = searchQuery.length >= 2
-    ? searchICD10(searchQuery).filter(c => !selectedDiagnoses.some(d => d.code === c.code))
+    ? (icd10SearchResults as ICD10Code[]).filter(c => !selectedDiagnoses.some(d => d.code === c.code))
     : [];
 
-  const commonCodes = getCommonICD10Codes().filter(
+  const commonCodes = (commonICD10Codes as ICD10Code[]).filter(
     c => !selectedDiagnoses.some(d => d.code === c.code)
   );
 

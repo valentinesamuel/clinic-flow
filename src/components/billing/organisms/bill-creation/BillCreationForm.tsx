@@ -31,22 +31,23 @@ import {
 import { cn } from '@/lib/utils';
 
 import { Patient } from '@/types/patient.types';
-import { BillItem, ServiceCategory, Bill } from '@/types/billing.types';
-import { searchPatients } from '@/data/patients';
-import {
-  ServiceItem,
-  CONSULTATION_ITEMS,
-  LAB_ITEMS,
-  PHARMACY_ITEMS,
-  PROCEDURE_ITEMS,
-  OTHER_ITEMS,
-  SERVICE_CATEGORY_LABELS,
-} from '@/data/bill-items';
+import { BillItem, ServiceCategory, Bill, ServiceItem, HMOClaim } from '@/types/billing.types';
+import { usePatientSearch } from '@/hooks/queries/usePatientQueries';
+import { useServiceItems } from '@/hooks/queries/useBillQueries';
+
+const SERVICE_CATEGORY_LABELS: Record<string, string> = {
+  consultation: 'Consultation',
+  lab: 'Lab',
+  pharmacy: 'Pharmacy',
+  procedure: 'Procedure',
+  admission: 'Admission',
+  other: 'Other',
+};
 import { InsuranceBadge } from '@/components/atoms/display/InsuranceBadge';
 import { HMOBillSummary } from '@/components/billing/molecules/hmo/HMOBillSummary';
 import { HMOItemStatusBadge } from '@/components/atoms/display/HMOItemStatusBadge';
 import { calculateBillCoverage } from '@/utils/hmoCoverage';
-import { mockClaims } from '@/data/claims';
+import { useClaims } from '@/hooks/queries/useClaimQueries';
 import { HMOClaimExistencePopup } from '@/components/billing/organisms/hmo-bill-check/HMOClaimExistencePopup';
 
 interface BillCreationFormProps {
@@ -102,15 +103,6 @@ function StepIndicator({ step, currentStep, label }: { step: number; currentStep
   );
 }
 
-const categoryItems: Record<ServiceCategory, ServiceItem[]> = {
-  consultation: CONSULTATION_ITEMS,
-  lab: LAB_ITEMS,
-  pharmacy: PHARMACY_ITEMS,
-  procedure: PROCEDURE_ITEMS,
-  admission: [],
-  other: OTHER_ITEMS,
-};
-
 export function BillCreationForm({
   open,
   onOpenChange,
@@ -128,16 +120,34 @@ export function BillCreationForm({
   const [notes, setNotes] = useState('');
   const [visitReason, setVisitReason] = useState('');
   const [showHMOClaimPopup, setShowHMOClaimPopup] = useState(false);
-  const [existingClaim, setExistingClaim] = useState<typeof mockClaims[0] | null>(null);
+  const [existingClaim, setExistingClaim] = useState<HMOClaim | null>(null);
   const [isWalkIn, setIsWalkIn] = useState(false);
   const [walkInName, setWalkInName] = useState('');
   const [walkInPhone, setWalkInPhone] = useState('');
 
+  // Hooks must be at top level
+  const { data: patientSearchResults = [] } = usePatientSearch(patientSearchQuery.length >= 2 ? patientSearchQuery : '');
+  const { data: serviceItemsData = [] } = useServiceItems();
+  const { data: claimsData = [] } = useClaims();
+
   // Search patients
   const patientResults = useMemo(() => {
     if (patientSearchQuery.length < 2) return [];
-    return searchPatients(patientSearchQuery).slice(0, 10);
-  }, [patientSearchQuery]);
+    return (patientSearchResults as Patient[]).slice(0, 10);
+  }, [patientSearchQuery, patientSearchResults]);
+
+  // Build category items from hook data
+  const categoryItems: Record<ServiceCategory, ServiceItem[]> = useMemo(() => {
+    const items = serviceItemsData as ServiceItem[];
+    return {
+      consultation: items.filter((i: ServiceItem) => i.category === 'consultation'),
+      lab: items.filter((i: ServiceItem) => i.category === 'lab'),
+      pharmacy: items.filter((i: ServiceItem) => i.category === 'pharmacy'),
+      procedure: items.filter((i: ServiceItem) => i.category === 'procedure'),
+      admission: [],
+      other: items.filter((i: ServiceItem) => i.category === 'other'),
+    };
+  }, [serviceItemsData]);
 
   // Filter items by search
   const filteredItems = useMemo(() => {
@@ -180,8 +190,8 @@ export function BillCreationForm({
 
     // Check for existing pending HMO claims
     if (patient.paymentType === 'hmo') {
-      const pendingClaim = mockClaims.find(
-        (c) => c.patientId === patient.id && ['draft', 'submitted', 'processing'].includes(c.status)
+      const pendingClaim = (claimsData as HMOClaim[]).find(
+        (c: HMOClaim) => c.patientId === patient.id && ['draft', 'submitted', 'processing'].includes(c.status)
       );
       if (pendingClaim) {
         setExistingClaim(pendingClaim);

@@ -1,8 +1,10 @@
 import ReportEmbedPage from './ReportEmbedPage';
-import { reportMetadata } from '@/data/reports';
+import { useReportMetadata } from '@/hooks/queries/useReportQueries';
+import { DashboardMetadata } from '@/types/report.types';
 
 export default function SurgeryReportPage() {
-  const metadata = reportMetadata.surgery;
+  const { data: allMetadata } = useReportMetadata();
+  const metadata: DashboardMetadata = allMetadata?.surgery ?? { title: 'Surgery Report', description: '', metrics: [] };
 
   return (
     <ReportEmbedPage

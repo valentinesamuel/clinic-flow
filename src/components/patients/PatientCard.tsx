@@ -1,7 +1,6 @@
 // PatientCard - Refactored to use atomic components
 
 import { Patient } from '@/types/patient.types';
-import { calculateAge } from '@/data/patients';
 
 // Atomic components
 import { PatientNumber } from '@/components/atoms/display/PatientNumber';

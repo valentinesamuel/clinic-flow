@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import {
   User,
@@ -16,7 +16,7 @@ import {
   FileImage,
 } from 'lucide-react';
 import { HMOClaim, ClaimDocument } from '@/types/billing.types';
-import { getBillById } from '@/data/bills';
+import { useBills } from '@/hooks/queries/useBillQueries';
 import { ClaimVersionHistory } from '@/components/billing/molecules/claim/ClaimVersionHistory';
 import { DocumentList } from '@/components/billing/molecules/documents/DocumentList';
 import { HMOItemStatusBadge } from '@/components/atoms/display/HMOItemStatusBadge';
@@ -101,17 +101,15 @@ export function ClaimDetailView({
   onMarkPaid,
   onWithdraw,
 }: ClaimDetailViewProps) {
-  const [linkedBills, setLinkedBills] = useState<Bill[]>([]);
+  const { data: allBills = [] } = useBills();
   const [previewDocument, setPreviewDocument] = useState<ClaimDocument | null>(null);
 
-  useEffect(() => {
-    if (claim.billIds && claim.billIds.length > 0) {
-      const bills = claim.billIds.map(id => getBillById(id)).filter(Boolean) as Bill[];
-      setLinkedBills(bills);
-    }
-  }, [claim.billIds]);
+  const linkedBills = useMemo(() => {
+    if (!claim.billIds || claim.billIds.length === 0) return [];
+    return (allBills as Bill[]).filter((b) => claim.billIds.includes(b.id));
+  }, [claim.billIds, allBills]);
 
-  const renderActionButtons = () => {
+  const renderActionButtons = (): JSX.Element[] => {
     const buttons: JSX.Element[] = [];
 
     switch (claim.status) {

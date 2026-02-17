@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Patient } from '@/types/patient.types';
-import { mockPatients } from '@/data/patients';
+import { usePatientSearch as usePatientSearchQuery } from '@/hooks/queries/usePatientQueries';
 
 const RECENT_SEARCHES_KEY = 'hms_recent_patient_searches';
 const MAX_RECENT_SEARCHES = 10;
@@ -28,7 +28,6 @@ export function usePatientSearch(
 
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
 
   // Load recent searches from localStorage
@@ -45,36 +44,20 @@ export function usePatientSearch(
 
   // Debounce query
   useEffect(() => {
-    setIsLoading(true);
     const timer = setTimeout(() => {
       setDebouncedQuery(query);
-      setIsLoading(false);
     }, debounceMs);
 
     return () => clearTimeout(timer);
   }, [query, debounceMs]);
 
-  // Search patients
+  // Search patients via API
+  const { data: searchData, isLoading } = usePatientSearchQuery(debouncedQuery);
+
   const results = useMemo(() => {
     if (!debouncedQuery.trim()) return [];
-
-    const searchTerm = debouncedQuery.toLowerCase().trim();
-
-    return mockPatients
-      .filter((patient) => {
-        const fullName = `${patient.firstName} ${patient.lastName}`.toLowerCase();
-        const mrn = patient.mrn.toLowerCase();
-        const phone = patient.phone.replace(/\D/g, '');
-        const searchPhone = searchTerm.replace(/\D/g, '');
-
-        return (
-          fullName.includes(searchTerm) ||
-          mrn.includes(searchTerm) ||
-          (searchPhone && phone.includes(searchPhone))
-        );
-      })
-      .slice(0, maxResults);
-  }, [debouncedQuery, maxResults]);
+    return ((searchData ?? []) as Patient[]).slice(0, maxResults);
+  }, [searchData, debouncedQuery, maxResults]);
 
   // Add to recent searches
   const addToRecentSearches = useCallback((term: string) => {

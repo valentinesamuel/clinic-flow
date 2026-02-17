@@ -28,17 +28,18 @@ import {
   PaymentItem,
   PaymentClearance,
   BillingDepartment,
+  Bill,
 } from "@/types/billing.types";
 import { CashierStation } from "@/types/cashier.types";
 import { Patient } from "@/types/patient.types";
-import { mockPatients } from "@/data/patients";
-import { getPendingBillsByDepartment } from "@/data/bills";
+import { useBills } from "@/hooks/queries/useBillQueries";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getUserBillingDepartment,
   getDepartmentLabel,
 } from "@/utils/billingDepartment";
+import { usePatients } from "@/hooks/queries/usePatientQueries";
 
 const deptToStation: Record<BillingDepartment, CashierStation> = {
   front_desk: "main",
@@ -63,10 +64,18 @@ export default function CashierCombinedDashboard() {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Fetch patients and bills data
+  const { data: patientsData } = usePatients();
+  const patients = patientsData?.data || [];
+  const { data: billsData = [] } = useBills();
+
   const department = user ? getUserBillingDepartment(user) : "front_desk";
   const station = deptToStation[department as BillingDepartment] || "main";
-  const pendingBills = getPendingBillsByDepartment(
-    department as BillingDepartment,
+
+  // Filter bills by department client-side
+  const pendingBills = (billsData as Bill[]).filter((bill: Bill) =>
+    (bill.status === 'pending' || bill.balance > 0) &&
+    (department === 'all' || bill.department === department)
   );
 
   const unpaidBills = pendingBills.slice(0, 4).map((bill, index) => ({
@@ -98,7 +107,7 @@ export default function CashierCombinedDashboard() {
   };
 
   const handleRecordPayment = () => {
-    const patient = mockPatients[0];
+    const patient = patients[0];
     if (patient) {
       setSelectedPatient(patient);
       setSelectedItems([]);
@@ -125,7 +134,7 @@ export default function CashierCombinedDashboard() {
   };
 
   const handleCollectBill = (billData: (typeof unpaidBills)[0]) => {
-    const patient = mockPatients.find((p) => p.id === billData.patientId);
+    const patient = patients.find((p) => p.id === billData.patientId);
     if (!patient) {
       toast({
         title: "Error",

@@ -185,3 +185,37 @@ export interface DispenseAuditEntry {
   performedByName: string;
   performedAt: string;
 }
+
+// ICD-10 Code Types
+export interface ICD10Code {
+  code: string;
+  description: string;
+  category: string;
+}
+
+// Appointment Input Types
+export interface AppointmentInput {
+  patientId: string;
+  patientName: string;
+  patientMrn: string;
+  doctorId: string;
+  doctorName: string;
+  appointmentType: AppointmentType;
+  scheduledDate: string;
+  scheduledTime: string;
+  duration: number;
+  reasonForVisit: string;
+  notes?: string;
+}
+
+export interface TimeSlot {
+  time: string;
+  available: boolean;
+}
+
+export interface DoctorAvailability {
+  doctorId: string;
+  doctorName: string;
+  availableSlots: number;
+  nextAvailable?: string;
+}

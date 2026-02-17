@@ -38,9 +38,10 @@ import { MetadataEditor } from '@/components/molecules/lab/MetadataEditor';
 import { LabQuickActionsDropdown } from '@/components/molecules/lab/LabQuickActionsDropdown';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { getLabOrderById, submitLabOrderToDoctor, updateLabTestResults, updateLabOrderStatus } from '@/data/lab-orders';
-import { getPatientById } from '@/data/patients';
-import { getEpisodesByPatientId } from '@/data/episodes';
+import { useLabOrder } from '@/hooks/queries/useLabQueries';
+import { useUpdateLabOrder, useUpdateLabOrderStatus } from '@/hooks/mutations/useLabMutations';
+import { usePatient } from '@/hooks/queries/usePatientQueries';
+import { useEpisodes } from '@/hooks/queries/useEpisodeQueries';
 
 export default function LabResultDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -55,6 +56,12 @@ export default function LabResultDetailPage() {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false);
   const [submitConfirmText, setSubmitConfirmText] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
+
+  const { data: labOrder } = useLabOrder(id || '');
+  const { data: patient } = usePatient(labOrder?.patientId || '');
+  const { data: allEpisodes = [] } = useEpisodes();
+  const updateLabOrder = useUpdateLabOrder();
+  const updateLabOrderStatus = useUpdateLabOrderStatus();
 
   const basePath = user
     ? user.role === 'hospital_admin'
@@ -71,15 +78,6 @@ export default function LabResultDetailPage() {
       ? '/receptionist'
       : `/${user.role}`
     : '';
-
-  const labOrder = useMemo(() => {
-    return id ? getLabOrderById(id) : null;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, refreshKey]);
-
-  const patient = useMemo(() => {
-    return labOrder ? getPatientById(labOrder.patientId) : null;
-  }, [labOrder]);
 
   if (!labOrder || !patient) {
     return (
@@ -105,7 +103,7 @@ export default function LabResultDetailPage() {
   const isDoctorOrLead = user?.role === 'doctor' || user?.role === 'clinical_lead';
   const isHmoPatient = patient.paymentType === 'hmo';
   const canSubmitToDoctor = isLabTech && labOrder.status === 'completed' && !labOrder.isSubmittedToDoctor;
-  const patientEpisodes = getEpisodesByPatientId(patient.id).filter(e => e.status === 'active' || e.status === 'pending_results');
+  const patientEpisodes = allEpisodes.filter(e => e.patientId === patient.id && (e.status === 'active' || e.status === 'pending_results'));
 
   const getStatusBadgeVariant = (
     status: string
@@ -177,10 +175,14 @@ export default function LabResultDetailPage() {
 
   const handleSaveEdits = () => {
     Object.entries(editedResults).forEach(([testCode, updates]) => {
-      updateLabTestResults(labOrder.id, testCode, {
-        result: updates.result,
-        techNotes: updates.techNotes,
-        metadata: updates.metadata,
+      updateLabOrder.mutate({
+        id: labOrder.id,
+        data: {
+          testCode,
+          result: updates.result,
+          techNotes: updates.techNotes,
+          metadata: updates.metadata,
+        },
       });
     });
     setIsEditing(false);
@@ -193,7 +195,10 @@ export default function LabResultDetailPage() {
 
   const handleConfirmSubmit = () => {
     if (submitConfirmText !== 'SUBMIT') return;
-    submitLabOrderToDoctor(labOrder.id);
+    updateLabOrder.mutate({
+      id: labOrder.id,
+      data: { isSubmittedToDoctor: true, submittedAt: new Date().toISOString() },
+    });
     setShowSubmitDialog(false);
     setSubmitConfirmText('');
     setRefreshKey(k => k + 1);
@@ -205,7 +210,7 @@ export default function LabResultDetailPage() {
 
   const handleCompleteLabTest = () => {
     if (!id) return;
-    updateLabOrderStatus(id, 'completed');
+    updateLabOrderStatus.mutate({ id, status: 'completed' });
     setRefreshKey(k => k + 1);
     toast({
       title: 'Lab Test Completed',

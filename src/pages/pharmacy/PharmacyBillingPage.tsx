@@ -20,8 +20,8 @@ import { BillCreationForm } from '@/components/billing/organisms/bill-creation/B
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { Bill, BillStatus, PaymentItem } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
-import { getBillsPaginated, getPendingBillsByDepartment } from '@/data/bills';
-import { getPatientById } from '@/data/patients';
+import { useBills } from '@/hooks/queries/useBillQueries';
+import { usePatient } from '@/hooks/queries/usePatientQueries';
 import { Search, Receipt, ArrowLeft, Plus, Pill, QrCode, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { generateBillingCode, getBillingCodeExpiry } from '@/utils/billingDepartment';
@@ -53,20 +53,22 @@ export default function PharmacyBillingPage() {
   const [showBillCreation, setShowBillCreation] = useState(false);
 
   // Fetch bills with department filter
-  const { data: bills, total, totalPages } = getBillsPaginated(currentPage, pageSize, {
+  const { data: allBills = [] } = useBills({
     department: 'pharmacy',
     status: statusFilter !== 'all' ? statusFilter : undefined,
     search: searchQuery || undefined,
   });
+  const total = allBills.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const bills = allBills.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Stats for pharmacy
-  const pendingPharmacyBills = getPendingBillsByDepartment('pharmacy');
-  const totalPending = pendingPharmacyBills.reduce((sum, b) => sum + b.balance, 0);
+  const { data: pendingPharmacyBills = [] } = useBills({ department: 'pharmacy', status: 'pending' });
+  const totalPending = pendingPharmacyBills.reduce((sum: number, b: Bill) => sum + b.balance, 0);
 
   const handleView = (bill: Bill) => {
-    const patient = getPatientById(bill.patientId) || null;
     setDetailsBill(bill);
-    setDetailsPatient(patient);
+    setDetailsPatient(null);
     setShowBillDetails(true);
   };
 

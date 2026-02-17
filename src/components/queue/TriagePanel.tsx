@@ -5,10 +5,12 @@ import { format } from 'date-fns';
 import { User, AlertTriangle, Heart, Thermometer, Activity, Wind, Droplets, Scale, Ruler, Save } from 'lucide-react';
 import { QueueEntry, Patient, QueuePriority } from '@/types/patient.types';
 import { VitalSigns } from '@/types/clinical.types';
-import { getPatientById } from '@/data/patients';
-import { getVitalsByPatient, addVitals, isVitalAbnormal, calculateBMI, getBMICategory } from '@/data/vitals';
-import { completeQueueEntry, moveToNextQueue, updatePriority } from '@/data/queue';
-import { getDoctors } from '@/data/staff';
+import { usePatient } from '@/hooks/queries/usePatientQueries';
+import { useVitalsByPatient } from '@/hooks/queries/useVitalQueries';
+import { useCreateVitals } from '@/hooks/mutations/useVitalMutations';
+import { useUpdateQueueEntry } from '@/hooks/mutations/useQueueMutations';
+import { useDoctors } from '@/hooks/queries/useStaffQueries';
+import { isVitalAbnormal, calculateBMI, getBMICategory } from '@/utils/vitalUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -58,7 +60,7 @@ const initialVitals: VitalsFormData = {
 export function TriagePanel({ entry, onComplete, onCancel }: TriagePanelProps) {
   const { toast } = useToast();
   const { user } = useAuth();
-  
+
   const [patient, setPatient] = useState<Patient | null>(null);
   const [vitals, setVitals] = useState<VitalsFormData>(initialVitals);
   const [chiefComplaint, setChiefComplaint] = useState(entry.reasonForVisit);
@@ -71,15 +73,24 @@ export function TriagePanel({ entry, onComplete, onCancel }: TriagePanelProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [previousVitals, setPreviousVitals] = useState<VitalSigns[]>([]);
 
+  const { data: patientData } = usePatient(entry.patientId);
+  const { data: vitalsHistory } = useVitalsByPatient(entry.patientId);
+  const { data: doctorsData } = useDoctors();
+  const createVitals = useCreateVitals();
+  const updateQueue = useUpdateQueueEntry();
+
+  const doctors = doctorsData ?? [];
+
   // Load patient data
   useEffect(() => {
-    const patientData = getPatientById(entry.patientId);
     setPatient(patientData || null);
-    
-    if (patientData) {
-      const history = getVitalsByPatient(patientData.id);
+
+    if (patientData && vitalsHistory) {
+      const history = vitalsHistory.sort((a, b) =>
+        new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+      );
       setPreviousVitals(history);
-      
+
       // Pre-fill height from previous if available
       if (history.length > 0) {
         setVitals(prev => ({
@@ -88,9 +99,7 @@ export function TriagePanel({ entry, onComplete, onCancel }: TriagePanelProps) {
         }));
       }
     }
-  }, [entry.patientId]);
-
-  const doctors = getDoctors();
+  }, [patientData, vitalsHistory]);
 
   // Calculate BMI if weight and height are provided
   const bmi = vitals.weight && vitals.height 
@@ -106,8 +115,8 @@ export function TriagePanel({ entry, onComplete, onCancel }: TriagePanelProps) {
 
   const handleSubmit = async () => {
     // Validate required fields
-    if (!vitals.bloodPressureSystolic || !vitals.bloodPressureDiastolic || 
-        !vitals.temperature || !vitals.pulse || !vitals.respiratoryRate || 
+    if (!vitals.bloodPressureSystolic || !vitals.bloodPressureDiastolic ||
+        !vitals.temperature || !vitals.pulse || !vitals.respiratoryRate ||
         !vitals.oxygenSaturation || !vitals.weight || !vitals.height) {
       toast({
         title: 'Missing Vitals',
@@ -121,7 +130,7 @@ export function TriagePanel({ entry, onComplete, onCancel }: TriagePanelProps) {
 
     try {
       // Save vitals
-      addVitals({
+      await createVitals.mutateAsync({
         patientId: entry.patientId,
         recordedBy: user?.id || 'usr-005',
         recordedAt: new Date().toISOString(),
@@ -137,13 +146,16 @@ export function TriagePanel({ entry, onComplete, onCancel }: TriagePanelProps) {
         notes: notes || undefined,
       });
 
-      // Update priority if changed
-      if (priority !== entry.priority) {
-        updatePriority(entry.id, priority, priorityReason);
-      }
-
-      // Move to doctor queue
-      moveToNextQueue(entry.id, 'doctor', selectedDoctor);
+      // Update queue entry
+      await updateQueue.mutateAsync({
+        entryId: entry.id,
+        updates: {
+          priority,
+          status: 'waiting',
+          queueType: 'doctor',
+          assignedTo: selectedDoctor,
+        },
+      });
 
       toast({
         title: 'Triage Complete',

@@ -54,6 +54,10 @@ import {
 import {
   basePermissions,
 } from '@/types/permission.types';
+import { TestCatalogEntry } from '@/types/clinical.types';
+import { BillingCodeEntry } from '@/types/cashier.types';
+import { RosterEntry } from '@/types/roster.types';
+import { ICD10ServiceMapping } from '@/types/financial.types';
 
 // ---- Helpers ----
 
@@ -107,14 +111,14 @@ const db = {
   'episode-timeline': stripUndefined(mockEpisodeTimeline),
   prescriptions: stripUndefined(mockPrescriptions),
   'lab-orders': stripUndefined(mockLabOrders),
-  'test-catalog': stripUndefined(ensureIds(testCatalog, 'testCode' as any)),
+  'test-catalog': stripUndefined(ensureIds(testCatalog as TestCatalogEntry[], 'testCode')),
   'partner-labs': stripUndefined(mockPartnerLabs),
   'lab-referrals': stripUndefined(mockLabReferrals),
   bills: stripUndefined(mockBills),
   'service-items': stripUndefined(ALL_SERVICE_ITEMS),
   payments: stripUndefined(mockPayments),
   'cashier-shifts': stripUndefined(mockShifts),
-  'billing-codes': stripUndefined(ensureIds(mockBillingCodes as any[])),
+  'billing-codes': stripUndefined(ensureIds(mockBillingCodes as BillingCodeEntry[])),
   'emergency-overrides': stripUndefined(mockEmergencyOverrides),
   'service-prices': stripUndefined(mockServicePrices),
   'price-approvals': stripUndefined(mockPriceApprovals),
@@ -126,7 +130,7 @@ const db = {
   inventory: stripUndefined(mockInventory),
   'stock-requests': stripUndefined(mockStockRequests),
   staff: stripUndefined(mockStaff),
-  roster: stripUndefined(ensureIds(mockRoster as any[])),
+  roster: stripUndefined(ensureIds(mockRoster as RosterEntry[])),
   'queue-entries': stripUndefined(mockQueueEntries),
   'nigerian-states': stripUndefined(
     nigerianStates.map((s) => ({ id: s.value, ...s })),
@@ -138,7 +142,7 @@ const db = {
   ),
   'icd10-categories': [{ id: '1', categories: ICD10_CATEGORIES }],
   'icd10-service-mappings': stripUndefined(
-    ensureIds(ICD10_SERVICE_MAPPINGS as any[], 'diagnosisCode' as any),
+    ensureIds(ICD10_SERVICE_MAPPINGS as ICD10ServiceMapping[], 'icd10Code'),
   ),
   'protocol-bundles': stripUndefined(PROTOCOL_BUNDLES),
   'conflict-rules': stripUndefined(CONFLICT_RULES),

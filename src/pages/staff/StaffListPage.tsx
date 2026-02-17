@@ -30,7 +30,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { mockStaff, addStaffMember } from '@/data/staff';
+import { useStaff } from '@/hooks/queries/useStaffQueries';
+import { useCreateStaffMember } from '@/hooks/mutations/useStaffMutations';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,13 +42,14 @@ const StaffListPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { data: staffData = [], isLoading } = useStaff();
+  const createStaffMutation = useCreateStaffMember();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showAddModal, setShowAddModal] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
@@ -66,12 +68,12 @@ const StaffListPage = () => {
   const basePath = user?.role === 'cmo' ? 'cmo' : 'hospital-admin';
 
   const departments = useMemo(() => {
-    const depts = new Set(mockStaff.map(s => s.department));
+    const depts = new Set(staffData.map(s => s.department));
     return Array.from(depts).sort();
-  }, [refreshKey]);
+  }, [staffData]);
 
   const filteredStaff = useMemo(() => {
-    return mockStaff.filter(staff => {
+    return staffData.filter(staff => {
       const matchesSearch = staff.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesRole = roleFilter === 'all' || staff.role.toLowerCase() === roleFilter.toLowerCase();
       const matchesDepartment = departmentFilter === 'all' || staff.department === departmentFilter;
@@ -82,7 +84,7 @@ const StaffListPage = () => {
 
       return matchesSearch && matchesRole && matchesDepartment && matchesStatus;
     });
-  }, [searchQuery, roleFilter, departmentFilter, statusFilter, refreshKey]);
+  }, [searchQuery, roleFilter, departmentFilter, statusFilter, staffData]);
 
   const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
   const paginatedStaff = filteredStaff.slice(
@@ -91,13 +93,13 @@ const StaffListPage = () => {
   );
 
   const stats = useMemo(() => {
-    const totalStaff = mockStaff.length;
-    const onDuty = mockStaff.filter(s => s.isOnDuty).length;
-    const doctors = mockStaff.filter(s => s.role === 'Doctor').length;
-    const nurses = mockStaff.filter(s => s.role === 'Nurse').length;
+    const totalStaff = staffData.length;
+    const onDuty = staffData.filter(s => s.isOnDuty).length;
+    const doctors = staffData.filter(s => s.role === 'Doctor').length;
+    const nurses = staffData.filter(s => s.role === 'Nurse').length;
 
     return { totalStaff, onDuty, doctors, nurses };
-  }, [refreshKey]);
+  }, [staffData]);
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
@@ -119,7 +121,7 @@ const StaffListPage = () => {
   const handleSubmitStaff = () => {
     if (!validateForm()) return;
 
-    addStaffMember({
+    createStaffMutation.mutate({
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
@@ -128,14 +130,15 @@ const StaffListPage = () => {
       specialization: formData.specialization || undefined,
       licenseNumber: formData.licenseNumber || undefined,
       isOnDuty: false,
+    }, {
+      onSuccess: () => {
+        toast({
+          title: 'Staff Member Added',
+          description: `${formData.name} has been added to the staff directory.`,
+        });
+        setShowAddModal(false);
+      },
     });
-
-    toast({
-      title: 'Staff Member Added',
-      description: `${formData.name} has been added to the staff directory.`,
-    });
-    setShowAddModal(false);
-    setRefreshKey(k => k + 1);
   };
 
   const handleRowClick = (staffId: string) => {

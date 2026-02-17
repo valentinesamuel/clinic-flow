@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, X, Plus, Loader2 } from 'lucide-react';
-import { searchPatients } from '@/data/patients';
+import { usePatientSearch as usePatientSearchQuery } from '@/hooks/queries/usePatientQueries';
 import { Patient } from '@/types/patient.types';
 import { PatientCard } from './PatientCard';
 import { cn } from '@/lib/utils';
@@ -28,44 +28,42 @@ export function PatientSearch({
   autoFocus = false,
 }: PatientSearchProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Patient[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showResults, setShowResults] = useState(false);
 
   // Memoize excludeIds to prevent unnecessary effect triggers
   const stableExcludeIds = useMemo(() => excludeIds, [excludeIds.join(',')]);
 
-  // Debounced search
+  // Debounce the query
   useEffect(() => {
     if (query.length < 2) {
-      setResults([]);
+      setDebouncedQuery('');
       setShowResults(false);
       return;
     }
-
-    setIsSearching(true);
     const timer = setTimeout(() => {
-      const searchResults = searchPatients(query)
-        .filter(p => !stableExcludeIds.includes(p.id))
-        .slice(0, 10);
-      setResults(searchResults);
-      setIsSearching(false);
+      setDebouncedQuery(query);
       setShowResults(true);
     }, 300);
-
     return () => clearTimeout(timer);
-  }, [query, stableExcludeIds]);
+  }, [query]);
+
+  const { data: searchData, isLoading: isSearching } = usePatientSearchQuery(debouncedQuery);
+  const results = useMemo(() => {
+    const all = (searchData ?? []) as Patient[];
+    return all.filter(p => !stableExcludeIds.includes(p.id)).slice(0, 10);
+  }, [searchData, stableExcludeIds]);
 
   const handleSelect = useCallback((patient: Patient) => {
     onSelect(patient);
     setQuery('');
-    setResults([]);
+    setDebouncedQuery('');
     setShowResults(false);
   }, [onSelect]);
 
   const clearSearch = () => {
     setQuery('');
-    setResults([]);
+    setDebouncedQuery('');
     setShowResults(false);
   };
 

@@ -15,17 +15,22 @@ import {
   ChevronRight,
   ArrowRight,
 } from 'lucide-react';
-import { getPendingPrescriptions, getTodaysPrescriptions } from '@/data/prescriptions';
-import { getItemsByCategory, getLowStockItems } from '@/data/inventory';
-import { getPendingBillsByDepartment } from '@/data/bills';
+import { usePendingPrescriptions, usePrescriptions } from '@/hooks/queries/usePrescriptionQueries';
+import { useInventory } from '@/hooks/queries/useInventoryQueries';
+import { useBills } from '@/hooks/queries/useBillQueries';
+import { Prescription } from '@/types/clinical.types';
+import { InventoryItem, Bill } from '@/types/billing.types';
 
 export default function PharmacistDashboard() {
   const navigate = useNavigate();
-  const pendingPrescriptions = getPendingPrescriptions();
-  const todaysPrescriptions = getTodaysPrescriptions();
-  const medicines = getItemsByCategory('medicine');
-  const lowStockMedicines = getLowStockItems().filter(i => i.category === 'medicine');
-  const pendingPharmacyBills = getPendingBillsByDepartment('pharmacy');
+  const { data: pendingPrescriptions = [] } = usePendingPrescriptions();
+  const { data: allPrescriptions = [] } = usePrescriptions();
+  const { data: allInventory = [] } = useInventory();
+  const { data: allBills = [] } = useBills();
+  const todaysPrescriptions = (allPrescriptions as Prescription[]);
+  const medicines = (allInventory as InventoryItem[]).filter((i: InventoryItem) => i.category === 'medicine');
+  const lowStockMedicines = (allInventory as InventoryItem[]).filter((i: InventoryItem) => i.category === 'medicine' && i.currentStock <= i.reorderLevel);
+  const pendingPharmacyBills = (allBills as Bill[]).filter((b: Bill) => b.department === 'pharmacy' && b.status === 'pending');
 
   return (
     <DashboardLayout allowedRoles={['pharmacist']}>

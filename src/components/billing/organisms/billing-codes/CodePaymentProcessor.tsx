@@ -16,8 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BillingCodeEntry } from '@/types/cashier.types';
 import { PaymentMethod } from '@/types/billing.types';
-import { getBillingCodeByCode } from '@/data/cashier-shifts';
-import { getBillById } from '@/data/bills';
+import { useBillingCodes, useBill } from '@/hooks/queries/useBillQueries';
 import { PaymentMethodSelector } from '@/components/billing/molecules/payment/PaymentMethodSelector';
 import { ChangeCalculator } from '@/components/billing/molecules/payment/ChangeCalculator';
 import {
@@ -55,6 +54,7 @@ export function CodePaymentProcessor({
   onOpenChange,
   onComplete,
 }: CodePaymentProcessorProps) {
+  const { data: billingCodes = [] } = useBillingCodes();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [codeInput, setCodeInput] = useState('');
   const [codeEntry, setCodeEntry] = useState<BillingCodeEntry | null>(null);
@@ -65,10 +65,10 @@ export function CodePaymentProcessor({
   const [referenceNumber, setReferenceNumber] = useState('');
   const [receiptNumber, setReceiptNumber] = useState('');
 
-  const handleLookup = () => {
+  const handleLookup = (): void => {
     setError(null);
     const code = codeInput.toUpperCase().trim();
-    const entry = getBillingCodeByCode(code);
+    const entry = (billingCodes as BillingCodeEntry[]).find((e) => e.code === code) || null;
 
     if (!entry) {
       setError('Billing code not found. Please check and try again.');
@@ -94,7 +94,7 @@ export function CodePaymentProcessor({
     setStep(2);
   };
 
-  const handleProcessPayment = () => {
+  const handleProcessPayment = (): void => {
     if (!codeEntry) return;
 
     // Validate based on payment method
@@ -116,14 +116,14 @@ export function CodePaymentProcessor({
     setStep(3);
   };
 
-  const handleComplete = () => {
+  const handleComplete = (): void => {
     if (codeEntry) {
       onComplete(codeEntry, receiptNumber);
     }
     handleClose();
   };
 
-  const handleClose = () => {
+  const handleClose = (): void => {
     setStep(1);
     setCodeInput('');
     setCodeEntry(null);

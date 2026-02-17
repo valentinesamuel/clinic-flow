@@ -8,8 +8,9 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EpisodesTable } from '@/components/billing/organisms/episode/EpisodesTable';
 import { EpisodeCreationModal } from '@/components/billing/organisms/episode/EpisodeCreationModal';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { getEpisodesPaginated, createEpisode } from '@/data/episodes';
-import { EpisodeStatus } from '@/types/episode.types';
+import { useEpisodes } from '@/hooks/queries/useEpisodeQueries';
+import { useCreateEpisode } from '@/hooks/mutations/useEpisodeMutations';
+import { EpisodeStatus, Episode } from '@/types/episode.types';
 import { Search, Activity, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -35,14 +36,16 @@ export default function EpisodeListPage() {
   const [showCreation, setShowCreation] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const { data: episodes, total, totalPages } = getEpisodesPaginated(
-    currentPage,
-    pageSize,
-    {
-      status: statusFilter !== 'all' ? statusFilter : undefined,
-      search: searchQuery || undefined,
-    }
-  );
+  const { data: allEpisodes = [] } = useEpisodes({
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    search: searchQuery || undefined,
+  });
+  const createEpisodeMutation = useCreateEpisode();
+
+  // Client-side pagination
+  const episodes: Episode[] = allEpisodes as Episode[];
+  const total = episodes.length;
+  const totalPages = Math.ceil(total / pageSize) || 1;
 
   const baseRoute = user
     ? user.role === 'hospital_admin'
@@ -59,7 +62,7 @@ export default function EpisodeListPage() {
   };
 
   const handleCreate = (data: { patientId: string; patientName: string; patientMrn: string; notes?: string }) => {
-    createEpisode({
+    createEpisodeMutation.mutate({
       episodeNumber: `EP-${Date.now()}`,
       patientId: data.patientId,
       patientName: data.patientName,
@@ -78,7 +81,7 @@ export default function EpisodeListPage() {
       totalBalance: 0,
       isLockedForAudit: false,
       notes: data.notes,
-    });
+    } as Partial<Episode>);
     toast({
       title: 'Episode Created',
       description: `New episode created for ${data.patientName}`,

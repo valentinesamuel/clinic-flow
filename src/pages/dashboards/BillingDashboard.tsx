@@ -22,25 +22,13 @@ import {
 } from "lucide-react";
 import { QuickActionsDropdown } from "@/components/billing/molecules";
 import { PaymentCollectionForm } from "@/components/billing/organisms/cashier-station/PaymentCollectionForm";
-import { PaymentItem, PaymentClearance } from "@/types/billing.types";
+import { PaymentItem, PaymentClearance, Bill } from "@/types/billing.types";
 import { Patient } from "@/types/patient.types";
-import { mockPatients } from "@/data/patients";
-import { getPendingBills, getTodaysRevenue } from "@/data/bills";
+import { useBills } from "@/hooks/queries/useBillQueries";
 import { useToast } from "@/hooks/use-toast";
 import { RevenueStatsCards } from "@/components/billing/RevenueStatsCards";
 import { useAuth } from "@/hooks/useAuth";
-
-// Mock billing data
-const unpaidBills = getPendingBills()
-  .slice(0, 4)
-  .map((bill, index) => ({
-    id: bill.id,
-    patient: bill.patientName,
-    patientId: bill.patientId,
-    amount: bill.balance,
-    daysOverdue: [15, 8, 3, 0][index] || 0,
-    bill,
-  }));
+import { usePatients } from "@/hooks/queries/usePatientQueries";
 
 const hmoClaimsStatus = {
   pending: 24,
@@ -64,34 +52,6 @@ function formatCurrency(value: number): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
-
-// Mock patient for demo
-const mockPatient: Patient = mockPatients[0] || {
-  id: "pt-demo",
-  mrn: "PT-2026-00123",
-  firstName: "Aisha",
-  lastName: "Mohammed",
-  dateOfBirth: "1985-03-15",
-  gender: "female",
-  bloodGroup: "O+",
-  maritalStatus: "married",
-  phone: "+234 803 123 4567",
-  address: "25 Marina Street, Lagos Island",
-  state: "Lagos",
-  lga: "Lagos Island",
-  nationality: "Nigerian",
-  paymentType: "cash",
-  nextOfKin: {
-    name: "Ibrahim Mohammed",
-    relationship: "Husband",
-    phone: "+234 803 987 6543",
-  },
-  allergies: [],
-  chronicConditions: [],
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  isActive: true,
-};
 
 const mockPaymentItems: PaymentItem[] = [
   {
@@ -147,7 +107,30 @@ export default function BillingDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
-  const todaysRevenue = getTodaysRevenue();
+
+  // Fetch bills and patients data
+  const { data: billsData = [] } = useBills();
+  const { data: patientsData, isLoading: isPatientsLoading } = usePatients();
+  const patients = patientsData?.data || [];
+
+  // Calculate pending bills and today's revenue client-side
+  const pendingBills = (billsData as Bill[]).filter((bill: Bill) => bill.status === 'pending' || bill.balance > 0);
+  const unpaidBills = pendingBills
+    .slice(0, 4)
+    .map((bill, index) => ({
+      id: bill.id,
+      patient: bill.patientName,
+      patientId: bill.patientId,
+      amount: bill.balance,
+      daysOverdue: [15, 8, 3, 0][index] || 0,
+      bill,
+    }));
+
+  const today = new Date().toISOString().split('T')[0];
+  const todaysBills = (billsData as Bill[]).filter((bill: Bill) =>
+    bill.createdAt && bill.createdAt.startsWith(today)
+  );
+  const todaysRevenue = todaysBills.reduce((sum, bill) => sum + (bill.total || 0), 0);
 
   const basePath = user?.role === 'cashier' ? '/cashier'
     : user?.role === 'hospital_admin' ? '/hospital-admin/billing'
@@ -159,13 +142,23 @@ export default function BillingDashboard() {
   const [selectedItems, setSelectedItems] = useState<PaymentItem[]>([]);
 
   const handleRecordPayment = () => {
-    setSelectedPatient(mockPatient);
+    // Use first patient from fetched data for demo
+    const demoPatient = patients[0];
+    if (!demoPatient) {
+      toast({
+        title: "No Patients",
+        description: "No patient data available for demo",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSelectedPatient(demoPatient);
     setSelectedItems(mockPaymentItems);
     setShowPaymentModal(true);
   };
 
   const handleCollectBill = (billData: (typeof unpaidBills)[0]) => {
-    const patient = mockPatients.find((p) => p.id === billData.patientId);
+    const patient = patients.find((p) => p.id === billData.patientId);
     if (!patient) {
       toast({
         title: "Error",

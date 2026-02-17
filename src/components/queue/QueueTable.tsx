@@ -3,9 +3,9 @@
 import { useMemo, useState } from 'react';
 import { User, Activity, Play, Eye, MoreHorizontal } from 'lucide-react';
 import { QueueEntry } from '@/types/patient.types';
-import { calculateWaitTime } from '@/data/queue';
-import { getPatientById } from '@/data/patients';
-import { getVitalsByPatient } from '@/data/vitals';
+import { usePatients } from '@/hooks/queries/usePatientQueries';
+import { useVitals } from '@/hooks/queries/useVitalQueries';
+import { calculateWaitTime } from '@/utils/queueUtils';
 import { PAGINATION } from '@/constants/designSystem';
 
 // Atomic components
@@ -74,6 +74,17 @@ export function QueueTable({
   selectedEntryId,
 }: QueueTableProps) {
   const [confirmEntry, setConfirmEntry] = useState<QueueEntry | null>(null);
+
+  const { data: patientsData } = usePatients();
+  const patients = patientsData ?? [];
+  const { data: vitalsData } = useVitals();
+  const allVitals = vitalsData ?? [];
+
+  const getPatientById = (id: string) => patients.find(p => p.id === id);
+  const getVitalsByPatient = (patientId: string) =>
+    allVitals.filter(v => v.patientId === patientId).sort((a, b) =>
+      new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+    );
 
   const totalPages = Math.ceil(entries.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;

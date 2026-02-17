@@ -17,14 +17,15 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Clock, AlertTriangle, CheckCircle, Package, MoreHorizontal, Check, X, MessageSquare, Forward, ChevronDown, ChevronUp, Eye } from 'lucide-react';
 import { format } from 'date-fns';
-import { getStockRequests, getPendingStockRequests, getUrgentPendingStockRequests, updateStockRequestStatus } from '@/data/stock-requests';
+import { useStockRequests, usePendingStockRequests, useUrgentPendingStockRequests } from '@/hooks/queries/useInventoryQueries';
+import { useUpdateStockRequestStatus } from '@/hooks/mutations/useInventoryMutations';
 import type { StockRequest, StockRequestStatus, StockRequestUrgency } from '@/types/stock-request.types';
 import type { UserRole } from '@/types/auth.types';
 
 export default function StockRequestAdminPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [refreshKey, setRefreshKey] = useState(0);
+  const updateStockRequestMutation = useUpdateStockRequestStatus();
   const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
 
   // Filters
@@ -49,10 +50,10 @@ export default function StockRequestAdminPage() {
   const isAdmin = user?.role === 'hospital_admin';
   const isCMO = user?.role === 'cmo';
 
-  // Fetch data
-  const allRequests = useMemo(() => getStockRequests(), [refreshKey]);
-  const pendingRequests = useMemo(() => getPendingStockRequests(), [refreshKey]);
-  const urgentPendingRequests = useMemo(() => getUrgentPendingStockRequests(), [refreshKey]);
+  // Fetch data using React Query hooks
+  const { data: allRequests = [] } = useStockRequests();
+  const { data: pendingRequests = [] } = usePendingStockRequests();
+  const { data: urgentPendingRequests = [] } = useUrgentPendingStockRequests();
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -87,13 +88,11 @@ export default function StockRequestAdminPage() {
   const handleApprove = () => {
     if (!approveDialog.request || !user) return;
 
-    updateStockRequestStatus(
-      approveDialog.request.id,
-      'approved',
-      user.id,
-      user.name,
-      approveNotes || undefined
-    );
+    updateStockRequestMutation.mutate({
+      id: approveDialog.request.id,
+      status: 'approved',
+      notes: approveNotes || undefined
+    });
 
     toast({
       title: 'Request Approved',
@@ -102,7 +101,6 @@ export default function StockRequestAdminPage() {
 
     setApproveDialog({ open: false, request: null });
     setApproveNotes('');
-    setRefreshKey((prev) => prev + 1);
   };
 
   const handlePartialApprove = () => {
@@ -115,14 +113,11 @@ export default function StockRequestAdminPage() {
       return;
     }
 
-    updateStockRequestStatus(
-      partialApproveDialog.request.id,
-      'partially_approved',
-      user.id,
-      user.name,
-      partialApproveNotes,
-      partialQuantities
-    );
+    updateStockRequestMutation.mutate({
+      id: partialApproveDialog.request.id,
+      status: 'partially_approved',
+      notes: partialApproveNotes
+    });
 
     toast({
       title: 'Request Partially Approved',
@@ -132,7 +127,6 @@ export default function StockRequestAdminPage() {
     setPartialApproveDialog({ open: false, request: null });
     setPartialApproveNotes('');
     setPartialQuantities({});
-    setRefreshKey((prev) => prev + 1);
   };
 
   const handleReject = () => {
@@ -145,13 +139,11 @@ export default function StockRequestAdminPage() {
       return;
     }
 
-    updateStockRequestStatus(
-      rejectDialog.request.id,
-      'rejected',
-      user.id,
-      user.name,
-      rejectReason
-    );
+    updateStockRequestMutation.mutate({
+      id: rejectDialog.request.id,
+      status: 'rejected',
+      notes: rejectReason
+    });
 
     toast({
       title: 'Request Rejected',
@@ -160,7 +152,6 @@ export default function StockRequestAdminPage() {
 
     setRejectDialog({ open: false, request: null });
     setRejectReason('');
-    setRefreshKey((prev) => prev + 1);
   };
 
   const handleRequestInfo = () => {
@@ -173,13 +164,11 @@ export default function StockRequestAdminPage() {
       return;
     }
 
-    updateStockRequestStatus(
-      infoDialog.request.id,
-      'info_requested',
-      user.id,
-      user.name,
-      infoRequest
-    );
+    updateStockRequestMutation.mutate({
+      id: infoDialog.request.id,
+      status: 'info_requested',
+      notes: infoRequest
+    });
 
     toast({
       title: 'Information Requested',
@@ -188,19 +177,16 @@ export default function StockRequestAdminPage() {
 
     setInfoDialog({ open: false, request: null });
     setInfoRequest('');
-    setRefreshKey((prev) => prev + 1);
   };
 
   const handleForward = () => {
     if (!forwardDialog.request || !user) return;
 
-    updateStockRequestStatus(
-      forwardDialog.request.id,
-      'forwarded_to_cmo',
-      user.id,
-      user.name,
-      forwardNotes || undefined
-    );
+    updateStockRequestMutation.mutate({
+      id: forwardDialog.request.id,
+      status: 'forwarded_to_cmo',
+      notes: forwardNotes || undefined
+    });
 
     toast({
       title: 'Request Forwarded',
@@ -209,7 +195,6 @@ export default function StockRequestAdminPage() {
 
     setForwardDialog({ open: false, request: null });
     setForwardNotes('');
-    setRefreshKey((prev) => prev + 1);
   };
 
   // Helper functions

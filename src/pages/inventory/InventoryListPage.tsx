@@ -23,7 +23,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
-import { mockInventory, addInventoryItem, updateInventoryItem, archiveInventoryItem } from '@/data/inventory';
+import { useInventory } from '@/hooks/queries/useInventoryQueries';
+import { useCreateInventoryItem, useUpdateInventoryItem } from '@/hooks/mutations/useInventoryMutations';
 import { InventoryItem } from '@/types/billing.types';
 import { format } from 'date-fns';
 import { Search, Package, AlertTriangle, DollarSign, Layers, Plus, Edit2, Trash2 } from 'lucide-react';
@@ -34,6 +35,10 @@ type StockStatus = 'all' | 'in_stock' | 'low' | 'out';
 
 export default function InventoryListPage() {
   const { toast } = useToast();
+  const { data: inventoryData = [] } = useInventory();
+  const createInventoryItem = useCreateInventoryItem();
+  const updateInventoryItemMutation = useUpdateInventoryItem();
+  const mockInventory = inventoryData as InventoryItem[];
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [stockStatusFilter, setStockStatusFilter] = useState<StockStatus>('all');
@@ -134,13 +139,13 @@ export default function InventoryListPage() {
 
   const handleSaveItem = () => {
     if (editingItem) {
-      updateInventoryItem(editingItem.id, itemForm);
+      updateInventoryItemMutation.mutate({ id: editingItem.id, ...itemForm });
       toast({
         title: 'Item Updated',
         description: `${itemForm.name} has been updated successfully.`,
       });
     } else {
-      addInventoryItem(itemForm);
+      createInventoryItem.mutate(itemForm);
       toast({
         title: 'Item Added',
         description: `${itemForm.name} has been added to inventory.`,
@@ -158,7 +163,7 @@ export default function InventoryListPage() {
 
   const handleArchiveItem = () => {
     if (archiveInput === 'ARCHIVE' && archiveTarget) {
-      archiveInventoryItem(archiveTarget.id);
+      updateInventoryItemMutation.mutate({ id: archiveTarget.id, archived: true });
       toast({
         title: 'Item Archived',
         description: `${archiveTarget.name} has been archived successfully.`,
@@ -294,7 +299,7 @@ export default function InventoryListPage() {
                   className="pl-10"
                 />
               </div>
-              <Select value={categoryFilter} onValueChange={(value: any) => setCategoryFilter(value)}>
+              <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as CategoryFilter)}>
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
@@ -306,7 +311,7 @@ export default function InventoryListPage() {
                   <SelectItem value="utility">Utility</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={stockStatusFilter} onValueChange={(value: any) => setStockStatusFilter(value)}>
+              <Select value={stockStatusFilter} onValueChange={(value) => setStockStatusFilter(value as StockStatus)}>
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Stock Status" />
                 </SelectTrigger>
@@ -438,7 +443,7 @@ export default function InventoryListPage() {
                 <Label htmlFor="category">Category</Label>
                 <Select
                   value={itemForm.category}
-                  onValueChange={(value: any) => setItemForm({ ...itemForm, category: value })}
+                  onValueChange={(value) => setItemForm({ ...itemForm, category: value as InventoryItem['category'] })}
                 >
                   <SelectTrigger>
                     <SelectValue />

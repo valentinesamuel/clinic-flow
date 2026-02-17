@@ -16,23 +16,27 @@ import {
   Receipt,
   ChevronRight,
 } from 'lucide-react';
-import { getPendingLabOrders, getLabOrdersByStatus, getUrgentLabOrders } from '@/data/lab-orders';
-import { getPendingBillsByDepartment } from '@/data/bills';
-import { getPartnerLabs, getReferralsByDirection } from '@/data/lab-referrals';
+import { useLabOrders, usePendingLabOrders, useUrgentLabOrders, usePartnerLabs, useLabReferrals } from '@/hooks/queries/useLabQueries';
+import { useBills } from '@/hooks/queries/useBillQueries';
+import { LabOrder } from '@/types/clinical.types';
+import { Bill } from '@/types/billing.types';
+import { PartnerLab, LabReferral } from '@/types/lab.types';
 
 export default function LabTechDashboard() {
   const navigate = useNavigate();
-  const pendingOrders = getPendingLabOrders();
-  const orderedTests = getLabOrdersByStatus('ordered');
-  const sampleCollected = getLabOrdersByStatus('sample_collected');
-  const processing = getLabOrdersByStatus('processing');
-  const urgentOrders = getUrgentLabOrders();
-  const pendingLabBills = getPendingBillsByDepartment('lab');
+  const { data: allLabOrders = [] } = useLabOrders();
+  const { data: pendingOrders = [] } = usePendingLabOrders();
+  const { data: urgentOrders = [] } = useUrgentLabOrders();
+  const { data: allBills = [] } = useBills();
+  const { data: partnerLabs = [] } = usePartnerLabs();
+  const { data: outboundReferrals = [] } = useLabReferrals('out');
 
-  const partnerLabs = getPartnerLabs();
-  const connectedPartners = partnerLabs.filter(lab => lab.status === 'connected');
-  const outboundReferrals = getReferralsByDirection('outbound');
-  const activeReferrals = outboundReferrals.filter(ref => !['completed', 'cancelled'].includes(ref.status));
+  const orderedTests = (allLabOrders as LabOrder[]).filter((o) => o.status === 'ordered');
+  const sampleCollected = (allLabOrders as LabOrder[]).filter((o) => o.status === 'sample_collected');
+  const processing = (allLabOrders as LabOrder[]).filter((o) => o.status === 'processing');
+  const pendingLabBills = (allBills as Bill[]).filter((b) => b.department === 'lab' && b.status === 'pending');
+  const connectedPartners = (partnerLabs as PartnerLab[]).filter((lab) => lab.status === 'connected');
+  const activeReferrals = (outboundReferrals as LabReferral[]).filter((ref) => !['completed', 'cancelled'].includes(ref.status));
 
   return (
     <DashboardLayout allowedRoles={['lab_tech']}>

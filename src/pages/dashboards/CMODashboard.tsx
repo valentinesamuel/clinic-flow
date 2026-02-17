@@ -31,14 +31,14 @@ import {
 } from "lucide-react";
 import { usePermissionToggles } from "@/hooks/queries/usePermissionQueries";
 import { Link } from "react-router-dom";
-import { searchPatients } from "@/data/patients";
+import { usePatientSearch } from "@/hooks/queries/usePatientQueries";
 import {
   getRecentBills,
   getPendingBills,
   getTotalPendingAmount,
   getTodaysRevenue,
 } from "@/data/bills";
-import { getPendingClaims } from "@/data/claims";
+import { usePendingClaims } from "@/hooks/queries/useClaimQueries";
 import { AppointmentBookingModal } from "@/components/appointments/AppointmentBookingModal";
 import { useDashboardActions } from "@/hooks/useDashboardActions";
 import { BillingOverviewCard } from "@/components/billing/BillingOverviewCard";
@@ -56,14 +56,15 @@ export default function CMODashboard() {
     null,
   );
 
-  const searchResults =
-    searchQuery.length >= 2 ? searchPatients(searchQuery).slice(0, 5) : [];
+  // Fetch patients based on search query
+  const { data: patientSearchResults } = usePatientSearch(searchQuery);
+  const searchResults = searchQuery.length >= 2 ? (patientSearchResults || []).slice(0, 5) : [];
 
   // Billing data
   const recentBills = getRecentBills(5);
   const pendingBills = getPendingBills();
   const totalPendingAmount = getTotalPendingAmount();
-  const pendingClaims = getPendingClaims();
+  const { data: pendingClaims = [] } = usePendingClaims();
   const todaysRevenue = getTodaysRevenue();
 
   const handleBookAppointment = (patientId: string) => {

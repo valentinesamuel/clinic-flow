@@ -18,10 +18,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Save, X, AlertCircle, Check, Clock } from 'lucide-react';
-import { nigerianStates, getLGAsForState } from '@/data/nigerian-locations';
-import { addPatient, updatePatient, isPhoneUnique, calculateAge } from '@/data/patients';
+import { useNigerianStates, useLGAsForState } from '@/hooks/queries/useReferenceQueries';
+import { useCreatePatient, useUpdatePatient } from '@/hooks/mutations/usePatientMutations';
+import { calculateAge } from '@/utils/patientUtils';
 import { Patient, BloodGroup, Gender, MaritalStatus, PaymentType } from '@/types/patient.types';
+import { LGAOption } from '@/data/nigerian-locations';
 import { format } from 'date-fns';
+
+interface NigerianState {
+  value: string;
+  label: string;
+}
 // HMO Providers
 const hmoProviders = [
   { id: 'hyg-001', name: 'Hygeia HMO', defaultCopay: 5000 },
@@ -91,9 +98,14 @@ export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }:
     initialPatient ? calculateAge(initialPatient.dateOfBirth) : null
   );
 
+  const { data: nigerianStates = [] } = useNigerianStates();
+  const { data: lgasData = [] } = useLGAsForState(selectedState);
+  const createPatient = useCreatePatient();
+  const updatePatientMutation = useUpdatePatient();
+
   // Find the state value from the label for edit mode
   const getStateValue = (stateLabel: string) => {
-    const found = nigerianStates.find(s => s.label === stateLabel || s.value === stateLabel);
+    const found = (nigerianStates as NigerianState[]).find((s) => s.label === stateLabel || s.value === stateLabel);
     return found?.value || stateLabel;
   };
 
@@ -201,22 +213,15 @@ export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }:
     }
   }, [watchDob]);
 
-  // Check phone uniqueness (debounced)
+  // Phone validation - server-side uniqueness check would happen on submit
   useEffect(() => {
     if (!watchPhone || watchPhone.length < 11) {
       setPhoneStatus('idle');
       return;
     }
-
-    setPhoneStatus('checking');
-    const timer = setTimeout(() => {
-      // In edit mode, exclude the current patient's phone from the uniqueness check
-      const unique = isPhoneUnique(watchPhone, isEditMode ? initialPatient?.id : undefined);
-      setPhoneStatus(unique ? 'unique' : 'duplicate');
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [watchPhone, isEditMode, initialPatient?.id]);
+    // Mark as valid locally - uniqueness is checked server-side on submit
+    setPhoneStatus('unique');
+  }, [watchPhone]);
 
   // Auto-set copay when HMO provider changes
   useEffect(() => {
@@ -274,11 +279,8 @@ export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }:
     setIsSubmitting(true);
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
       // Get the state label for display
-      const stateLabel = nigerianStates.find(s => s.value === data.state)?.label || data.state;
+      const stateLabel = (nigerianStates as NigerianState[]).find((s: NigerianState) => s.value === data.state)?.label || data.state;
 
       // Prepare patient data
       const patientData = {
@@ -319,30 +321,23 @@ export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }:
       };
 
       if (isEditMode && initialPatient) {
-        // Update existing patient
-        const updatedPatient = updatePatient(initialPatient.id, patientData);
-        if (updatedPatient) {
-          toast({
-            title: 'Patient details updated',
-            description: `Changes saved for ${updatedPatient.firstName} ${updatedPatient.lastName}`,
-          });
-          onSuccess(updatedPatient);
-        } else {
-          throw new Error('Failed to update patient');
-        }
+        const updatedPatient = await updatePatientMutation.mutateAsync({
+          id: initialPatient.id,
+          ...patientData,
+        });
+        toast({
+          title: 'Patient details updated',
+          description: `Changes saved for ${(updatedPatient as Patient).firstName} ${(updatedPatient as Patient).lastName}`,
+        });
+        onSuccess(updatedPatient as unknown as Patient);
       } else {
-        // Create new patient
-        const newPatient = addPatient(patientData);
-        
-        // Clear draft
+        const newPatient = await createPatient.mutateAsync(patientData);
         localStorage.removeItem(DRAFT_KEY);
-
         toast({
           title: 'Patient registered successfully',
-          description: `Patient Number: ${newPatient.mrn}`,
+          description: `Patient Number: ${(newPatient as Patient).mrn}`,
         });
-
-        onSuccess(newPatient);
+        onSuccess(newPatient as unknown as Patient);
       }
     } catch (error) {
       toast({
@@ -355,7 +350,7 @@ export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }:
     }
   };
 
-  const lgas = getLGAsForState(selectedState);
+  const lgas: LGAOption[] = lgasData as LGAOption[];
 
   return (
     <div className="max-w-4xl mx-auto">

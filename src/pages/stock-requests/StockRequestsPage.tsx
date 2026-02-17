@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { Plus, Package, Clock, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
-import { getStockRequestsByRequester } from '@/data/stock-requests';
-import type { StockRequestStatus, StockRequestUrgency } from '@/types/stock-request.types';
+import { useStockRequests } from '@/hooks/queries/useInventoryQueries';
+import type { StockRequestStatus, StockRequestUrgency, StockRequest } from '@/types/stock-request.types';
 
 function getRolePrefix(role: string): string {
   if (role === 'hospital_admin') return '/hospital-admin';
@@ -21,6 +21,7 @@ function getRolePrefix(role: string): string {
 export default function StockRequestsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { data: allStockRequests = [] } = useStockRequests();
   const [refreshKey] = useState(0);
   const [expandedRequestId, setExpandedRequestId] = useState<string | null>(null);
 
@@ -29,8 +30,8 @@ export default function StockRequestsPage() {
   // Fetch requests data
   const requests = useMemo(() => {
     if (!user?.id) return [];
-    return getStockRequestsByRequester(user.id);
-  }, [user?.id, refreshKey]);
+    return (allStockRequests as StockRequest[]).filter((r) => r.requesterId === user.id);
+  }, [user?.id, refreshKey, allStockRequests]);
 
   // Calculate stats
   const stats = useMemo(() => {

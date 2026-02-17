@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Patient } from '@/types/patient.types';
-import { searchPatients } from '@/data/patients';
+import { usePatientSearch } from '@/hooks/queries/usePatientQueries';
 import {
   Dialog,
   DialogContent,

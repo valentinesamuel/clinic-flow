@@ -1,4 +1,5 @@
 import { apiClient } from '../client';
+import { ConflictRule } from '@/types/consultation.types';
 
 export const protocolsApi = {
   getBundles: async () => (await apiClient.get('/protocol-bundles')).data,
@@ -8,19 +9,17 @@ export const protocolsApi = {
     })).data,
   getBundleById: async (id: string) =>
     (await apiClient.get(`/protocol-bundles/${id}`)).data,
-  getConflictRules: async () =>
-    (await apiClient.get('/conflict-rules')).data,
-  findConflicts: async (labCodes: string[], drugNames: string[]) => {
+  getConflictRules: async (): Promise<ConflictRule[]> =>
+    (await apiClient.get<ConflictRule[]>('/conflict-rules')).data,
+  findConflicts: async (labCodes: string[], drugNames: string[]): Promise<ConflictRule[]> => {
     // Fetch all rules and filter client-side (json-server can't do complex queries)
-    const { data: rules } = await apiClient.get('/conflict-rules');
-    return rules.filter((rule: any) => {
+    const { data: rules } = await apiClient.get<ConflictRule[]>('/conflict-rules');
+    return rules.filter((rule: ConflictRule) => {
       const hasLab = labCodes.some((code) =>
-        rule.labTestCodes?.includes(code),
+        rule.conflictingLabTestCode?.includes(code),
       );
       const hasDrug = drugNames.some((name) =>
-        rule.drugNames?.some((d: string) =>
-          d.toLowerCase().includes(name.toLowerCase()),
-        ),
+        rule.drugNamePattern?.toLowerCase().includes(name.toLowerCase()),
       );
       return hasLab && hasDrug;
     });

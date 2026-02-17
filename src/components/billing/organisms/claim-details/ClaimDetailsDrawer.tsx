@@ -19,7 +19,7 @@ import {
   Eye,
   Stethoscope,
 } from 'lucide-react';
-import { HMOClaim, ClaimStatus, ClaimDocument, ClaimDiagnosis, BillItem } from '@/types/billing.types';
+import { HMOClaim, ClaimStatus, ClaimDocument, ClaimDiagnosis, BillItem, Bill } from '@/types/billing.types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +34,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ClaimVersionHistory } from '@/components/billing/molecules/claim/ClaimVersionHistory';
 import { DocumentPreviewModal } from '@/components/billing/molecules/documents/DocumentPreviewModal';
 import { cn } from '@/lib/utils';
-import { getBillById } from '@/data/bills';
+import { useBills } from '@/hooks/queries/useBillQueries';
 
 interface ClaimDetailsDrawerProps {
   open: boolean;
@@ -87,6 +87,7 @@ export function ClaimDetailsDrawer({
 }: ClaimDetailsDrawerProps) {
   const [previewDoc, setPreviewDoc] = useState<ClaimDocument | null>(null);
   const [showDocPreview, setShowDocPreview] = useState(false);
+  const { data: allBills = [] } = useBills();
 
   if (!claim) return null;
 
@@ -100,17 +101,17 @@ export function ClaimDetailsDrawer({
   const canPayOutOfPocket = claim.status === 'denied';
 
   // Get linked bill details
-  const bills = (claim.billIds || []).map(id => getBillById(id)).filter(Boolean);
+  const bills = (claim.billIds || []).map(id => (allBills as Bill[]).find((b) => b.id === id)).filter((b): b is Bill => b !== undefined);
   const firstBill = bills[0];
   const displayItems = firstBill?.items.slice(0, 4) || [];
   const remainingItemsCount = (firstBill?.items.length || 0) - 4;
 
-  const handleDocumentClick = (doc: ClaimDocument) => {
+  const handleDocumentClick = (doc: ClaimDocument): void => {
     setPreviewDoc(doc);
     setShowDocPreview(true);
   };
 
-  const handleViewBillClick = () => {
+  const handleViewBillClick = (): void => {
     if (onViewBill && claim.billIds && claim.billIds.length > 0) {
       onViewBill(claim.billIds[0]);
     }

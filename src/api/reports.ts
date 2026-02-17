@@ -1,17 +1,21 @@
 import { apiClient } from './client';
-import type { DashboardType } from '@/data/reports';
+import type { DashboardType, DashboardMetadata, ReportSummary, ReportAlert } from '@/types/report.types';
+
+interface AlertWithDashboard extends ReportAlert {
+  dashboardType: DashboardType;
+}
 
 export const reportsApi = {
-  getSummary: async () => {
+  getSummary: async (): Promise<ReportSummary> => {
     const { data } = await apiClient.get('/report-summary/1');
     const { id, ...summary } = data;
-    return summary;
+    return summary as ReportSummary;
   },
-  getMetadata: async () => {
+  getMetadata: async (): Promise<Record<DashboardType, DashboardMetadata>> => {
     const { data } = await apiClient.get<{ id: string; title: string; description: string; metrics: string[] }[]>(
       '/report-metadata',
     );
-    const result = {} as Record<DashboardType, { title: string; description: string; metrics: string[] }>;
+    const result = {} as Record<DashboardType, DashboardMetadata>;
     for (const entry of data) {
       result[entry.id as DashboardType] = {
         title: entry.title,
@@ -21,11 +25,11 @@ export const reportsApi = {
     }
     return result;
   },
-  getAlerts: async () => {
-    const { data } = await apiClient.get<any[]>('/report-alerts');
-    const result = {} as Record<DashboardType, any[]>;
+  getAlerts: async (): Promise<Record<DashboardType, ReportAlert[]>> => {
+    const { data } = await apiClient.get<AlertWithDashboard[]>('/report-alerts');
+    const result = {} as Record<DashboardType, ReportAlert[]>;
     for (const alert of data) {
-      const type = alert.dashboardType as DashboardType;
+      const type: DashboardType = alert.dashboardType;
       if (!result[type]) result[type] = [];
       result[type].push(alert);
     }

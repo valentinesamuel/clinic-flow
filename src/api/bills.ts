@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { CashierShift } from '@/types/cashier.types';
 
 export const billsApi = {
   getAll: async () => (await apiClient.get('/bills')).data,
@@ -37,7 +38,7 @@ export const billsApi = {
     });
     return data[0] || null;
   },
-  calculateShiftStats: async (shift: any) => {
+  calculateShiftStats: async (shift: CashierShift) => {
     // Pure computation — keep client-side
     const { calculateShiftStats } = await import('@/data/cashier-shifts');
     return calculateShiftStats(shift);

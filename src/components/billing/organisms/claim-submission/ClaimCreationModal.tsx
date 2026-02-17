@@ -31,9 +31,9 @@ import { cn } from '@/lib/utils';
 
 import { Patient } from '@/types/patient.types';
 import { Bill, HMOClaim, ClaimDocument, ClaimDiagnosis, HMOProvider } from '@/types/billing.types';
-import { searchPatients, getPatientById } from '@/data/patients';
-import { getBillsByPatient, getBillById } from '@/data/bills';
-import { mockHMOProviders } from '@/data/claims';
+import { usePatientSearch, usePatients } from '@/hooks/queries/usePatientQueries';
+import { useBills } from '@/hooks/queries/useBillQueries';
+import { useHMOProviders } from '@/hooks/queries/useReferenceQueries';
 import { HMOProviderSelector } from '@/components/billing/molecules/hmo/HMOProviderSelector';
 import { DiagnosisSelector } from '@/components/billing/molecules/diagnosis/DiagnosisSelector';
 import { DiagnosisServiceSuggestion } from '@/components/billing/molecules/diagnosis/DiagnosisServiceSuggestion';
@@ -42,9 +42,10 @@ import { DocumentUploadZone } from '@/components/billing/molecules/documents/Doc
 import { DocumentList } from '@/components/billing/molecules/documents/DocumentList';
 import { InsuranceBadge } from '@/components/atoms/display/InsuranceBadge';
 import { HMOItemStatusBadge } from '@/components/atoms/display/HMOItemStatusBadge';
-import { ICD10Code, getCommonICD10Codes } from '@/data/icd10-codes';
-import { getServicesForMultipleDiagnoses } from '@/data/icd10-service-mappings';
+import { ICD10Code } from '@/types/clinical.types';
+import { useCommonICD10, useICD10ServiceMappings } from '@/hooks/queries/useReferenceQueries';
 import { buildClaimItemsFromBill } from '@/utils/hmoCoverage';
+import { ICD10ServiceMapping } from '@/types/financial.types';
 
 interface ClaimCreationModalProps {
   open: boolean;
@@ -147,19 +148,27 @@ export function ClaimCreationModal({
   ]);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
+  // React Query hooks
+  const { data: patientSearchResults = [] } = usePatientSearch(patientSearchQuery.length >= 2 ? patientSearchQuery : '');
+  const { data: billsData = [] } = useBills();
+  const { data: hmoProvidersData = [] } = useHMOProviders();
+  const { data: commonICD10Data = [] } = useCommonICD10();
+  const { data: icd10ServiceMappingsData = [] } = useICD10ServiceMappings();
+
   // Search patients
   const patientResults = useMemo(() => {
     if (patientSearchQuery.length < 2) return [];
-    return searchPatients(patientSearchQuery).filter(p => p.paymentType === 'hmo').slice(0, 10);
-  }, [patientSearchQuery]);
+    return (patientSearchResults as Patient[]).filter((p) => p.paymentType === 'hmo').slice(0, 10);
+  }, [patientSearchQuery, patientSearchResults]);
 
   // Get patient's pending bills
   const patientBills = useMemo(() => {
     if (!selectedPatient) return [];
-    return getBillsByPatient(selectedPatient.id).filter(b => 
+    return (billsData as Bill[]).filter((b) =>
+      b.patientId === selectedPatient.id &&
       (b.status === 'pending' || b.status === 'partial') && b.paymentMethod === 'hmo'
     );
-  }, [selectedPatient]);
+  }, [selectedPatient, billsData]);
 
   // Build pre-populated claim items from first selected bill with HMO coverage
   const prePopulatedClaim = useMemo(() => {
@@ -175,8 +184,11 @@ export function ClaimCreationModal({
   // Get approved services for selected diagnoses
   const diagnosisServiceMappings = useMemo(() => {
     if (diagnoses.length === 0) return [];
-    return getServicesForMultipleDiagnoses(diagnoses.map((d) => d.code));
-  }, [diagnoses]);
+    const diagnosisCodes = diagnoses.map((d) => d.code);
+    return (icd10ServiceMappingsData as ICD10ServiceMapping[]).filter((mapping) =>
+      diagnosisCodes.includes(mapping.icd10Code)
+    );
+  }, [diagnoses, icd10ServiceMappingsData]);
 
   // Aggregate all items from all selected bills
   const allSelectedBillItems = useMemo(() => {
@@ -194,13 +206,13 @@ export function ClaimCreationModal({
 
   // Get HMO provider name
   const selectedProvider = useMemo(() => {
-    return mockHMOProviders.find(p => p.id === hmoProviderId);
-  }, [hmoProviderId]);
+    return (hmoProvidersData as HMOProvider[]).find((p) => p.id === hmoProviderId);
+  }, [hmoProviderId, hmoProvidersData]);
 
   // Get suggested diagnoses based on common codes
-  const suggestedDiagnoses = useMemo(() => {
-    return getCommonICD10Codes();
-  }, []);
+  const suggestedDiagnoses = useMemo((): ICD10Code[] => {
+    return commonICD10Data as ICD10Code[];
+  }, [commonICD10Data]);
 
   const handleSelectPatient = (patient: Patient) => {
     setSelectedPatient(patient);

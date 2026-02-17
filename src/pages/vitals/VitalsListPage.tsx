@@ -29,9 +29,11 @@ import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { VitalSignsCard } from '@/components/clinical/VitalSignsCard';
 import { VitalsEntryModal } from '@/components/clinical/VitalsEntryModal';
 import { VitalSigns } from '@/types/clinical.types';
-import { getAllRecentVitals, addVitals, isVitalAbnormal, getVitalsByPatient } from '@/data/vitals';
-import { getPatientById, getAllPatients } from '@/data/patients';
-import { getStaffById } from '@/data/staff';
+import { isVitalAbnormal } from '@/utils/vitalUtils';
+import { usePatients } from '@/hooks/queries/usePatientQueries';
+import { useVitals } from '@/hooks/queries/useVitalQueries';
+import { useStaff } from '@/hooks/queries/useStaffQueries';
+import { useCreateVitals } from '@/hooks/mutations/useVitalMutations';
 import { useToast } from '@/hooks/use-toast';
 import { Activity, AlertTriangle, Plus, Search, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
@@ -66,8 +68,21 @@ export default function VitalsListPage() {
   const [selectedVital, setSelectedVital] = useState<VitalSigns | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
 
-  const allVitals = useMemo(() => getAllRecentVitals(), [refreshKey]);
-  const patients = useMemo(() => getAllPatients(), []);
+  const { data: vitalsData } = useVitals();
+  const { data: patientsData } = usePatients();
+  const { data: staffData } = useStaff();
+  const createVitals = useCreateVitals();
+
+  const allVitals = vitalsData ?? [];
+  const patients = patientsData ?? [];
+  const staff = staffData ?? [];
+
+  const getPatientById = (id: string) => patients.find(p => p.id === id);
+  const getStaffById = (id: string) => staff.find(s => s.id === id);
+  const getVitalsByPatient = (patientId: string) =>
+    allVitals.filter(v => v.patientId === patientId).sort((a, b) =>
+      new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
+    );
 
   // Filter vitals
   const filteredVitals = useMemo(() => {
@@ -125,9 +140,17 @@ export default function VitalsListPage() {
     }
   };
 
-  const handleVitalsSuccess = (vitals: VitalSigns) => {
-    addVitals(vitals);
-    setRefreshKey((k) => k + 1);
+  const handleVitalsSuccess = async (vitals: VitalSigns) => {
+    try {
+      await createVitals.mutateAsync(vitals);
+      setRefreshKey((k) => k + 1);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to save vitals',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleRowClick = (vital: VitalSigns) => {

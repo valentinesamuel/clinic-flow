@@ -25,12 +25,13 @@ import {
   HMOServiceCoverage,
   HMOCoverageType,
   ServiceCategory,
+  HMOProvider,
 } from "@/types/billing.types";
 import {
   getAllCoveragesPaginated,
   updateCoverage,
 } from "@/data/hmo-service-coverage";
-import { mockHMOProviders } from "@/data/claims";
+import { useHMOProviders } from "@/hooks/queries/useClaimQueries";
 
 const CATEGORIES: { value: ServiceCategory | "All"; label: string }[] = [
   { value: "All", label: "All Categories" },
@@ -42,8 +43,11 @@ const CATEGORIES: { value: ServiceCategory | "All"; label: string }[] = [
 ];
 
 export function HMOCoverageConfigTable() {
+  const { data: hmoProviders = [] } = useHMOProviders();
+  const typedHMOProviders = hmoProviders as HMOProvider[];
+
   const [selectedProvider, setSelectedProvider] = useState<string>(
-    mockHMOProviders[0]?.id || "",
+    typedHMOProviders[0]?.id || "",
   );
   const [categoryFilter, setCategoryFilter] = useState<ServiceCategory | "All">(
     "All",
@@ -80,16 +84,16 @@ export function HMOCoverageConfigTable() {
   const handleUpdateCoverage = (
     id: string,
     updatedCoverage: HMOServiceCoverage,
-  ) => {
+  ): void => {
     updateCoverage(updatedCoverage.id, updatedCoverage);
   };
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = (page: number): void => {
     setCurrentPage(page);
   };
 
   const selectedProviderName =
-    mockHMOProviders.find((p) => p.id === selectedProvider)?.name || "";
+    typedHMOProviders.find((p) => p.id === selectedProvider)?.name || "";
 
   return (
     <div className="space-y-6">
@@ -122,7 +126,7 @@ export function HMOCoverageConfigTable() {
                   <SelectValue placeholder="Select provider" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockHMOProviders.map((provider) => (
+                  {typedHMOProviders.map((provider) => (
                     <SelectItem key={provider.id} value={provider.id}>
                       {provider.name}
                     </SelectItem>

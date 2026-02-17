@@ -32,8 +32,8 @@ import {
   Pencil,
   Send,
 } from 'lucide-react';
-import { mockInventory } from '@/data/inventory';
-import { createStockRequest } from '@/data/stock-requests';
+import { useInventory } from '@/hooks/queries/useInventoryQueries';
+import { useCreateStockRequest } from '@/hooks/mutations/useInventoryMutations';
 import type { StockRequestUrgency, StockRequestItem } from '@/types/stock-request.types';
 import type { InventoryItem } from '@/types/billing.types';
 
@@ -63,6 +63,9 @@ export default function NewStockRequestPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { data: inventoryData = [] } = useInventory();
+  const createStockRequestMutation = useCreateStockRequest();
+  const mockInventory = inventoryData as InventoryItem[];
 
   // Inventory filters & pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -178,7 +181,7 @@ export default function NewStockRequestPage() {
         .map(si => `${si.inventoryItem.name}: ${si.itemNotes.trim()}`),
     ].filter(Boolean).join('\n') || undefined;
 
-    createStockRequest({
+    createStockRequestMutation.mutate({
       requesterId: user.id,
       requesterName: user.name,
       requesterRole: user.role,

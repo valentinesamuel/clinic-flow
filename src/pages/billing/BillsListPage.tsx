@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import {
@@ -33,12 +33,8 @@ import {
   HMOClaim,
 } from "@/types/billing.types";
 import { Patient } from "@/types/patient.types";
-import {
-  getBillsPaginated,
-  getBillsByDepartment,
-  getPendingBillsByDepartment,
-} from "@/data/bills";
-import { mockPatients, getPatientById } from "@/data/patients";
+import { usePatients } from "@/hooks/queries/usePatientQueries";
+import { useBills } from "@/hooks/queries/useBillQueries";
 import {
   Search,
   Receipt,
@@ -69,6 +65,12 @@ export default function BillsListPage() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Fetch data with React Query
+  const { data: patientsData, isLoading: isLoadingPatients } = usePatients();
+  const { data: billsData = [], isLoading: isLoadingBills, isError: isErrorBills } = useBills();
+
+  const patients = patientsData?.data || [];
 
   // Determine default department based on user
   const userDepartment = user ? getUserBillingDepartment(user) : "all";
@@ -102,26 +104,53 @@ export default function BillsListPage() {
   const [showClaimCreation, setShowClaimCreation] = useState(false);
   const [claimBill, setClaimBill] = useState<Bill | null>(null);
 
-  // Fetch bills with filters
-  const {
-    data: bills,
-    total,
-    totalPages,
-  } = getBillsPaginated(currentPage, pageSize, {
-    department: departmentFilter,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    search: searchQuery || undefined,
-  });
+  // Client-side filtering and pagination
+  const { bills, total, totalPages, deptBills, pendingBills, totalPending, totalPaidAmount } = useMemo(() => {
+    let filtered = [...billsData];
 
-  // Stats scoped by department filter
-  const deptBills = getBillsByDepartment(departmentFilter);
-  const pendingBills = getPendingBillsByDepartment(departmentFilter);
-  const totalPending = pendingBills.reduce((sum, b) => sum + b.balance, 0);
-  const totalPaidAmount = deptBills.filter(b => b.status === 'paid').reduce((sum, b) => sum + b.amountPaid, 0);
+    // Filter by department
+    if (departmentFilter !== "all") {
+      filtered = filtered.filter(b => b.department === departmentFilter);
+    }
+
+    // Filter by status
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(b => b.status === statusFilter);
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        b =>
+          b.billNumber.toLowerCase().includes(query) ||
+          b.patientName.toLowerCase().includes(query) ||
+          b.patientMrn.toLowerCase().includes(query)
+      );
+    }
+
+    // Calculate stats for current department filter
+    const deptBills = departmentFilter === "all"
+      ? billsData
+      : billsData.filter(b => b.department === departmentFilter);
+
+    const pendingBills = deptBills.filter(b => b.status === 'pending' || b.status === 'partial');
+    const totalPending = pendingBills.reduce((sum, b) => sum + b.balance, 0);
+    const totalPaidAmount = deptBills.filter(b => b.status === 'paid').reduce((sum, b) => sum + b.amountPaid, 0);
+
+    // Pagination
+    const total = filtered.length;
+    const totalPages = Math.ceil(total / pageSize);
+    const start = (currentPage - 1) * pageSize;
+    const bills = filtered.slice(start, start + pageSize);
+
+    return { bills, total, totalPages, deptBills, pendingBills, totalPending, totalPaidAmount };
+  }, [billsData, departmentFilter, statusFilter, searchQuery, currentPage, pageSize]);
+
   const isCashier = user?.role === 'cashier';
 
   const handleCollect = (bill: Bill) => {
-    const patient = mockPatients.find((p) => p.id === bill.patientId);
+    const patient = patients.find((p) => p.id === bill.patientId);
     if (!patient) {
       toast({
         title: "Error",
@@ -148,7 +177,7 @@ export default function BillsListPage() {
   };
 
   const handleView = (bill: Bill) => {
-    const patient = getPatientById(bill.patientId) || null;
+    const patient = patients.find(p => p.id === bill.patientId) || null;
     setDetailsBill(bill);
     setDetailsPatient(patient);
     setShowBillDetails(true);
@@ -209,6 +238,33 @@ export default function BillsListPage() {
     setShowClaimCreation(false);
     setClaimBill(null);
   };
+
+  // Loading state
+  if (isLoadingBills || isLoadingPatients) {
+    return (
+      <DashboardLayout allowedRoles={["cashier", "hospital_admin", "cmo"]}>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading bills...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Error state
+  if (isErrorBills) {
+    return (
+      <DashboardLayout allowedRoles={["cashier", "hospital_admin", "cmo"]}>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <p className="text-destructive">Error loading bills. Please try again.</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout allowedRoles={["cashier", "hospital_admin", "cmo"]}>
@@ -446,7 +502,7 @@ export default function BillsListPage() {
         onOpenChange={setShowClaimCreation}
         preselectedBill={claimBill}
         preselectedPatient={
-          claimBill ? getPatientById(claimBill.patientId) : null
+          claimBill ? patients.find(p => p.id === claimBill.patientId) || null : null
         }
         onComplete={handleClaimComplete}
         onSaveDraft={handleClaimDraft}

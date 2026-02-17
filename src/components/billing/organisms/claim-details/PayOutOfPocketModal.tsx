@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { NIGERIAN_BANKS } from '@/data/nigerian-banks';
+import { useNigerianBanks } from '@/hooks/queries/useReferenceQueries';
 
 interface PayOutOfPocketModalProps {
   open: boolean;
@@ -58,6 +58,8 @@ export function PayOutOfPocketModal({
   const [paymentMethod, setPaymentMethod] = useState<PrivatePaymentMethod>('cash');
   const [referenceNumber, setReferenceNumber] = useState('');
   const [selectedBank, setSelectedBank] = useState('');
+
+  const { banks } = useNigerianBanks();
 
   if (!claim) return null;
 
@@ -203,7 +205,7 @@ export function PayOutOfPocketModal({
                     <SelectValue placeholder="Select bank" />
                   </SelectTrigger>
                   <SelectContent>
-                    {NIGERIAN_BANKS.map((bank) => (
+                    {banks.map((bank) => (
                       <SelectItem key={bank.code} value={bank.code}>
                         {bank.name}
                       </SelectItem>

@@ -27,9 +27,9 @@ import {
 import { CashierStation, CashierShift, ShiftTransaction } from '@/types/cashier.types';
 import { Bill, PaymentItem } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
-import { getCurrentShift, calculateShiftStats } from '@/data/cashier-shifts';
-import { getPendingBillsByDepartment } from '@/data/bills';
-import { getPatientById } from '@/data/patients';
+import { useCurrentShift } from '@/hooks/queries/useBillQueries';
+import { useBills } from '@/hooks/queries/useBillQueries';
+import { usePatient, usePatients } from '@/hooks/queries/usePatientQueries';
 import { PaymentCollectionForm } from './PaymentCollectionForm';
 import { CashierShiftReport } from './CashierShiftReport';
 import { cn } from '@/lib/utils';
@@ -67,22 +67,36 @@ const departmentMap: Record<CashierStation, string> = {
 };
 
 export function CashierDashboard({ station }: CashierDashboardProps) {
-  const [shift, setShift] = useState<CashierShift | null>(
-    getCurrentShift(station) || null
-  );
+  const { data: currentShiftData } = useCurrentShift(station);
+  const [shift, setShift] = useState<CashierShift | null>(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showShiftReport, setShowShiftReport] = useState(false);
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
+  // Sync shift from query on first load
+  useState(() => {
+    if (currentShiftData && !shift) {
+      setShift(currentShiftData as CashierShift);
+    }
+  });
+
   // Get pending bills for this station's department
   const department = departmentMap[station];
-  const pendingBills = station === 'main' 
-    ? getPendingBillsByDepartment('all')
-    : getPendingBillsByDepartment(department as any);
+  const { data: pendingBills = [] } = useBills(
+    station === 'main'
+      ? { status: 'pending' }
+      : { department, status: 'pending' }
+  );
 
   // Calculate shift stats
-  const stats = shift ? calculateShiftStats(shift) : null;
+  const stats = shift ? {
+    transactionCount: shift.transactions.length,
+    totalCollected: shift.transactions.reduce((sum, t) => sum + t.amount, 0),
+    cashCollected: shift.transactions.filter(t => t.paymentMethod === 'cash').reduce((sum, t) => sum + t.amount, 0),
+    cardCollected: shift.transactions.filter(t => t.paymentMethod === 'card').reduce((sum, t) => sum + t.amount, 0),
+    transferCollected: shift.transactions.filter((t: ShiftTransaction) => t.paymentMethod === 'transfer').reduce((sum: number, t: ShiftTransaction) => sum + t.amount, 0),
+  } : null;
 
   const handleStartShift = () => {
     const newShift: CashierShift = {
@@ -115,12 +129,9 @@ export function CashierDashboard({ station }: CashierDashboardProps) {
   };
 
   const handleCollectPayment = (bill: Bill) => {
-    const patient = getPatientById(bill.patientId);
-    if (patient) {
-      setSelectedBill(bill);
-      setSelectedPatient(patient);
-      setShowPaymentForm(true);
-    }
+    setSelectedBill(bill);
+    setSelectedPatient({ id: bill.patientId, firstName: bill.patientName.split(' ')[0], lastName: bill.patientName.split(' ').slice(1).join(' ') } as Patient);
+    setShowPaymentForm(true);
   };
 
   const handlePaymentComplete = () => {

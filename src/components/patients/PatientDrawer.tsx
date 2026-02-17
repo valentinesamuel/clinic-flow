@@ -1,14 +1,14 @@
 import { format } from 'date-fns';
-import { 
-  Activity, 
-  AlertTriangle, 
-  FileText, 
+import {
+  Activity,
+  AlertTriangle,
+  FileText,
   Calendar,
   User
 } from 'lucide-react';
 import { Patient, QueueEntry } from '@/types/patient.types';
-import { VitalSigns } from '@/types/clinical.types';
-import { getConsultationsByPatient } from '@/data/consultations';
+import { VitalSigns, Consultation } from '@/types/clinical.types';
+import { useConsultationsByPatient } from '@/hooks/queries/useConsultationQueries';
 
 // Molecule components
 import { PatientQuickInfo } from '@/components/molecules/patient/PatientQuickInfo';
@@ -53,9 +53,11 @@ export function PatientDrawer({
   onViewFullProfile,
   onComplete,
 }: PatientDrawerProps) {
+  const { data: consultationsData = [] } = useConsultationsByPatient(patient?.id ?? '');
+
   if (!patient) return null;
 
-  const recentConsultations = getConsultationsByPatient(patient.id).slice(0, 3);
+  const recentConsultations = (consultationsData as Consultation[]).slice(0, 3);
   const hasAlerts = patient.allergies.length > 0 || patient.chronicConditions.length > 0;
 
   return (
@@ -170,7 +172,7 @@ export function PatientDrawer({
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {recentConsultations.map(con => (
+                    {recentConsultations.map((con: Consultation) => (
                       <div key={con.id} className="p-3 rounded-lg bg-muted/50">
                         <p className="font-medium text-sm">{con.diagnosis[0]}</p>
                         <div className="flex items-center gap-2 mt-1">

@@ -34,12 +34,13 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { testCatalog } from "@/data/lab-orders";
+import { useTestCatalog } from "@/hooks/queries/useLabQueries";
 
 export default function LabSettingsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { data: testCatalog = [], isLoading, isError } = useTestCatalog();
 
   const basePath = user?.role === "cmo" ? "/cmo" : "/hospital-admin";
 
@@ -68,9 +69,9 @@ export default function LabSettingsPage() {
       categories: categories.size,
       withCriticalValues,
     };
-  }, []);
+  }, [testCatalog]);
 
-  const previewTests = useMemo(() => testCatalog.slice(0, 5), []);
+  const previewTests = useMemo(() => testCatalog.slice(0, 5), [testCatalog]);
 
   const handleToggle = (
     name: string,
@@ -83,6 +84,38 @@ export default function LabSettingsPage() {
       description: `${name} has been ${value ? "enabled" : "disabled"}.`,
     });
   };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout allowedRoles={["cmo", "hospital_admin"]}>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <FlaskConical className="h-6 w-6 text-primary" />
+              Lab Settings
+            </h1>
+            <p className="text-muted-foreground mt-1">Loading test catalog...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (isError) {
+    return (
+      <DashboardLayout allowedRoles={["cmo", "hospital_admin"]}>
+        <div className="space-y-6">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <FlaskConical className="h-6 w-6 text-primary" />
+              Lab Settings
+            </h1>
+            <p className="text-destructive mt-1">Error loading test catalog</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout allowedRoles={["cmo", "hospital_admin"]}>

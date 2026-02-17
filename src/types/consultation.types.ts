@@ -105,3 +105,25 @@ export interface ConsultationFormData {
   bundleDeselections: BundleDeselectionRecord[];
   justifications: JustificationEntry[];
 }
+
+// Conflict Rules Types
+export interface ConflictRule {
+  id: string;
+  drugNamePattern: string;
+  conflictingLabTestCode: string;
+  conflictingLabResult: string;
+  description: string;
+}
+
+export interface PatientLabResult {
+  testCode: string;
+  result: string;
+  isAbnormal?: boolean;
+}
+
+// HMO Rules Types
+export interface HMOAlertResult {
+  rule: HMORule;
+  passed: boolean;
+  actualValue?: string | number;
+}

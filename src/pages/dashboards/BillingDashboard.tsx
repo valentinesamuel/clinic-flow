@@ -24,11 +24,11 @@ import { QuickActionsDropdown } from "@/components/billing/molecules";
 import { PaymentCollectionForm } from "@/components/billing/organisms/cashier-station/PaymentCollectionForm";
 import { PaymentItem, PaymentClearance } from "@/types/billing.types";
 import { Patient } from "@/types/patient.types";
-import { mockPatients } from "@/data/patients";
 import { getPendingBills, getTodaysRevenue } from "@/data/bills";
 import { useToast } from "@/hooks/use-toast";
 import { RevenueStatsCards } from "@/components/billing/RevenueStatsCards";
 import { useAuth } from "@/hooks/useAuth";
+import { usePatients } from "@/hooks/queries/usePatientQueries";
 
 // Mock billing data
 const unpaidBills = getPendingBills()
@@ -64,34 +64,6 @@ function formatCurrency(value: number): string {
     maximumFractionDigits: 0,
   }).format(value);
 }
-
-// Mock patient for demo
-const mockPatient: Patient = mockPatients[0] || {
-  id: "pt-demo",
-  mrn: "PT-2026-00123",
-  firstName: "Aisha",
-  lastName: "Mohammed",
-  dateOfBirth: "1985-03-15",
-  gender: "female",
-  bloodGroup: "O+",
-  maritalStatus: "married",
-  phone: "+234 803 123 4567",
-  address: "25 Marina Street, Lagos Island",
-  state: "Lagos",
-  lga: "Lagos Island",
-  nationality: "Nigerian",
-  paymentType: "cash",
-  nextOfKin: {
-    name: "Ibrahim Mohammed",
-    relationship: "Husband",
-    phone: "+234 803 987 6543",
-  },
-  allergies: [],
-  chronicConditions: [],
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  isActive: true,
-};
 
 const mockPaymentItems: PaymentItem[] = [
   {
@@ -149,6 +121,10 @@ export default function BillingDashboard() {
   const { user } = useAuth();
   const todaysRevenue = getTodaysRevenue();
 
+  // Fetch patients data
+  const { data: patientsData, isLoading: isPatientsLoading } = usePatients();
+  const patients = patientsData?.data || [];
+
   const basePath = user?.role === 'cashier' ? '/cashier'
     : user?.role === 'hospital_admin' ? '/hospital-admin/billing'
     : user?.role === 'cmo' ? '/cmo/billing' : '/cashier';
@@ -159,13 +135,23 @@ export default function BillingDashboard() {
   const [selectedItems, setSelectedItems] = useState<PaymentItem[]>([]);
 
   const handleRecordPayment = () => {
-    setSelectedPatient(mockPatient);
+    // Use first patient from fetched data for demo
+    const demoPatient = patients[0];
+    if (!demoPatient) {
+      toast({
+        title: "No Patients",
+        description: "No patient data available for demo",
+        variant: "destructive",
+      });
+      return;
+    }
+    setSelectedPatient(demoPatient);
     setSelectedItems(mockPaymentItems);
     setShowPaymentModal(true);
   };
 
   const handleCollectBill = (billData: (typeof unpaidBills)[0]) => {
-    const patient = mockPatients.find((p) => p.id === billData.patientId);
+    const patient = patients.find((p) => p.id === billData.patientId);
     if (!patient) {
       toast({
         title: "Error",

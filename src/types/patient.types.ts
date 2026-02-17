@@ -82,3 +82,34 @@ export interface QueueEntry {
   queueNumber: number;
   notes?: string;
 }
+
+// Nigerian Location Types
+export interface StateOption {
+  value: string;
+  label: string;
+}
+
+export interface LGAOption {
+  value: string;
+  label: string;
+}
+
+// Queue Input and Stats Types
+export interface QueueInput {
+  patientId: string;
+  patientName: string;
+  patientMrn: string;
+  queueType: QueueType;
+  priority?: QueuePriority;
+  reasonForVisit: string;
+  assignedTo?: string;
+  notes?: string;
+}
+
+export interface QueueStats {
+  waiting: number;
+  inProgress: number;
+  completed: number;
+  avgWaitTime: number;
+  emergencyCount: number;
+}

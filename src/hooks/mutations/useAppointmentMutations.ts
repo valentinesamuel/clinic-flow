@@ -25,3 +25,32 @@ export function useUpdateAppointment() {
     },
   });
 }
+
+export function useCancelAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) =>
+      offlineApiClient.patch(`/appointments/${id}`, {
+        status: 'cancelled',
+        notes: reason,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all });
+    },
+  });
+}
+
+export function useCheckInAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) =>
+      offlineApiClient.patch(`/appointments/${id}`, {
+        status: 'checked_in',
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all });
+    },
+  });
+}

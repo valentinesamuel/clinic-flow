@@ -8,3 +8,19 @@ export function useVitals() {
     queryFn: () => vitalsApi.getAll(),
   });
 }
+
+export function useVitalsByPatient(patientId: string) {
+  return useQuery({
+    queryKey: queryKeys.vitals.byPatient(patientId),
+    queryFn: () => vitalsApi.getByPatient(patientId),
+    enabled: !!patientId,
+  });
+}
+
+export function useLatestVitals(patientId: string) {
+  return useQuery({
+    queryKey: [...queryKeys.vitals.byPatient(patientId), 'latest'],
+    queryFn: () => vitalsApi.getLatest(patientId),
+    enabled: !!patientId,
+  });
+}

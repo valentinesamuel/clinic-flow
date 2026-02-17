@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getMedicalStaff } from '@/data/staff';
+import { useStaff } from '@/hooks/queries/useStaffQueries';
 
 const MedicalStaffPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -27,7 +27,12 @@ const MedicalStaffPage = () => {
   const [departmentFilter, setDepartmentFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const medicalStaff = getMedicalStaff();
+  // Fetch staff data
+  const { data: staffData, isLoading } = useStaff();
+  const allStaff = staffData || [];
+
+  // Filter for medical staff only (doctors and nurses)
+  const medicalStaff = allStaff.filter(s => s.role === 'Doctor' || s.role === 'Nurse');
 
   const departments = useMemo(() => {
     const depts = new Set(medicalStaff.map(s => s.department));

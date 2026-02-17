@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { useAppointments } from '@/hooks/queries/useAppointmentQueries';
 import { useQueueByType } from '@/hooks/queries/useQueueQueries';
-import { calculateWaitTime } from '@/data/queue';
+import { calculateWaitTime } from '@/utils/queueUtils';
 import { useDoctors } from '@/hooks/queries/useStaffQueries';
 import { usePatientSearch } from '@/hooks/queries/usePatientQueries';
 import { useDashboardActions } from '@/hooks/useDashboardActions';

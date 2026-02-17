@@ -13,7 +13,7 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { useQueueByType } from '@/hooks/queries/useQueueQueries';
-import { calculateWaitTime } from '@/data/queue';
+import { calculateWaitTime } from '@/utils/queueUtils';
 import { useDashboardActions } from '@/hooks/useDashboardActions';
 
 export default function NurseDashboard() {

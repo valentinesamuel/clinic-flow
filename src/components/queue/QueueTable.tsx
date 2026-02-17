@@ -5,7 +5,7 @@ import { User, Activity, Play, Eye, MoreHorizontal } from 'lucide-react';
 import { QueueEntry } from '@/types/patient.types';
 import { usePatients } from '@/hooks/queries/usePatientQueries';
 import { useVitals } from '@/hooks/queries/useVitalQueries';
-import { calculateWaitTime } from '@/data/queue';
+import { calculateWaitTime } from '@/utils/queueUtils';
 import { PAGINATION } from '@/constants/designSystem';
 
 // Atomic components

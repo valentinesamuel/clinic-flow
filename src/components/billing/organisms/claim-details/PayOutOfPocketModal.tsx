@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useNigerianBanks } from '@/data/nigerian-banks';
+import { useNigerianBanks } from '@/hooks/queries/useReferenceQueries';
 
 interface PayOutOfPocketModalProps {
   open: boolean;

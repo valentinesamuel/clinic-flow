@@ -31,7 +31,6 @@ import {
 } from "@/types/billing.types";
 import { CashierStation } from "@/types/cashier.types";
 import { Patient } from "@/types/patient.types";
-import { mockPatients } from "@/data/patients";
 import { getPendingBillsByDepartment } from "@/data/bills";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,6 +38,7 @@ import {
   getUserBillingDepartment,
   getDepartmentLabel,
 } from "@/utils/billingDepartment";
+import { usePatients } from "@/hooks/queries/usePatientQueries";
 
 const deptToStation: Record<BillingDepartment, CashierStation> = {
   front_desk: "main",
@@ -62,6 +62,10 @@ export default function CashierCombinedDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Fetch patients data
+  const { data: patientsData } = usePatients();
+  const patients = patientsData?.data || [];
 
   const department = user ? getUserBillingDepartment(user) : "front_desk";
   const station = deptToStation[department as BillingDepartment] || "main";
@@ -98,7 +102,7 @@ export default function CashierCombinedDashboard() {
   };
 
   const handleRecordPayment = () => {
-    const patient = mockPatients[0];
+    const patient = patients[0];
     if (patient) {
       setSelectedPatient(patient);
       setSelectedItems([]);
@@ -125,7 +129,7 @@ export default function CashierCombinedDashboard() {
   };
 
   const handleCollectBill = (billData: (typeof unpaidBills)[0]) => {
-    const patient = mockPatients.find((p) => p.id === billData.patientId);
+    const patient = patients.find((p) => p.id === billData.patientId);
     if (!patient) {
       toast({
         title: "Error",

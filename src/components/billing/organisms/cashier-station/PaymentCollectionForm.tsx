@@ -28,8 +28,7 @@ import { ThermalReceipt } from '@/components/billing/organisms/receipt/ThermalRe
 
 import { PaymentMethod, PaymentItem, PaymentClearance, PaymentSplit, HMOVerification } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
-import { useNigerianBanks } from '@/data/nigerian-banks';
-import { useHMOProviders } from '@/hooks/queries/useReferenceQueries';
+import { useHMOProviders, useNigerianBanks } from '@/hooks/queries/useReferenceQueries';
 import { SplitPaymentManager } from '@/components/billing/molecules/payment/SplitPaymentManager';
 import { Switch } from '@/components/ui/switch';
 

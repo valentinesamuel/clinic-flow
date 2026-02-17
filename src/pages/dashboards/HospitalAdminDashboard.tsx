@@ -34,7 +34,7 @@ import {
   getTodaysRevenue,
 } from "@/data/bills";
 import { getPendingClaims, getTotalPendingClaims } from "@/data/claims";
-import { getNonMedicalStaff, getOnDutyStaff } from "@/data/staff";
+import { useStaff } from "@/hooks/queries/useStaffQueries";
 import { BillingOverviewCard } from "@/components/billing/BillingOverviewCard";
 
 export default function HospitalAdminDashboard() {
@@ -42,12 +42,21 @@ export default function HospitalAdminDashboard() {
   const { user } = useAuth();
   const { canViewClinicalData } = usePermissions({ userRole: user?.role });
 
+  // Fetch staff data
+  const { data: staffData } = useStaff();
+  const allStaff = staffData || [];
+
   const lowStockItems = getLowStockItems();
   const criticalItems = getCriticalItems();
   const pendingBills = getPendingBills();
   const pendingClaims = getPendingClaims();
-  const nonMedicalStaff = getNonMedicalStaff();
-  const onDutyStaff = getOnDutyStaff();
+
+  // Compute non-medical staff and on-duty staff from fetched data
+  const nonMedicalStaff = allStaff.filter(
+    s => s.role !== 'Doctor' && s.role !== 'Nurse'
+  );
+  const onDutyStaff = allStaff.filter(s => s.isOnDuty);
+
   const recentBills = getRecentBills(5);
   const totalPendingAmount = getTotalPendingAmount();
 

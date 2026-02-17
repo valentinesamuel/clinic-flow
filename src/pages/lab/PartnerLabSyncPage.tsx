@@ -97,11 +97,13 @@ export default function PartnerLabSyncPage() {
   const [, setRefreshKey] = useState(0);
   const refresh = () => setRefreshKey((k) => k + 1);
 
-  const partnerLabs = getPartnerLabs();
-  const connectedLabs = getConnectedPartnerLabs();
-  const outboundReferrals = getReferralsByDirection('outbound');
-  const inboundReferrals = getReferralsByDirection('inbound');
-  const eligibleLabOrders = getLabOrdersForOutbound();
+  // Derived data from React Query hooks
+  const connectedLabs = partnerLabs.filter(lab => lab.isConnected);
+  const outboundReferrals = labReferrals.filter(ref => ref.direction === 'outbound');
+  const inboundReferrals = labReferrals.filter(ref => ref.direction === 'inbound');
+  const eligibleLabOrders = allLabOrders.filter(order =>
+    order.status === 'completed' && !labReferrals.some(ref => ref.sourceLabOrderId === order.id)
+  );
 
   const outboundActive = outboundReferrals.filter(
     (ref) => !['completed', 'cancelled'].includes(ref.status)

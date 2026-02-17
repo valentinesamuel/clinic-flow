@@ -22,7 +22,7 @@ import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { useToast } from '@/hooks/use-toast';
 import { useQueueByType } from '@/hooks/queries/useQueueQueries';
 import { useUpdateQueueEntry } from '@/hooks/mutations/useQueueMutations';
-import { calculateWaitTime } from '@/data/queue';
+import { calculateWaitTime } from '@/utils/queueUtils';
 import { QueueEntry, QueuePriority } from '@/types/patient.types';
 import { PAGINATION } from '@/constants/designSystem';
 

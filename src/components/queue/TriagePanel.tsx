@@ -6,11 +6,11 @@ import { User, AlertTriangle, Heart, Thermometer, Activity, Wind, Droplets, Scal
 import { QueueEntry, Patient, QueuePriority } from '@/types/patient.types';
 import { VitalSigns } from '@/types/clinical.types';
 import { usePatient } from '@/hooks/queries/usePatientQueries';
-import { useVitals } from '@/hooks/queries/useVitalQueries';
+import { useVitalsByPatient } from '@/hooks/queries/useVitalQueries';
 import { useCreateVitals } from '@/hooks/mutations/useVitalMutations';
 import { useUpdateQueueEntry } from '@/hooks/mutations/useQueueMutations';
 import { useDoctors } from '@/hooks/queries/useStaffQueries';
-import { isVitalAbnormal, calculateBMI, getBMICategory } from '@/data/vitals';
+import { isVitalAbnormal, calculateBMI, getBMICategory } from '@/utils/vitalUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -74,7 +74,7 @@ export function TriagePanel({ entry, onComplete, onCancel }: TriagePanelProps) {
   const [previousVitals, setPreviousVitals] = useState<VitalSigns[]>([]);
 
   const { data: patientData } = usePatient(entry.patientId);
-  const { data: vitalsHistory } = useVitals({ patientId: entry.patientId });
+  const { data: vitalsHistory } = useVitalsByPatient(entry.patientId);
   const { data: doctorsData } = useDoctors();
   const createVitals = useCreateVitals();
   const updateQueue = useUpdateQueueEntry();

@@ -1,83 +1,33 @@
-# CLAUDE.md — Clinic Flow (React Vite)
+# Clinic Flow (React 19 + Vite)
 
-## Tech Stack
+## Project Overview
 
-* Frontend: React 19, Vite, Tailwind CSS, shadcn/ui
-* Backend:
-* State Management:
+- **Role**: Patient & Provider Management System (Healthcare context)
+- **Stack**: React 19, Vite, TypeScript, Tailwind CSS v4, shadcn/ui
+- **Standards**: HIPAA-ready security, HL7 FHIR data patterns, WCAG 2.1 accessibility
 
-## Standards
+## Universal Rules (MUST FOLLOW)
 
-* Use functional components and TypeScript interfaces.
-* Favor `npm run dev` for local development.
-* Component structure: `src/components/ui` for primitives, `src/features` for logic.
+- **Baby Steps™**: Break tasks into the smallest possible meaningful changes.
+- **Architecutre**: Always stick to the atomic design systems that we have.
+- **Functionality**: Always make sure that all interactions are functional.
+- **Parallel Execution**: "1 MESSAGE = ALL COMPONENT ECOSYSTEM OPERATIONS" (Always create the Component, Hook, Styles, and Test suite simultaneously).
+- **Security**: NEVER commit `.env` files. NEVER hardcode PHI or secrets in tests or examples.
+- **Types**: Use strict TypeScript interfaces over `type`. No `any`.
+- **React**: Functional components only. Use React 19 `use` hook for promise unwrapping.
+- **Agent Spawning**: Always make sure that you do not spawn agents unnecessarily unless you have to edit more than 5 files at once.
+- **Post session Operation**: At the end of every session, make sure that that there are no build to type errors in the project
 
-## Parallel Execution Golden Rule
+## Core Workflow
 
-* 1 MESSAGE = ALL COMPONENT ECOSYSTEM OPERATIONS (Component + Hook + Test + Styles).
+- **Plan Mode**: Always start complex tasks in Plan Mode (Shift+Tab) to verify architecture.
+- **Verification**: Run `npm test` after every meaningful change. Use Playwright for UI validation.
+- **Context Hygiene**: Run `/compact` every 5-10 turns or when context exceeds 60%..
 
-### 2. Surgical Agent Selection (Personas)
+## Command Reference
 
-Instead of 135 agents, create or keep only these four files in your `.claude/agents/` directory. These cover your full-stack needs:
-
-* **`frontend-architect.md`**: For React 19 component logic and state management.
-* **`api-designer.md`**: For your backend/API work.
-* **`devops-engineer.md`**: For infrastructure and Docker work.
-* **`security-auditor.md`**: Critical for clinic-flow to ensure HIPAA-ready patterns.
-
-**Token Tip:** If you want to keep an agent from loading its description into every prompt, add `disable-model-invocation: true` to its YAML frontmatter. You can still call it manually with `@agent-name`.
-
-### 3. High-Value "Skills" (Automated Logic)
-
-Skills are more token-efficient than agents because Claude only loads the full instructions when it determines they are relevant to your task.
-
-* **Vercel React Best Practices:** Don't let the name fool you; these 45 rules are essential for React performance (fixing waterfalls and bundle size) regardless of whether you use Next.js or Vite.
-```bash
-npx add-skill vercel-labs/agent-skills
-
-```
-
-
-* **a11y-audit:** Automatically ensures your healthcare dashboard meets WCAG accessibility standards.
-```bash
-/plugin install a11y-audit
-
-```
-
-
-
-### 4. "Power Plugins" (MCP Servers)
-
-To give your agent "eyes" and live knowledge of your Vite project, install these two Model Context Protocol servers:
-
-* **Context7 (The Documentation Plugin):** This is considered the "best MCP for coding" because it fetches live, up-to-date documentation for your specific stack (e.g., Vite, Tailwind v4) into the context, preventing hallucinations.
-
-
-* **Playwright DevTools:** Essential for debugging "Vite HMR" issues or broken UI redirects in your clinic dashboard. It allows Claude to launch a real browser and see what’s failing.
-
-
-
-**Installation:**
-
-```bash
-claude mcp add context7
-claude mcp add playwright-devtools --scope user npx playwright-devtools-mcp@latest
-
-```
-
-### 5. Advanced Token Management for Full-Stack
-
-To prevent your backend rules from eating tokens while you work on CSS, use **Path-Scoping** in your `.claude/rules/` directory.
-
-Create a file at `.claude/rules/frontend.md` and add this frontmatter:
-
-```yaml
----
-paths:
-  - "src/components/**/*"
-  - "src/hooks/**/*"
----
-# React UI Rules
-- Use Tailwind spacing scales exclusively.
-- Ensure all forms have ARIA labels.
-
+- **Dev**: `npm run dev` (Vite)
+- **Build**: `npm run build`
+- **Lint**: `npm run lint`
+- **Test**: `npm test` (Vitest)
+- **A11y**: `/run-audit` (using a11y-audit plugin)

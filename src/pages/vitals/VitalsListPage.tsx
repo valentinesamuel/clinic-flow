@@ -29,7 +29,7 @@ import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { VitalSignsCard } from '@/components/clinical/VitalSignsCard';
 import { VitalsEntryModal } from '@/components/clinical/VitalsEntryModal';
 import { VitalSigns } from '@/types/clinical.types';
-import { isVitalAbnormal } from '@/data/vitals';
+import { isVitalAbnormal } from '@/utils/vitalUtils';
 import { usePatients } from '@/hooks/queries/usePatientQueries';
 import { useVitals } from '@/hooks/queries/useVitalQueries';
 import { useStaff } from '@/hooks/queries/useStaffQueries';

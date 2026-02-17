@@ -38,7 +38,7 @@ import {
   getBillsByDepartment,
   getPendingBillsByDepartment,
 } from "@/data/bills";
-import { mockPatients, getPatientById } from "@/data/patients";
+import { usePatients } from "@/hooks/queries/usePatientQueries";
 import {
   Search,
   Receipt,
@@ -69,6 +69,10 @@ export default function BillsListPage() {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // Fetch patients data
+  const { data: patientsData } = usePatients();
+  const patients = patientsData?.data || [];
 
   // Determine default department based on user
   const userDepartment = user ? getUserBillingDepartment(user) : "all";
@@ -121,7 +125,7 @@ export default function BillsListPage() {
   const isCashier = user?.role === 'cashier';
 
   const handleCollect = (bill: Bill) => {
-    const patient = mockPatients.find((p) => p.id === bill.patientId);
+    const patient = patients.find((p) => p.id === bill.patientId);
     if (!patient) {
       toast({
         title: "Error",
@@ -148,7 +152,7 @@ export default function BillsListPage() {
   };
 
   const handleView = (bill: Bill) => {
-    const patient = getPatientById(bill.patientId) || null;
+    const patient = patients.find(p => p.id === bill.patientId) || null;
     setDetailsBill(bill);
     setDetailsPatient(patient);
     setShowBillDetails(true);
@@ -446,7 +450,7 @@ export default function BillsListPage() {
         onOpenChange={setShowClaimCreation}
         preselectedBill={claimBill}
         preselectedPatient={
-          claimBill ? getPatientById(claimBill.patientId) : null
+          claimBill ? patients.find(p => p.id === claimBill.patientId) || null : null
         }
         onComplete={handleClaimComplete}
         onSaveDraft={handleClaimDraft}

@@ -20,7 +20,7 @@ export function useBundleSuggestion(
 
     for (const diagnosis of selectedDiagnoses) {
       // Use data from hook for primary diagnosis, empty for others
-      const matches = diagnosis.code === primaryCode ? (bundlesForDiagnosis as any[]) : [];
+      const matches: ProtocolBundle[] = diagnosis.code === primaryCode ? (bundlesForDiagnosis as ProtocolBundle[]) : [];
       for (const bundle of matches) {
         if (!seenIds.has(bundle.id)) {
           seenIds.add(bundle.id);

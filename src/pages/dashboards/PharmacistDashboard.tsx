@@ -18,6 +18,8 @@ import {
 import { usePendingPrescriptions, usePrescriptions } from '@/hooks/queries/usePrescriptionQueries';
 import { useInventory } from '@/hooks/queries/useInventoryQueries';
 import { useBills } from '@/hooks/queries/useBillQueries';
+import { Prescription } from '@/types/clinical.types';
+import { InventoryItem, Bill } from '@/types/billing.types';
 
 export default function PharmacistDashboard() {
   const navigate = useNavigate();
@@ -25,10 +27,10 @@ export default function PharmacistDashboard() {
   const { data: allPrescriptions = [] } = usePrescriptions();
   const { data: allInventory = [] } = useInventory();
   const { data: allBills = [] } = useBills();
-  const todaysPrescriptions = (allPrescriptions as any[]);
-  const medicines = (allInventory as any[]).filter((i: any) => i.category === 'medicine');
-  const lowStockMedicines = (allInventory as any[]).filter((i: any) => i.category === 'medicine' && i.currentStock <= i.reorderLevel);
-  const pendingPharmacyBills = (allBills as any[]).filter((b: any) => b.department === 'pharmacy' && b.status === 'pending');
+  const todaysPrescriptions = (allPrescriptions as Prescription[]);
+  const medicines = (allInventory as InventoryItem[]).filter((i: InventoryItem) => i.category === 'medicine');
+  const lowStockMedicines = (allInventory as InventoryItem[]).filter((i: InventoryItem) => i.category === 'medicine' && i.currentStock <= i.reorderLevel);
+  const pendingPharmacyBills = (allBills as Bill[]).filter((b: Bill) => b.department === 'pharmacy' && b.status === 'pending');
 
   return (
     <DashboardLayout allowedRoles={['pharmacist']}>

@@ -20,8 +20,6 @@ import {
   Package,
   Users,
   Receipt,
-  Fuel,
-  CreditCard,
   ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,11 +29,12 @@ import {
   getPendingBills,
   getTotalPendingAmount,
   getRecentBills,
-  getTodaysRevenue,
 } from "@/data/bills";
+import { getTotalPendingClaims } from "@/data/claims";
 import { usePendingClaims } from "@/hooks/queries/useClaimQueries";
 import { useStaff } from "@/hooks/queries/useStaffQueries";
 import { BillingOverviewCard } from "@/components/billing/BillingOverviewCard";
+import { InventoryItem } from "@/types/billing.types";
 
 export default function HospitalAdminDashboard() {
   const navigate = useNavigate();
@@ -48,11 +47,11 @@ export default function HospitalAdminDashboard() {
 
   // Fetch inventory data
   const { data: inventoryData = [] } = useInventory();
-  const lowStockItems = (inventoryData as any[]).filter(
-    item => item.currentStock <= item.reorderLevel
+  const lowStockItems = (inventoryData as InventoryItem[]).filter(
+    (item: InventoryItem) => item.currentStock <= item.reorderLevel
   );
-  const criticalItems = (inventoryData as any[]).filter(
-    item =>
+  const criticalItems = (inventoryData as InventoryItem[]).filter(
+    (item: InventoryItem) =>
       ['Diesel', 'Medical Oxygen'].includes(item.name) &&
       item.currentStock <= item.reorderLevel
   );

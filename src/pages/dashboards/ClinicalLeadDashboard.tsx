@@ -17,6 +17,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { useStaff, useDoctors, useNurses } from '@/hooks/queries/useStaffQueries';
 import { useLabResultsForReview, useUrgentLabOrders } from '@/hooks/queries/useLabQueries';
 import { useQueueByType } from '@/hooks/queries/useQueueQueries';
+import { getWaitingCount } from '@/data/queue';
 
 export default function ClinicalLeadDashboard() {
   const { user } = useAuth();

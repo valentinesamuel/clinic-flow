@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import { useLabOrders, usePendingLabOrders, useUrgentLabOrders, usePartnerLabs, useLabReferrals } from '@/hooks/queries/useLabQueries';
 import { useBills } from '@/hooks/queries/useBillQueries';
+import { LabOrder } from '@/types/clinical.types';
+import { Bill } from '@/types/billing.types';
 
 export default function LabTechDashboard() {
   const navigate = useNavigate();
@@ -28,10 +30,10 @@ export default function LabTechDashboard() {
   const { data: partnerLabs = [] } = usePartnerLabs();
   const { data: outboundReferrals = [] } = useLabReferrals('out');
 
-  const orderedTests = (allLabOrders as any[]).filter((o: any) => o.status === 'ordered');
-  const sampleCollected = (allLabOrders as any[]).filter((o: any) => o.status === 'sample_collected');
-  const processing = (allLabOrders as any[]).filter((o: any) => o.status === 'processing');
-  const pendingLabBills = (allBills as any[]).filter((b: any) => b.department === 'lab' && b.status === 'pending');
+  const orderedTests = (allLabOrders as LabOrder[]).filter((o: LabOrder) => o.status === 'ordered');
+  const sampleCollected = (allLabOrders as LabOrder[]).filter((o: LabOrder) => o.status === 'sample_collected');
+  const processing = (allLabOrders as LabOrder[]).filter((o: LabOrder) => o.status === 'processing');
+  const pendingLabBills = (allBills as Bill[]).filter((b: Bill) => b.department === 'lab' && b.status === 'pending');
   const connectedPartners = (partnerLabs as any[]).filter((lab: any) => lab.status === 'connected');
   const activeReferrals = (outboundReferrals as any[]).filter((ref: any) => !['completed', 'cancelled'].includes(ref.status));
 

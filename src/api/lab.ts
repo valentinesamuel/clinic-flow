@@ -1,29 +1,30 @@
 import { apiClient } from './client';
+import { LabOrder, LabTest } from '@/types/clinical.types';
 
 export const labApi = {
-  getOrders: async () => (await apiClient.get('/lab-orders')).data,
+  getOrders: async (): Promise<LabOrder[]> => (await apiClient.get<LabOrder[]>('/lab-orders')).data,
   getTestCatalog: async () => (await apiClient.get('/test-catalog')).data,
-  getPending: async () => {
-    const { data } = await apiClient.get('/lab-orders');
-    return data.filter((o: any) =>
+  getPending: async (): Promise<LabOrder[]> => {
+    const { data } = await apiClient.get<LabOrder[]>('/lab-orders');
+    return data.filter((o: LabOrder) =>
       ['ordered', 'sample_collected', 'processing'].includes(o.status),
     );
   },
-  getByStatus: async (status: string) =>
-    (await apiClient.get('/lab-orders', { params: { status } })).data,
-  getUrgent: async () => {
-    const { data } = await apiClient.get('/lab-orders', {
+  getByStatus: async (status: string): Promise<LabOrder[]> =>
+    (await apiClient.get<LabOrder[]>('/lab-orders', { params: { status } })).data,
+  getUrgent: async (): Promise<LabOrder[]> => {
+    const { data } = await apiClient.get<LabOrder[]>('/lab-orders', {
       params: { priority: 'stat' },
     });
-    return data.filter((o: any) => o.status !== 'completed');
+    return data.filter((o: LabOrder) => o.status !== 'completed');
   },
-  getByPatient: async (patientId: string) =>
-    (await apiClient.get('/lab-orders', { params: { patientId } })).data,
-  getForReview: async () => {
-    const { data } = await apiClient.get('/lab-orders', {
+  getByPatient: async (patientId: string): Promise<LabOrder[]> =>
+    (await apiClient.get<LabOrder[]>('/lab-orders', { params: { patientId } })).data,
+  getForReview: async (): Promise<LabOrder[]> => {
+    const { data } = await apiClient.get<LabOrder[]>('/lab-orders', {
       params: { status: 'completed' },
     });
-    return data.filter((o: any) => o.tests?.some((t: any) => t.isAbnormal));
+    return data.filter((o: LabOrder) => o.tests?.some((t: LabTest) => t.isAbnormal));
   },
   getOrderById: async (id: string) =>
     (await apiClient.get(`/lab-orders/${id}`)).data,
@@ -44,10 +45,10 @@ export const labApi = {
       ...data,
       orderedAt: new Date().toISOString(),
     })).data,
-  getForOutbound: async () => {
-    const { data } = await apiClient.get('/lab-orders');
+  getForOutbound: async (): Promise<LabOrder[]> => {
+    const { data } = await apiClient.get<LabOrder[]>('/lab-orders');
     return data.filter(
-      (o: any) =>
+      (o: LabOrder) =>
         ['ordered', 'sample_collected'].includes(o.status) && !o.referralId,
     );
   },

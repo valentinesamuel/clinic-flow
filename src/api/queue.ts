@@ -1,28 +1,29 @@
 import { apiClient } from './client';
 import { calculateWaitTime } from '@/utils/queueUtils';
+import { QueueEntry } from '@/types/queue.types';
 
 export const queueApi = {
-  getAll: async () => (await apiClient.get('/queue-entries')).data,
-  getByType: async (type: string) =>
-    (await apiClient.get('/queue-entries', { params: { queueType: type } })).data,
+  getAll: async (): Promise<QueueEntry[]> => (await apiClient.get<QueueEntry[]>('/queue-entries')).data,
+  getByType: async (type: string): Promise<QueueEntry[]> =>
+    (await apiClient.get<QueueEntry[]>('/queue-entries', { params: { queueType: type } })).data,
   getStats: async (type: string) => {
-    const { data: entries } = await apiClient.get('/queue-entries', {
+    const { data: entries } = await apiClient.get<QueueEntry[]>('/queue-entries', {
       params: { queueType: type },
     });
-    const waiting = entries.filter((e: any) => e.status === 'waiting').length;
-    const inProgress = entries.filter((e: any) => e.status === 'in_progress').length;
+    const waiting = entries.filter((e: QueueEntry) => e.status === 'waiting').length;
+    const inProgress = entries.filter((e: QueueEntry) => e.status === 'in_progress').length;
     return { total: entries.length, waiting, inProgress };
   },
   getAllStats: async () => {
-    const { data: entries } = await apiClient.get('/queue-entries');
-    const types = [...new Set(entries.map((e: any) => e.queueType))];
-    const stats: Record<string, any> = {};
+    const { data: entries } = await apiClient.get<QueueEntry[]>('/queue-entries');
+    const types = [...new Set(entries.map((e: QueueEntry) => e.queueType))];
+    const stats: Record<string, { total: number; waiting: number; inProgress: number }> = {};
     for (const type of types) {
-      const typed = entries.filter((e: any) => e.queueType === type);
+      const typed = entries.filter((e: QueueEntry) => e.queueType === type);
       stats[type as string] = {
         total: typed.length,
-        waiting: typed.filter((e: any) => e.status === 'waiting').length,
-        inProgress: typed.filter((e: any) => e.status === 'in_progress').length,
+        waiting: typed.filter((e: QueueEntry) => e.status === 'waiting').length,
+        inProgress: typed.filter((e: QueueEntry) => e.status === 'in_progress').length,
       };
     }
     return stats;

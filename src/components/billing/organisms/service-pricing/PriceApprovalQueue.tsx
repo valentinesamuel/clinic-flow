@@ -103,8 +103,8 @@ export function PriceApprovalQueue() {
   const { data: allApprovals = [] } = usePriceApprovals();
   const updateApprovalMutation = useUpdatePriceApproval();
 
-  const pendingApprovals = pendingApprovalsData as any[];
-  const approvalHistory = (allApprovals as any[]).filter((a: any) => a.status !== 'pending');
+  const pendingApprovals = pendingApprovalsData as PriceApproval[];
+  const approvalHistory = (allApprovals as PriceApproval[]).filter((a: PriceApproval) => a.status !== 'pending');
 
   const filteredPending = useMemo(() => {
     if (categoryFilter === 'all') return pendingApprovals;
@@ -165,7 +165,7 @@ export function PriceApprovalQueue() {
       notes: approvalNotes || undefined,
       reviewerId: 'usr-cmo',
       reviewerName: 'Dr. Nwosu',
-    } as any);
+    });
 
     toast({
       title: 'Price Approved',
@@ -196,7 +196,7 @@ export function PriceApprovalQueue() {
       notes: rejectionReason,
       reviewerId: 'usr-cmo',
       reviewerName: 'Dr. Nwosu',
-    } as any);
+    });
 
     toast({
       title: 'Price Rejected',
@@ -217,7 +217,7 @@ export function PriceApprovalQueue() {
         notes: 'Bulk approval',
         reviewerId: 'usr-cmo',
         reviewerName: 'Dr. Nwosu',
-      } as any);
+      });
     });
 
     toast({

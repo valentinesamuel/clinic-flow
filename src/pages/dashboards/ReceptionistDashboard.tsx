@@ -21,11 +21,12 @@ import { useDoctors } from '@/hooks/queries/useStaffQueries';
 import { usePatientSearch } from '@/hooks/queries/usePatientQueries';
 import { useDashboardActions } from '@/hooks/useDashboardActions';
 import { CheckInModal } from '@/components/queue/CheckInModal';
+import { QueueEntry } from '@/types/queue.types';
 
 export default function ReceptionistDashboard() {
   const navigate = useNavigate();
   const { actions } = useDashboardActions('receptionist');
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export default function ReceptionistDashboard() {
   const { data: doctors = [] } = useDoctors();
   const { data: searchResults = [] } = usePatientSearch(searchQuery);
 
-  const waitingCount = (checkInQueue as any[]).filter((e: any) => e.status === 'waiting').length;
+  const waitingCount = (checkInQueue as QueueEntry[]).filter((e: QueueEntry) => e.status === 'waiting').length;
 
   const getWaitTimeColor = (minutes: number) => {
     if (minutes < 20) return 'text-green-600 dark:text-green-400';

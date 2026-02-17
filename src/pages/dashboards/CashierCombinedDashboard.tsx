@@ -28,6 +28,7 @@ import {
   PaymentItem,
   PaymentClearance,
   BillingDepartment,
+  Bill,
 } from "@/types/billing.types";
 import { CashierStation } from "@/types/cashier.types";
 import { Patient } from "@/types/patient.types";
@@ -72,7 +73,7 @@ export default function CashierCombinedDashboard() {
   const station = deptToStation[department as BillingDepartment] || "main";
 
   // Filter bills by department client-side
-  const pendingBills = (billsData as any[]).filter(bill =>
+  const pendingBills = (billsData as Bill[]).filter((bill: Bill) =>
     (bill.status === 'pending' || bill.balance > 0) &&
     (department === 'all' || bill.department === department)
   );

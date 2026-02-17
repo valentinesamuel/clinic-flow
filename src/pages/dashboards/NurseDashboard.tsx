@@ -15,18 +15,19 @@ import {
 import { useQueueByType } from '@/hooks/queries/useQueueQueries';
 import { calculateWaitTime } from '@/utils/queueUtils';
 import { useDashboardActions } from '@/hooks/useDashboardActions';
+import { QueueEntry } from '@/types/queue.types';
 
 export default function NurseDashboard() {
   const navigate = useNavigate();
   const { actions } = useDashboardActions('nurse');
 
   const { data: triageQueue = [] } = useQueueByType('triage');
-  const waitingPatients = (triageQueue as any[]).filter(e => e.status === 'waiting');
-  const inProgressPatients = (triageQueue as any[]).filter(e => e.status === 'in_progress');
+  const waitingPatients = (triageQueue as QueueEntry[]).filter((e: QueueEntry) => e.status === 'waiting');
+  const inProgressPatients = (triageQueue as QueueEntry[]).filter((e: QueueEntry) => e.status === 'in_progress');
 
   const triageSummary = {
-    processed: (triageQueue as any[]).filter(e => e.status === 'completed').length,
-    urgent: (triageQueue as any[]).filter(e => e.priority === 'emergency').length,
+    processed: (triageQueue as QueueEntry[]).filter((e: QueueEntry) => e.status === 'completed').length,
+    urgent: (triageQueue as QueueEntry[]).filter((e: QueueEntry) => e.priority === 'emergency').length,
     pending: waitingPatients.length,
   };
 

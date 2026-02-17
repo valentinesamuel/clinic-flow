@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { VitalSigns } from '@/types/clinical.types';
-import { ConsultationDiagnosis, ConsultationLabOrder, HMOAlertResult } from '@/types/consultation.types';
+import { ConsultationDiagnosis, ConsultationLabOrder, HMOAlertResult, HMORule } from '@/types/consultation.types';
 import { useHMORules } from '@/hooks/queries/useReferenceQueries';
 
 export function useHMOAlerts(
@@ -14,7 +14,7 @@ export function useHMOAlerts(
   const alerts = useMemo((): HMOAlertResult[] => {
     if (!hmoProviderId) return [];
     // Evaluate rules from hook data
-    return (hmoRules as any[]).map((rule: any) => {
+    return (hmoRules as HMORule[]).map((rule: HMORule) => {
       let passed = true;
       let actualValue: unknown;
 

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { QuickActionsDropdown } from "@/components/billing/molecules";
 import { PaymentCollectionForm } from "@/components/billing/organisms/cashier-station/PaymentCollectionForm";
-import { PaymentItem, PaymentClearance } from "@/types/billing.types";
+import { PaymentItem, PaymentClearance, Bill } from "@/types/billing.types";
 import { Patient } from "@/types/patient.types";
 import { useBills } from "@/hooks/queries/useBillQueries";
 import { useToast } from "@/hooks/use-toast";
@@ -114,7 +114,7 @@ export default function BillingDashboard() {
   const patients = patientsData?.data || [];
 
   // Calculate pending bills and today's revenue client-side
-  const pendingBills = (billsData as any[]).filter(bill => bill.status === 'pending' || bill.balance > 0);
+  const pendingBills = (billsData as Bill[]).filter((bill: Bill) => bill.status === 'pending' || bill.balance > 0);
   const unpaidBills = pendingBills
     .slice(0, 4)
     .map((bill, index) => ({
@@ -127,7 +127,7 @@ export default function BillingDashboard() {
     }));
 
   const today = new Date().toISOString().split('T')[0];
-  const todaysBills = (billsData as any[]).filter(bill =>
+  const todaysBills = (billsData as Bill[]).filter((bill: Bill) =>
     bill.createdAt && bill.createdAt.startsWith(today)
   );
   const todaysRevenue = todaysBills.reduce((sum, bill) => sum + (bill.total || 0), 0);

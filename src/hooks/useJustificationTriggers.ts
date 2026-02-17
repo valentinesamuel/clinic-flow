@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ResolvedPrice } from '@/types/financial.types';
-import { ConsultationLabOrder, ConsultationPrescriptionItem, JustificationEntry, JustificationTrigger, PatientLabResult } from '@/types/consultation.types';
+import { ConsultationLabOrder, ConsultationPrescriptionItem, JustificationEntry, JustificationTrigger, PatientLabResult, ConflictRule } from '@/types/consultation.types';
 import { useConflictRules } from '@/hooks/queries/useReferenceQueries';
 
 export interface JustificationTriggerInfo {
@@ -43,9 +43,9 @@ export function useJustificationTriggers(
 
     // Conflict triggers: drug-lab conflicts
     for (const rxItem of prescriptionItems) {
-      const conflicts = (conflictRules as any[]).filter((rule: any) =>
-        rule.drugName?.toLowerCase() === rxItem.drugName.toLowerCase() &&
-        patientLabResults.some((lab: PatientLabResult) => rule.labTestCode === lab.testCode)
+      const conflicts = (conflictRules as ConflictRule[]).filter((rule: ConflictRule) =>
+        rule.drugNamePattern?.toLowerCase() === rxItem.drugName.toLowerCase() &&
+        patientLabResults.some((lab: PatientLabResult) => rule.conflictingLabTestCode === lab.testCode)
       );
       for (const conflict of conflicts) {
         result.push({

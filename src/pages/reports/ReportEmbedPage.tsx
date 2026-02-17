@@ -15,7 +15,7 @@ import {
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
-import type { DashboardType } from '@/types/report.types';
+import type { DashboardType, ReportAlert } from '@/types/report.types';
 import { getSeverityColor } from '@/utils/reportUtils';
 import { useReportAlerts } from '@/hooks/queries/useReportQueries';
 import { format } from 'date-fns';
@@ -43,7 +43,8 @@ export default function ReportEmbedPage({
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   const { data: allAlerts = {} } = useReportAlerts();
-  const alerts = ((allAlerts as any)[dashboardType] || []) as any[];
+  const alertsData = allAlerts as Record<DashboardType, ReportAlert[]>;
+  const alerts = (alertsData[dashboardType] || []) as ReportAlert[];
 
   const dateRangeButtons: { value: DateRangeOption; label: string }[] = [
     { value: 'today', label: 'Today' },

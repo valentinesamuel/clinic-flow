@@ -28,8 +28,9 @@ export default function PatientListPage() {
     paymentType: paymentFilter,
     search: searchQuery,
   });
-  const patients: Patient[] = (data as any)?.patients ?? (data as any)?.data ?? [];
-  const totalPages = (data as any)?.totalPages ?? 1;
+  const paginationData = data as { patients?: Patient[], data?: Patient[], totalPages?: number } | undefined;
+  const patients: Patient[] = paginationData?.patients ?? paginationData?.data ?? [];
+  const totalPages = paginationData?.totalPages ?? 1;
 
   const handleViewPatient = (patient: Patient) => {
     navigate(`${basePath}/patients/${patient.id}`);

@@ -12,7 +12,7 @@ import {
 import { HMOProviderSelector } from '@/components/billing/molecules/hmo/HMOProviderSelector';
 import { HMOVerificationCard } from '@/components/billing/molecules/hmo/HMOVerificationCard';
 import { HMOCoverageDisplay } from '@/components/billing/molecules/hmo/HMOCoverageDisplay';
-import { HMOVerification, ServiceCategory } from '@/types/billing.types';
+import { HMOVerification, ServiceCategory, HMOProvider } from '@/types/billing.types';
 import { Patient } from '@/types/patient.types';
 import { useHMOProviders } from '@/hooks/queries/useReferenceQueries';
 
@@ -40,9 +40,9 @@ export function HMOVerificationFlow({
   const [errorMessage, setErrorMessage] = useState<string>('');
   const { data: hmoProviders = [] } = useHMOProviders();
 
-  const provider = providerId ? (hmoProviders as any[]).find((p: any) => p.id === providerId) : undefined;
+  const provider = providerId ? (hmoProviders as HMOProvider[]).find((p) => p.id === providerId) : undefined;
 
-  const handleVerify = async () => {
+  const handleVerify = async (): Promise<void> => {
     if (!providerId || !policyNumber) return;
 
     setStep('verifying');
@@ -81,17 +81,17 @@ export function HMOVerificationFlow({
     }
   };
 
-  const handleProceedCash = () => {
+  const handleProceedCash = (): void => {
     onCancel();
   };
 
-  const handleContinue = () => {
+  const handleContinue = (): void => {
     if (verification) {
       onVerified(verification);
     }
   };
 
-  const handleRetry = () => {
+  const handleRetry = (): void => {
     setStep('select');
     setErrorMessage('');
   };

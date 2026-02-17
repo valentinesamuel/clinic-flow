@@ -31,6 +31,9 @@ import { usePrescription } from '@/hooks/queries/usePrescriptionQueries';
 import { useDispensePrescription } from '@/hooks/mutations/usePrescriptionMutations';
 import { usePatients } from '@/hooks/queries/usePatientQueries';
 import { useStaff } from '@/hooks/queries/useStaffQueries';
+import { Patient } from '@/types/patient.types';
+import { Prescription } from '@/types/clinical.types';
+import { Staff } from '@/types/staff.types';
 import {
   ArrowLeft,
   FileText,
@@ -87,14 +90,14 @@ export default function PrescriptionDetailPage() {
   const [substitutionReason, setSubstitutionReason] = useState('');
   const [substitutePharmacistNotes, setSubstitutePharmacistNotes] = useState('');
 
-  const prescription = prescriptionData as any;
+  const prescription = prescriptionData as Prescription | undefined;
 
-  const getPatientById = (patientId: string) => {
-    return (allPatients as any[]).find((p: any) => p.id === patientId);
+  const getPatientById = (patientId: string): Patient | undefined => {
+    return (allPatients as Patient[]).find((p) => p.id === patientId);
   };
 
-  const getStaffById = (staffId: string) => {
-    return (allStaff as any[]).find((s: any) => s.id === staffId);
+  const getStaffById = (staffId: string): Staff | undefined => {
+    return (allStaff as Staff[]).find((s) => s.id === staffId);
   };
 
   const patient = prescription ? getPatientById(prescription.patientId) : null;
@@ -200,7 +203,7 @@ export default function PrescriptionDetailPage() {
       isSubstituted: item.isSubstituted,
     }));
 
-    const result = dispensePrescriptionMutation.mutate({ prescriptionId: prescription.id, dispensedItems, pharmacistId: user.id, pharmacistName: user.name } as any) as any;
+    const result = dispensePrescriptionMutation.mutate({ prescriptionId: prescription.id, dispensedItems, pharmacistId: user.id, pharmacistName: user.name });
 
     if (result) {
       setRefreshKey((k) => k + 1);

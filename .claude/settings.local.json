@@ -21,7 +21,9 @@
       "Bash(npm run lint:*)",
       "Bash(npx eslint:*)",
       "Bash(npm test:*)",
-      "Bash(/Users/valentinesamuel/Desktop/clinic-flow/MIGRATION_SUMMARY.md:*)"
+      "Bash(/Users/valentinesamuel/Desktop/clinic-flow/MIGRATION_SUMMARY.md:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

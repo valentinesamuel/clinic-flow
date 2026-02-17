@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import { PaymentsTable } from "@/components/billing/organisms/tables/PaymentsTable";
 import { QueuePagination } from "@/components/molecules/queue/QueuePagination";
-import { PaymentMethod } from "@/types/billing.types";
+import { PaymentMethod, Bill } from "@/types/billing.types";
 import {
   PaymentRecord,
   getPaymentsPaginated,
@@ -61,7 +61,7 @@ export default function PaymentsListPage() {
 
   // Fetch bills data for bill lookups
   const { data: billsData = [] } = useBills();
-  const getBillById = (billId: string) => (billsData as any[]).find((b: any) => b.id === billId);
+  const getBillById = (billId: string) => (billsData as Bill[]).find((b: Bill) => b.id === billId);
 
   const initialMethod = searchParams.get("method") as PaymentMethod | null;
   const [searchQuery, setSearchQuery] = useState("");

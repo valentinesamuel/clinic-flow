@@ -38,7 +38,7 @@ import { useCreateLabReferral, useUpdateLabReferralStatus } from '@/hooks/mutati
 import { usePatients, usePatient } from '@/hooks/queries/usePatientQueries';
 import { useLabOrders } from '@/hooks/queries/useLabQueries';
 import { useTestCatalog } from '@/hooks/queries/useLabQueries';
-import type { LabReferral, PartnerLab, ReferralStatus, ReferralTest } from '@/types/lab-referral.types';
+import type { LabReferral, PartnerLab, ReferralStatus, ReferralTest, PartnerLabStatus } from '@/types/lab-referral.types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,6 +46,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { format } from 'date-fns';
+import type { Patient } from '@/types/patient.types';
+import type { LabOrder, TestCatalogEntry } from '@/types/clinical.types';
 
 export default function PartnerLabSyncPage() {
   const { toast } = useToast();
@@ -112,6 +114,25 @@ export default function PartnerLabSyncPage() {
     (ref) => !['completed', 'cancelled'].includes(ref.status)
   );
 
+  // Helper functions for patient search
+  const searchPatients = (query: string): Patient[] => {
+    const lowerQuery = query.toLowerCase();
+    return allPatients.filter(p =>
+      p.firstName.toLowerCase().includes(lowerQuery) ||
+      p.lastName.toLowerCase().includes(lowerQuery) ||
+      p.mrn.toLowerCase().includes(lowerQuery) ||
+      p.phone.toLowerCase().includes(lowerQuery)
+    );
+  };
+
+  const getPatientById = (id: string): Patient | undefined => {
+    return allPatients.find(p => p.id === id);
+  };
+
+  const getLabOrdersByPatient = (patientId: string): LabOrder[] => {
+    return allLabOrders.filter(o => o.patientId === patientId);
+  };
+
   // Outbound: patient search & queue tests
   const outSearchResults = outPatientSearch.length >= 2 ? searchPatients(outPatientSearch) : [];
   const outSelectedPatient = outSelectedPatientId ? getPatientById(outSelectedPatientId) : undefined;
@@ -127,8 +148,8 @@ export default function PartnerLabSyncPage() {
     setTests: React.Dispatch<React.SetStateAction<ReferralTest[]>>,
     index: number,
     testCode: string
-  ) => {
-    const entry = (testCatalog as any[]).find((t: any) => t.testCode === testCode);
+  ): void => {
+    const entry = testCatalog.find((t) => t.testCode === testCode);
     const updated = [...tests];
     updated[index] = {
       testCode,
@@ -142,7 +163,7 @@ export default function PartnerLabSyncPage() {
   const handleAddTestRow = (
     tests: ReferralTest[],
     setTests: React.Dispatch<React.SetStateAction<ReferralTest[]>>
-  ) => {
+  ): void => {
     setTests([...tests, { testCode: '', testName: '' }]);
   };
 
@@ -150,12 +171,12 @@ export default function PartnerLabSyncPage() {
     tests: ReferralTest[],
     setTests: React.Dispatch<React.SetStateAction<ReferralTest[]>>,
     index: number
-  ) => {
+  ): void => {
     setTests(tests.filter((_, i) => i !== index));
   };
 
   // --- Outbound dialog handlers ---
-  const resetOutboundForm = () => {
+  const resetOutboundForm = (): void => {
     setOutSelectedLab('');
     setOutSelectedPatientId('');
     setOutPatientSearch('');
@@ -164,13 +185,13 @@ export default function PartnerLabSyncPage() {
     setOutNotes('');
   };
 
-  const toggleOutboundTestKey = (key: string) => {
+  const toggleOutboundTestKey = (key: string): void => {
     setOutSelectedTestKeys((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
   };
 
-  const handleCreateOutbound = () => {
+  const handleCreateOutbound = (): void => {
     if (!outSelectedLab || !outSelectedPatientId || outSelectedTestKeys.length === 0) {
       toast({ title: 'Validation Error', description: 'Select a patient, at least one test, and a partner lab', variant: 'destructive' });
       return;
@@ -189,7 +210,7 @@ export default function PartnerLabSyncPage() {
       return { testCode, testName: testCode };
     });
 
-    createReferral({
+    createReferralMutation.mutate({
       direction: 'outbound',
       patientId: patient.id,
       patientName: `${patient.firstName} ${patient.lastName}`,
@@ -211,7 +232,7 @@ export default function PartnerLabSyncPage() {
   };
 
   // --- Inbound dialog handlers ---
-  const resetInboundForm = () => {
+  const resetInboundForm = (): void => {
     setInPatientName('');
     setInPatientPhone('');
     setInSelectedLab('');
@@ -221,7 +242,7 @@ export default function PartnerLabSyncPage() {
     setInAttachmentFiles([]);
   };
 
-  const handleCreateInbound = () => {
+  const handleCreateInbound = (): void => {
     if (!inPatientName || !inPatientPhone || !inSelectedLab || inTests.some((t) => !t.testCode)) {
       toast({ title: 'Validation Error', description: 'Please fill in all required fields', variant: 'destructive' });
       return;
@@ -231,8 +252,11 @@ export default function PartnerLabSyncPage() {
 
     const attachmentUrls = inAttachmentFiles.map((f) => URL.createObjectURL(f));
 
-    createInboundReferral({
+    createReferralMutation.mutate({
+      direction: 'inbound',
+      patientId: '', // Will be created
       patientName: inPatientName,
+      patientMrn: '', // Will be generated
       patientPhone: inPatientPhone,
       partnerLabId: lab.id,
       partnerLabName: lab.name,
@@ -242,6 +266,7 @@ export default function PartnerLabSyncPage() {
       attachments: attachmentUrls.length > 0 ? attachmentUrls : undefined,
       referredBy: user?.id || 'lab-t-001',
       referredByName: user?.name || 'Lab Tech',
+      status: 'received'
     });
 
     toast({ title: 'Inbound Test Registered', description: `Inbound test from ${lab.name} registered and lab order created` });
@@ -251,7 +276,7 @@ export default function PartnerLabSyncPage() {
   };
 
   // --- Send Existing Order handlers ---
-  const resetSendExisting = () => {
+  const resetSendExisting = (): void => {
     setSendSelectedOrderId('');
     setSendSelectedLab('');
     setSendStep('select');
@@ -260,18 +285,31 @@ export default function PartnerLabSyncPage() {
   const selectedOrder = eligibleLabOrders.find((o) => o.id === sendSelectedOrderId);
   const sendSelectedLabObj = connectedLabs.find((l) => l.id === sendSelectedLab);
 
-  const handleConfirmSendExisting = () => {
-    if (!sendSelectedOrderId || !sendSelectedLab) return;
+  const handleConfirmSendExisting = (): void => {
+    if (!sendSelectedOrderId || !sendSelectedLab || !selectedOrder) return;
     const lab = connectedLabs.find((l) => l.id === sendSelectedLab);
     if (!lab) return;
 
-    makeLabOrderOutbound(
-      sendSelectedOrderId,
-      lab.id,
-      lab.name,
-      user?.id || 'lab-t-001',
-      user?.name || 'Lab Tech'
-    );
+    // Create outbound referral from existing order
+    createReferralMutation.mutate({
+      direction: 'outbound',
+      patientId: selectedOrder.patientId,
+      patientName: selectedOrder.patientName,
+      patientMrn: selectedOrder.patientMrn,
+      partnerLabId: lab.id,
+      partnerLabName: lab.name,
+      tests: selectedOrder.tests.map(t => ({
+        testCode: t.testCode,
+        testName: t.testName
+      })),
+      status: 'pending',
+      referredBy: user?.id || 'lab-t-001',
+      referredByName: user?.name || 'Lab Tech',
+      priority: selectedOrder.priority === 'stat' ? 'urgent' : 'routine',
+      sourceLabOrderId: selectedOrder.id,
+      orderingDoctorId: selectedOrder.doctorId,
+      orderingDoctorName: selectedOrder.doctorName
+    });
 
     toast({ title: 'Order Sent to Partner', description: `Lab order sent to ${lab.name} as outbound referral` });
     resetSendExisting();
@@ -280,7 +318,7 @@ export default function PartnerLabSyncPage() {
   };
 
   // --- Receive Results handlers ---
-  const openReceiveResults = (referral: LabReferral) => {
+  const openReceiveResults = (referral: LabReferral): void => {
     setReceiveReferralId(referral.id);
     setReceiveExtRefNumber('');
     setReceiveTestResults(
@@ -290,7 +328,7 @@ export default function PartnerLabSyncPage() {
     setReceiveResultsOpen(true);
   };
 
-  const handleSubmitResults = () => {
+  const handleSubmitResults = (): void => {
     if (!receiveExtRefNumber) {
       toast({ title: 'Validation Error', description: 'External reference number is required', variant: 'destructive' });
       return;
@@ -298,12 +336,13 @@ export default function PartnerLabSyncPage() {
 
     const attachmentUrls = receiveAttachmentFiles.map((f) => URL.createObjectURL(f));
 
-    receiveOutboundResults(
-      receiveReferralId,
-      receiveExtRefNumber,
-      receiveTestResults,
-      attachmentUrls.length > 0 ? attachmentUrls : undefined
-    );
+    updateReferralStatusMutation.mutate({
+      referralId: receiveReferralId,
+      status: 'results_received',
+      externalReferenceNumber: receiveExtRefNumber,
+      tests: receiveTestResults,
+      resultAttachments: attachmentUrls.length > 0 ? attachmentUrls : undefined
+    });
 
     toast({ title: 'Results Received', description: 'Outbound referral results have been recorded' });
     setReceiveResultsOpen(false);
@@ -311,20 +350,20 @@ export default function PartnerLabSyncPage() {
   };
 
   // --- Status actions ---
-  const handleUpdateStatus = (id: string, status: ReferralStatus) => {
-    updateReferralStatus(id, status);
+  const handleUpdateStatus = (id: string, status: ReferralStatus): void => {
+    updateReferralStatusMutation.mutate({ referralId: id, status });
     toast({ title: 'Status Updated', description: `Referral status updated to ${status.replace('_', ' ')}` });
     refresh();
   };
 
-  const handleCompleteOutbound = (id: string) => {
-    completeOutboundReferral(id);
+  const handleCompleteOutbound = (id: string): void => {
+    updateReferralStatusMutation.mutate({ referralId: id, status: 'completed' });
     toast({ title: 'Referral Completed', description: 'Outbound referral marked as completed' });
     refresh();
   };
 
   // --- Status badge ---
-  const getStatusBadge = (status: ReferralStatus) => {
+  const getStatusBadge = (status: ReferralStatus): JSX.Element => {
     const variants: Record<ReferralStatus, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; label: string; className?: string }> = {
       pending: { variant: 'default', label: 'Pending' },
       sent: { variant: 'secondary', label: 'Sent' },
@@ -339,8 +378,8 @@ export default function PartnerLabSyncPage() {
     return <Badge variant={config.variant} className={config.className}>{config.label}</Badge>;
   };
 
-  const getLabStatusBadge = (status: PartnerLab['status']) => {
-    const variants: Record<PartnerLab['status'], { className: string; label: string }> = {
+  const getLabStatusBadge = (status: PartnerLabStatus): JSX.Element => {
+    const variants: Record<PartnerLabStatus, { className: string; label: string }> = {
       connected: { className: 'bg-green-500', label: 'Connected' },
       disconnected: { className: 'bg-red-500', label: 'Disconnected' },
       pending: { className: 'bg-yellow-500', label: 'Pending' },
@@ -353,7 +392,7 @@ export default function PartnerLabSyncPage() {
   const renderTestRows = (
     tests: ReferralTest[],
     setTests: React.Dispatch<React.SetStateAction<ReferralTest[]>>
-  ) => (
+  ): JSX.Element => (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
         <Label>Tests *</Label>
@@ -372,7 +411,7 @@ export default function PartnerLabSyncPage() {
               <SelectValue placeholder="Select test..." />
             </SelectTrigger>
             <SelectContent>
-              {(testCatalog as any[]).map((entry: any) => (
+              {testCatalog.map((entry) => (
                 <SelectItem key={entry.testCode} value={entry.testCode}>
                   {entry.testCode} — {entry.testName}
                 </SelectItem>

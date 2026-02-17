@@ -18,6 +18,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Stethoscope, Search } from 'lucide-react';
+import { createLabOrder } from '@/data/lab-orders';
+import { createPrescription } from '@/data/prescriptions';
+import { logAuditEntry } from '@/data/audit-log';
+import { amendConsultation, updateConsultation, createConsultation } from '@/data/consultations';
 
 export default function ConsultationPage() {
   const navigate = useNavigate();
@@ -46,7 +50,7 @@ export default function ConsultationPage() {
   useEffect(() => {
     if (preloadedPatient && !selectedPatient) {
       setSelectedPatient(preloadedPatient as Patient);
-      const v = patientVitals as any[];
+      const v = patientVitals as VitalSigns[];
       setVitals(v.length > 0 ? v[0] : null);
     }
   }, [preloadedPatient, patientVitals]);
@@ -87,7 +91,7 @@ export default function ConsultationPage() {
 
     if (existingConsultation) {
       updateConsultationMutation.mutate({
-        id: (existingConsultation as any).id,
+        id: existingConsultation.id,
         data: {
           chiefComplaint: formData.chiefComplaint,
           historyOfPresentIllness: formData.historyOfPresentIllness,
@@ -98,7 +102,7 @@ export default function ConsultationPage() {
           followUpDate: formData.followUpDate || undefined,
           status: 'draft',
         },
-      } as any);
+      });
     } else {
       createConsultationMutation.mutate({
         patientId: selectedPatient.id,
@@ -113,7 +117,7 @@ export default function ConsultationPage() {
         labOrderIds: [],
         followUpDate: formData.followUpDate || undefined,
         status: 'draft',
-      } as any);
+      });
     }
 
     toast({

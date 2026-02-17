@@ -19,7 +19,7 @@ import {
   Eye,
   Stethoscope,
 } from 'lucide-react';
-import { HMOClaim, ClaimStatus, ClaimDocument, ClaimDiagnosis, BillItem } from '@/types/billing.types';
+import { HMOClaim, ClaimStatus, ClaimDocument, ClaimDiagnosis, BillItem, Bill } from '@/types/billing.types';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -101,17 +101,17 @@ export function ClaimDetailsDrawer({
   const canPayOutOfPocket = claim.status === 'denied';
 
   // Get linked bill details
-  const bills = (claim.billIds || []).map(id => (allBills as any[]).find((b: any) => b.id === id)).filter(Boolean);
+  const bills = (claim.billIds || []).map(id => (allBills as Bill[]).find((b) => b.id === id)).filter((b): b is Bill => b !== undefined);
   const firstBill = bills[0];
   const displayItems = firstBill?.items.slice(0, 4) || [];
   const remainingItemsCount = (firstBill?.items.length || 0) - 4;
 
-  const handleDocumentClick = (doc: ClaimDocument) => {
+  const handleDocumentClick = (doc: ClaimDocument): void => {
     setPreviewDoc(doc);
     setShowDocPreview(true);
   };
 
-  const handleViewBillClick = () => {
+  const handleViewBillClick = (): void => {
     if (onViewBill && claim.billIds && claim.billIds.length > 0) {
       onViewBill(claim.billIds[0]);
     }

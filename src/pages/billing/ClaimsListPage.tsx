@@ -75,7 +75,7 @@ export default function ClaimsListPage() {
 
   // Fetch bills data for bill lookups
   const { data: billsData = [] } = useBills();
-  const getBillById = (billId: string) => (billsData as any[]).find((b: any) => b.id === billId);
+  const getBillById = (billId: string) => (billsData as Bill[]).find((b: Bill) => b.id === billId);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ClaimStatus | "all">(

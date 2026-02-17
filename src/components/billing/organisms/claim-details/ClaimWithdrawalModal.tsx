@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, Phone, Mail, Globe, CheckCircle2, XCircle } from 'lucide-react';
-import { HMOClaim, WithdrawalReason } from '@/types/billing.types';
+import { HMOClaim, WithdrawalReason, HMOProviderExtended } from '@/types/billing.types';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,7 +49,7 @@ export function ClaimWithdrawalModal({
 
   if (!claim) return null;
 
-  const provider = (hmoProviders as any[]).find((p: any) => p.id === claim.hmoProviderId);
+  const provider = (hmoProviders as HMOProviderExtended[]).find((p) => p.id === claim.hmoProviderId);
   const isSubmitted = claim.status === 'submitted';
   const isProcessing = claim.status === 'processing';
   const isApproved = claim.status === 'approved';
@@ -59,7 +59,7 @@ export function ClaimWithdrawalModal({
   const needsRetraction = isProcessing || isApproved;
   const canInstantCancel = isSubmitted;
 
-  const handleSubmit = () => {
+  const handleSubmit = (): void => {
     if (needsRetraction) {
       onRequestRetraction(reason, notes);
     } else {
@@ -69,7 +69,7 @@ export function ClaimWithdrawalModal({
     resetForm();
   };
 
-  const resetForm = () => {
+  const resetForm = (): void => {
     setReason('patient_self_pay');
     setNotes('');
     setConfirmContact(false);

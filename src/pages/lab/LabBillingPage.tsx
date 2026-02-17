@@ -64,26 +64,26 @@ export default function LabBillingPage() {
 
   // Stats for lab
   const { data: pendingLabBills = [] } = useBills({ department: 'lab', status: 'pending' });
-  const totalPending = pendingLabBills.reduce((sum: number, b: any) => sum + b.balance, 0);
+  const totalPending = pendingLabBills.reduce((sum: number, b: Bill) => sum + b.balance, 0);
 
-  const handleView = (bill: Bill) => {
+  const handleView = (bill: Bill): void => {
     setDetailsBill(bill);
     setDetailsPatient(null);
     setShowBillDetails(true);
   };
 
-  const handleRowClick = (bill: Bill) => {
+  const handleRowClick = (bill: Bill): void => {
     handleView(bill);
   };
 
-  const handlePrint = (bill: Bill) => {
+  const handlePrint = (bill: Bill): void => {
     toast({
       title: 'Print',
       description: `Printing ${bill.billNumber}`,
     });
   };
 
-  const handleGenerateCode = (bill: Bill) => {
+  const handleGenerateCode = (bill: Bill): void => {
     const code = generateBillingCode();
     toast({
       title: 'Billing Code Generated',
@@ -98,7 +98,7 @@ export default function LabBillingPage() {
     });
   };
 
-  const handleBillCreated = (bill: Partial<Bill>) => {
+  const handleBillCreated = (bill: Partial<Bill>): void => {
     toast({
       title: 'Bill Created',
       description: `Bill for ${bill.patientName} has been created`,

@@ -30,13 +30,13 @@ type StockStatus = 'all' | 'in_stock' | 'low' | 'out';
 export default function PharmacyStockPage() {
   const { toast } = useToast();
   const { data: inventoryData = [] } = useInventory();
-  const mockInventory = inventoryData as any[];
+  const mockInventory: InventoryItem[] = inventoryData as InventoryItem[];
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'medicine' | 'consumable'>('all');
   const [stockStatusFilter, setStockStatusFilter] = useState<StockStatus>('all');
 
   const pharmacyItems = useMemo(() => {
-    return mockInventory.filter((item: any) =>
+    return mockInventory.filter((item: InventoryItem) =>
       ['medicine', 'consumable'].includes(item.category)
     );
   }, [mockInventory]);
@@ -183,7 +183,7 @@ export default function PharmacyStockPage() {
                   className="pl-10"
                 />
               </div>
-              <Select value={categoryFilter} onValueChange={(value: any) => setCategoryFilter(value)}>
+              <Select value={categoryFilter} onValueChange={(value: string) => setCategoryFilter(value as 'all' | 'medicine' | 'consumable')}>
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
@@ -193,7 +193,7 @@ export default function PharmacyStockPage() {
                   <SelectItem value="consumable">Consumable</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={stockStatusFilter} onValueChange={(value: any) => setStockStatusFilter(value)}>
+              <Select value={stockStatusFilter} onValueChange={(value: string) => setStockStatusFilter(value as StockStatus)}>
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Stock Status" />
                 </SelectTrigger>

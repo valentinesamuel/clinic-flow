@@ -38,7 +38,7 @@ export default function InventoryListPage() {
   const { data: inventoryData = [] } = useInventory();
   const createInventoryItem = useCreateInventoryItem();
   const updateInventoryItemMutation = useUpdateInventoryItem();
-  const mockInventory = inventoryData as any[];
+  const mockInventory = inventoryData as InventoryItem[];
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all');
   const [stockStatusFilter, setStockStatusFilter] = useState<StockStatus>('all');
@@ -139,13 +139,13 @@ export default function InventoryListPage() {
 
   const handleSaveItem = () => {
     if (editingItem) {
-      updateInventoryItemMutation.mutate({ id: editingItem.id, ...itemForm } as any);
+      updateInventoryItemMutation.mutate({ id: editingItem.id, ...itemForm });
       toast({
         title: 'Item Updated',
         description: `${itemForm.name} has been updated successfully.`,
       });
     } else {
-      createInventoryItem.mutate(itemForm as any);
+      createInventoryItem.mutate(itemForm);
       toast({
         title: 'Item Added',
         description: `${itemForm.name} has been added to inventory.`,
@@ -163,7 +163,7 @@ export default function InventoryListPage() {
 
   const handleArchiveItem = () => {
     if (archiveInput === 'ARCHIVE' && archiveTarget) {
-      updateInventoryItemMutation.mutate({ id: archiveTarget.id, archived: true } as any);
+      updateInventoryItemMutation.mutate({ id: archiveTarget.id, archived: true });
       toast({
         title: 'Item Archived',
         description: `${archiveTarget.name} has been archived successfully.`,
@@ -299,7 +299,7 @@ export default function InventoryListPage() {
                   className="pl-10"
                 />
               </div>
-              <Select value={categoryFilter} onValueChange={(value: any) => setCategoryFilter(value)}>
+              <Select value={categoryFilter} onValueChange={(value) => setCategoryFilter(value as CategoryFilter)}>
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
@@ -311,7 +311,7 @@ export default function InventoryListPage() {
                   <SelectItem value="utility">Utility</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={stockStatusFilter} onValueChange={(value: any) => setStockStatusFilter(value)}>
+              <Select value={stockStatusFilter} onValueChange={(value) => setStockStatusFilter(value as StockStatus)}>
                 <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Stock Status" />
                 </SelectTrigger>
@@ -443,7 +443,7 @@ export default function InventoryListPage() {
                 <Label htmlFor="category">Category</Label>
                 <Select
                   value={itemForm.category}
-                  onValueChange={(value: any) => setItemForm({ ...itemForm, category: value })}
+                  onValueChange={(value) => setItemForm({ ...itemForm, category: value as InventoryItem['category'] })}
                 >
                   <SelectTrigger>
                     <SelectValue />

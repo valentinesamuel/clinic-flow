@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useNigerianStates } from '@/hooks/queries/useReferenceQueries';
+import { StateOption } from '@/data/nigerian-locations';
 
 interface StateSelectorProps {
   label?: string;
@@ -53,7 +54,7 @@ export const StateSelector = forwardRef<HTMLButtonElement, StateSelectorProps>(
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent className="max-h-[300px] bg-popover">
-            {(nigerianStates as any[]).map((state: any) => (
+            {nigerianStates.map((state: StateOption) => (
               <SelectItem key={state.value} value={state.value}>
                 {state.label}
               </SelectItem>

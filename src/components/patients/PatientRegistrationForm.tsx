@@ -22,6 +22,7 @@ import { useNigerianStates, useLGAsForState } from '@/hooks/queries/useReference
 import { useCreatePatient, useUpdatePatient } from '@/hooks/mutations/usePatientMutations';
 import { calculateAge } from '@/utils/patientUtils';
 import { Patient, BloodGroup, Gender, MaritalStatus, PaymentType } from '@/types/patient.types';
+import { LGAOption } from '@/data/nigerian-locations';
 import { format } from 'date-fns';
 
 interface NigerianState {
@@ -279,7 +280,7 @@ export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }:
 
     try {
       // Get the state label for display
-      const stateLabel = (nigerianStates as any[]).find((s: any) => s.value === data.state)?.label || data.state;
+      const stateLabel = (nigerianStates as NigerianState[]).find((s: NigerianState) => s.value === data.state)?.label || data.state;
 
       // Prepare patient data
       const patientData = {
@@ -326,7 +327,7 @@ export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }:
         });
         toast({
           title: 'Patient details updated',
-          description: `Changes saved for ${(updatedPatient as any).firstName} ${(updatedPatient as any).lastName}`,
+          description: `Changes saved for ${(updatedPatient as Patient).firstName} ${(updatedPatient as Patient).lastName}`,
         });
         onSuccess(updatedPatient as unknown as Patient);
       } else {
@@ -334,7 +335,7 @@ export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }:
         localStorage.removeItem(DRAFT_KEY);
         toast({
           title: 'Patient registered successfully',
-          description: `Patient Number: ${(newPatient as any).mrn}`,
+          description: `Patient Number: ${(newPatient as Patient).mrn}`,
         });
         onSuccess(newPatient as unknown as Patient);
       }
@@ -349,7 +350,7 @@ export function PatientRegistrationForm({ onSuccess, onCancel, initialPatient }:
     }
   };
 
-  const lgas = lgasData as any[];
+  const lgas: LGAOption[] = lgasData as LGAOption[];
 
   return (
     <div className="max-w-4xl mx-auto">

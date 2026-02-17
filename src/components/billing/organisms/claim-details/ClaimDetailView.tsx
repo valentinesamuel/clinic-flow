@@ -106,10 +106,10 @@ export function ClaimDetailView({
 
   const linkedBills = useMemo(() => {
     if (!claim.billIds || claim.billIds.length === 0) return [];
-    return (allBills as any[]).filter((b: any) => claim.billIds.includes(b.id)) as Bill[];
+    return (allBills as Bill[]).filter((b) => claim.billIds.includes(b.id));
   }, [claim.billIds, allBills]);
 
-  const renderActionButtons = () => {
+  const renderActionButtons = (): JSX.Element[] => {
     const buttons: JSX.Element[] = [];
 
     switch (claim.status) {

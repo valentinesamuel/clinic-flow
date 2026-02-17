@@ -65,10 +65,10 @@ export function CodePaymentProcessor({
   const [referenceNumber, setReferenceNumber] = useState('');
   const [receiptNumber, setReceiptNumber] = useState('');
 
-  const handleLookup = () => {
+  const handleLookup = (): void => {
     setError(null);
     const code = codeInput.toUpperCase().trim();
-    const entry = (billingCodes as any[]).find((e: any) => e.code === code) || null;
+    const entry = (billingCodes as BillingCodeEntry[]).find((e) => e.code === code) || null;
 
     if (!entry) {
       setError('Billing code not found. Please check and try again.');
@@ -94,7 +94,7 @@ export function CodePaymentProcessor({
     setStep(2);
   };
 
-  const handleProcessPayment = () => {
+  const handleProcessPayment = (): void => {
     if (!codeEntry) return;
 
     // Validate based on payment method
@@ -116,14 +116,14 @@ export function CodePaymentProcessor({
     setStep(3);
   };
 
-  const handleComplete = () => {
+  const handleComplete = (): void => {
     if (codeEntry) {
       onComplete(codeEntry, receiptNumber);
     }
     handleClose();
   };
 
-  const handleClose = () => {
+  const handleClose = (): void => {
     setStep(1);
     setCodeInput('');
     setCodeEntry(null);

@@ -26,6 +26,8 @@ import { usePatients } from '@/hooks/queries/usePatientQueries';
 import { Search, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Prescription } from '@/types/clinical.types';
+import { Patient } from '@/types/patient.types';
 
 type PrescriptionStatus = 'pending' | 'dispensed' | 'partially_dispensed' | 'cancelled';
 
@@ -39,18 +41,19 @@ export default function PrescriptionListPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const getPatientById = (patientId: string) => {
-    return (allPatients as any[]).find((p: any) => p.id === patientId);
+  const getPatientById = (patientId: string): Patient | undefined => {
+    return (allPatients as Patient[]).find((p) => p.id === patientId);
   };
 
   // Filter prescriptions based on role
   const prescriptions = useMemo(() => {
+    const allRx = allPrescriptions as Prescription[];
     if (user?.role === 'doctor') {
       // Show only prescriptions written by this doctor
-      return (allPrescriptions as any[]).filter((rx: any) => rx.doctorId === user.id);
+      return allRx.filter((rx) => rx.doctorId === user.id);
     }
     // Pharmacist sees all prescriptions
-    return allPrescriptions as any[];
+    return allRx;
   }, [user, allPrescriptions]);
 
   // Filter prescriptions

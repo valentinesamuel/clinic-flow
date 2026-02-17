@@ -10,7 +10,7 @@ import { EpisodeCreationModal } from '@/components/billing/organisms/episode/Epi
 import { QueuePagination } from '@/components/molecules/queue/QueuePagination';
 import { useEpisodes } from '@/hooks/queries/useEpisodeQueries';
 import { useCreateEpisode } from '@/hooks/mutations/useEpisodeMutations';
-import { EpisodeStatus } from '@/types/episode.types';
+import { EpisodeStatus, Episode } from '@/types/episode.types';
 import { Search, Activity, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -43,7 +43,7 @@ export default function EpisodeListPage() {
   const createEpisodeMutation = useCreateEpisode();
 
   // Client-side pagination
-  const episodes = allEpisodes as any[];
+  const episodes: Episode[] = allEpisodes as Episode[];
   const total = episodes.length;
   const totalPages = Math.ceil(total / pageSize) || 1;
 
@@ -81,7 +81,7 @@ export default function EpisodeListPage() {
       totalBalance: 0,
       isLockedForAudit: false,
       notes: data.notes,
-    } as any);
+    } as Partial<Episode>);
     toast({
       title: 'Episode Created',
       description: `New episode created for ${data.patientName}`,

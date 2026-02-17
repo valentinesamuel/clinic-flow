@@ -45,13 +45,13 @@ export function DoctorSelector({
   const [open, setOpen] = useState(false);
   const { data: allDoctors = [] } = useDoctors();
 
-  const doctors = useMemo(() => {
+  const doctors = useMemo((): DoctorOption[] => {
     // In a real app, we'd calculate available slots based on date
     // For now, we'll simulate availability
-    return (allDoctors as any[]).map(doc => ({
+    return allDoctors.map((doc): DoctorOption => ({
       ...doc,
       availableSlots: Math.floor(Math.random() * 10) + 1,
-    })) as DoctorOption[];
+    }));
   }, [date, allDoctors]);
 
   const selectedDoctor = doctors.find(d => d.id === value);

@@ -5,11 +5,17 @@ import { Input } from '@/components/ui/input';
 import { useReportSummary } from '@/hooks/queries/useReportQueries';
 import { DollarSign, Activity, Stethoscope, Package, FileDown, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ReportSummary } from '@/types/report.types';
 
 export default function ReportsPage() {
   const { toast } = useToast();
   const { data: reportSummaryData } = useReportSummary('all');
-  const mockReportSummary = (reportSummaryData || { financial: { totalRevenue: 0, outstandingPayments: 0, claimsPending: 0 }, operational: { totalPatientsToday: 0, avgWaitTime: 0, bedOccupancy: 0 }, clinical: { consultationsCompleted: 0, abnormalResults: 0, prescriptionsFilled: 0 }, inventory: { lowStockItems: 0, totalInventoryValue: 0, expiringItems: 0 } }) as any;
+  const mockReportSummary = (reportSummaryData || {
+    financial: { totalRevenue: 0, outstandingPayments: 0, claimsPending: 0 },
+    operational: { totalPatientsToday: 0, avgWaitTime: 0, bedOccupancy: 0 },
+    clinical: { consultationsCompleted: 0, abnormalResults: 0, prescriptionsFilled: 0 },
+    inventory: { lowStockItems: 0, totalInventoryValue: 0, expiringItems: 0 }
+  }) as ReportSummary;
 
   const handleViewReport = (reportType: string) => {
     toast({

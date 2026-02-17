@@ -5,6 +5,7 @@ import { Plus, Check } from 'lucide-react';
 import { useICD10ServiceMappings } from '@/hooks/queries/useReferenceQueries';
 import { useServiceItems } from '@/hooks/queries/useBillQueries';
 import { ICD10ServiceMapping } from '@/types/financial.types';
+import { ServiceItem } from '@/types/billing.types';
 
 interface DiagnosisServiceSuggestionProps {
   diagnosisCodes: string[];
@@ -104,7 +105,7 @@ export function DiagnosisServiceSuggestion({
       <div className="flex flex-wrap gap-2">
         {allSuggestedServices.map(([serviceId, serviceName]) => {
           const isSelected = selectedServiceIds.includes(serviceId);
-          const serviceItem = (serviceItemsData as any[]).find((s: any) => s.id === serviceId);
+          const serviceItem = (serviceItemsData as ServiceItem[]).find((s) => s.id === serviceId);
           return (
             <button
               key={serviceId}

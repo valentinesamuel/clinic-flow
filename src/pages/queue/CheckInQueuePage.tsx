@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { PAGINATION } from '@/constants/designSystem';
+import { QueueEntry } from '@/types/clinical.types';
 
 type StatusFilter = 'all' | 'pending' | 'checked_in' | 'completed';
 
@@ -281,11 +282,11 @@ export default function CheckInQueuePage() {
                 <CardTitle className="text-base">Triage Queue</CardTitle>
               </CardHeader>
               <CardContent>
-                {(triageQueueData as any[]).filter(q => q.status === 'waiting').length === 0 ? (
+                {(triageQueueData as QueueEntry[]).filter(q => q.status === 'waiting').length === 0 ? (
                   <p className="text-sm text-muted-foreground">No patients in triage queue</p>
                 ) : (
                   <div className="space-y-2">
-                    {(triageQueueData as any[]).filter(q => q.status === 'waiting').slice(0, 5).map((entry) => (
+                    {(triageQueueData as QueueEntry[]).filter(q => q.status === 'waiting').slice(0, 5).map((entry) => (
                       <div key={entry.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{entry.patientName}</p>
@@ -296,9 +297,9 @@ export default function CheckInQueuePage() {
                         </Badge>
                       </div>
                     ))}
-                    {(triageQueueData as any[]).filter(q => q.status === 'waiting').length > 5 && (
+                    {(triageQueueData as QueueEntry[]).filter(q => q.status === 'waiting').length > 5 && (
                       <p className="text-xs text-center text-muted-foreground pt-2">
-                        +{(triageQueueData as any[]).filter(q => q.status === 'waiting').length - 5} more
+                        +{(triageQueueData as QueueEntry[]).filter(q => q.status === 'waiting').length - 5} more
                       </p>
                     )}
                   </div>
@@ -311,11 +312,11 @@ export default function CheckInQueuePage() {
                 <CardTitle className="text-base">Doctor Queue</CardTitle>
               </CardHeader>
               <CardContent>
-                {(doctorQueueData as any[]).filter(q => q.status === 'waiting').length === 0 ? (
+                {(doctorQueueData as QueueEntry[]).filter(q => q.status === 'waiting').length === 0 ? (
                   <p className="text-sm text-muted-foreground">No patients waiting for doctor</p>
                 ) : (
                   <div className="space-y-2">
-                    {(doctorQueueData as any[]).filter(q => q.status === 'waiting').slice(0, 5).map((entry) => (
+                    {(doctorQueueData as QueueEntry[]).filter(q => q.status === 'waiting').slice(0, 5).map((entry) => (
                       <div key={entry.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{entry.patientName}</p>

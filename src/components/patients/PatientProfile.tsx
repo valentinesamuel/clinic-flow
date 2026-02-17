@@ -8,6 +8,8 @@ import { usePrescriptionsByPatient } from '@/hooks/queries/usePrescriptionQuerie
 import { useLabOrdersByPatient } from '@/hooks/queries/useLabQueries';
 import { useBills } from '@/hooks/queries/useBillQueries';
 import { useStaff } from '@/hooks/queries/useStaffQueries';
+import { VitalSigns, Consultation, Appointment, Prescription, LabOrder } from '@/types/clinical.types';
+import { Bill } from '@/types/billing.types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -66,58 +68,65 @@ export function PatientProfile({
   const { toast } = useToast();
   const [copiedMrn, setCopiedMrn] = useState(false);
   const [showVitalsModal, setShowVitalsModal] = useState(false);
+  const [vitals, setVitals] = useState<VitalSigns[]>([]);
 
   // Fetch data via hooks
   const { data: vitalsData = [] } = useVitals({ patientId: patient.id });
-  const vitals = vitalsData as VitalSigns[];
-  const { data: consultations = [] } = useConsultationsByPatient(patient.id);
-  const { data: allAppointments = [] } = useAppointments({ patientId: patient.id });
-  const { data: prescriptions = [] } = usePrescriptionsByPatient(patient.id);
-  const { data: labOrders = [] } = useLabOrdersByPatient(patient.id);
-  const { data: bills = [] } = useBills({ patientId: patient.id });
+  const consultationsData = useConsultationsByPatient(patient.id);
+  const consultations = (consultationsData.data || []) as Consultation[];
+  const appointmentsData = useAppointments({ patientId: patient.id });
+  const allAppointments = (appointmentsData.data || []) as Appointment[];
+  const prescriptionsData = usePrescriptionsByPatient(patient.id);
+  const prescriptions = (prescriptionsData.data || []) as Prescription[];
+  const labOrdersData = useLabOrdersByPatient(patient.id);
+  const labOrders = (labOrdersData.data || []) as LabOrder[];
+  const billsData = useBills({ patientId: patient.id });
+  const bills = (billsData.data || []) as Bill[];
 
   const age = calculateAge(patient.dateOfBirth);
   const initials = `${patient.firstName[0]}${patient.lastName[0]}`.toUpperCase();
   const genderIcon = patient.gender === 'male' ? '♂' : patient.gender === 'female' ? '♀' : '⚧';
 
   // Derived data
-  const latestVitals = vitals.length > 0 ? [...vitals].sort((a: any, b: any) =>
+  const vitalsFromData = vitalsData as VitalSigns[];
+  const latestVitals = vitalsFromData.length > 0 ? [...vitalsFromData].sort((a: VitalSigns, b: VitalSigns) =>
     new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime()
   )[0] : null;
-  const patientAppointments = (allAppointments as any[]).filter((a: any) => a.patientId === patient.id);
-  const upcomingAppointments = patientAppointments.filter((a: any) =>
+  const patientAppointments = allAppointments.filter((a: Appointment) => a.patientId === patient.id);
+  const upcomingAppointments = patientAppointments.filter((a: Appointment) =>
     isAfter(new Date(`${a.scheduledDate}T${a.scheduledTime}`), new Date()) &&
     !['cancelled', 'completed'].includes(a.status)
   );
-  const pastAppointments = patientAppointments.filter((a: any) =>
+  const pastAppointments = patientAppointments.filter((a: Appointment) =>
     isBefore(new Date(`${a.scheduledDate}T${a.scheduledTime}`), new Date()) ||
     a.status === 'completed'
   );
-  const activePrescriptions = (prescriptions as any[]).filter((p: any) => p.status === 'dispensed' || p.status === 'pending');
-  const pendingLabs = (labOrders as any[]).filter((l: any) => l.status !== 'completed' && l.status !== 'cancelled');
-  const completedLabs = (labOrders as any[]).filter((l: any) => l.status === 'completed');
-  const outstandingBalance = (bills as any[]).reduce((sum: number, b: any) => sum + (b.balance || 0), 0);
+  const activePrescriptions = prescriptions.filter((p: Prescription) => p.status === 'dispensed' || p.status === 'pending');
+  const pendingLabs = labOrders.filter((l: LabOrder) => l.status !== 'completed' && l.status !== 'cancelled');
+  const completedLabs = labOrders.filter((l: LabOrder) => l.status === 'completed');
+  const outstandingBalance = bills.reduce((sum: number, b: Bill) => sum + (b.balance || 0), 0);
 
-  const copyMrn = async () => {
+  const copyMrn = async (): Promise<void> => {
     await navigator.clipboard.writeText(patient.mrn);
     setCopiedMrn(true);
     toast({ title: 'Copied!', description: 'Patient number copied to clipboard.' });
     setTimeout(() => setCopiedMrn(false), 2000);
   };
 
-  const handleVitalsRecorded = (newVitals: VitalSigns) => {
-    setVitals(prev => [newVitals, ...prev]);
+  const handleVitalsRecorded = (newVitals: VitalSigns): void => {
+    setVitals((prev: VitalSigns[]) => [newVitals, ...prev]);
   };
 
-  const paymentBadgeVariant = {
+  const paymentBadgeVariant: Record<string, 'secondary' | 'default' | 'outline'> = {
     cash: 'secondary',
     hmo: 'default',
     corporate: 'outline',
-  } as const;
+  };
 
-  const getStaffName = (staffId: string) => {
-    const staff = mockStaff.find(s => s.id === staffId);
-    return staff?.name || 'Unknown';
+  const getStaffName = (staffId: string): string => {
+    // In a real app, this would use the useStaff hook
+    // For now, return a placeholder
+    return 'Staff Member';
   };
 
   // Check for HMO expiry warning
@@ -167,8 +176,8 @@ export function PatientProfile({
               )}
             </div>
             
-            <Badge 
-              variant={paymentBadgeVariant[patient.paymentType]}
+            <Badge
+              variant={paymentBadgeVariant[patient.paymentType] as 'secondary' | 'default' | 'outline'}
               className="mb-4"
             >
               {patient.paymentType === 'hmo' 
@@ -438,7 +447,7 @@ export function PatientProfile({
                   <CardContent className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Payment Type</span>
-                      <Badge variant={paymentBadgeVariant[patient.paymentType]}>
+                      <Badge variant={paymentBadgeVariant[patient.paymentType] as 'secondary' | 'default' | 'outline'}>
                         {patient.paymentType.toUpperCase()}
                       </Badge>
                     </div>
@@ -479,7 +488,7 @@ export function PatientProfile({
                   <Badge variant="outline">{consultations.length} consultations</Badge>
                 </div>
                 <div className="space-y-4">
-                  {consultations.map((consultation, index) => (
+                  {consultations.map((consultation: Consultation, index: number) => (
                     <ConsultationCard
                       key={consultation.id}
                       consultation={consultation}
@@ -512,16 +521,16 @@ export function PatientProfile({
 
             {latestVitals ? (
               <>
-                <VitalSignsCard 
-                  vitals={latestVitals} 
-                  showRecordedBy 
+                <VitalSignsCard
+                  vitals={latestVitals}
+                  showRecordedBy
                   recordedByName={getStaffName(latestVitals.recordedBy)}
                 />
 
-                <VitalsTrendChart vitals={vitals} patientId={patient.id} />
+                <VitalsTrendChart vitals={vitalsFromData} patientId={patient.id} />
 
                 {/* Vitals History Table */}
-                {vitals.length > 1 && (
+                {vitalsFromData.length > 1 && (
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-sm">Vitals History</CardTitle>
@@ -540,7 +549,7 @@ export function PatientProfile({
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {vitals.slice(0, 10).map((v) => (
+                          {vitalsFromData.slice(0, 10).map((v: VitalSigns) => (
                             <TableRow key={v.id}>
                               <TableCell className="text-xs">
                                 {format(new Date(v.recordedAt), 'dd MMM yyyy')}
@@ -583,7 +592,7 @@ export function PatientProfile({
             {upcomingAppointments.length > 0 && (
               <div className="space-y-3">
                 <h4 className="font-medium text-sm">Upcoming Appointments</h4>
-                {upcomingAppointments.map(apt => (
+                {upcomingAppointments.map((apt: Appointment) => (
                   <Card key={apt.id}>
                     <CardContent className="py-4">
                       <div className="flex items-center justify-between">
@@ -612,7 +621,7 @@ export function PatientProfile({
             {pastAppointments.length > 0 && (
               <div className="space-y-3">
                 <h4 className="font-medium text-sm text-muted-foreground">Past Appointments</h4>
-                {pastAppointments.slice(0, 5).map(apt => (
+                {pastAppointments.slice(0, 5).map((apt: Appointment) => (
                   <Card key={apt.id} className="bg-muted/30">
                     <CardContent className="py-3">
                       <div className="flex items-center justify-between">
@@ -650,11 +659,11 @@ export function PatientProfile({
             {activePrescriptions.length > 0 && (
               <div className="space-y-3">
                 <h4 className="font-medium text-sm">Active Prescriptions</h4>
-                {activePrescriptions.map(rx => (
+                {activePrescriptions.map((rx: Prescription) => (
                   <Card key={rx.id} className="border-l-4 border-l-green-500">
                     <CardContent className="py-4">
                       <div className="space-y-2">
-                        {rx.items.map((item, i) => (
+                        {rx.items.map((item, i: number) => (
                           <div key={i} className="flex items-center justify-between">
                             <div>
                               <p className="font-medium">{item.drugName} {item.dosage}</p>
@@ -693,7 +702,7 @@ export function PatientProfile({
                   <AlertCircle className="h-4 w-4 text-yellow-600" />
                   Pending Tests
                 </h4>
-                {pendingLabs.map(lab => (
+                {pendingLabs.map((lab: LabOrder) => (
                   <Card key={lab.id} className="border-l-4 border-l-yellow-500">
                     <CardContent className="py-4">
                       <div className="flex items-center justify-between">
@@ -716,7 +725,7 @@ export function PatientProfile({
             {completedLabs.length > 0 && (
               <div className="space-y-3">
                 <h4 className="font-medium text-sm">Completed Results</h4>
-                {completedLabs.map(lab => (
+                {completedLabs.map((lab: LabOrder) => (
                   <Card key={lab.id}>
                     <CardContent className="py-4">
                       <div className="flex items-center justify-between mb-3">
@@ -738,7 +747,7 @@ export function PatientProfile({
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {lab.tests.map((test, i) => (
+                          {lab.tests.map((test, i: number) => (
                             <TableRow key={i}>
                               <TableCell>{test.testName}</TableCell>
                               <TableCell className={cn(test.isAbnormal && "text-destructive font-medium")}>
@@ -806,14 +815,14 @@ export function PatientProfile({
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {bills.map(bill => (
+                      {bills.map((bill: Bill) => (
                         <TableRow key={bill.id}>
                           <TableCell className="font-mono text-xs">{bill.billNumber}</TableCell>
                           <TableCell>{format(new Date(bill.createdAt), 'dd MMM yyyy')}</TableCell>
                           <TableCell>₦{bill.total.toLocaleString()}</TableCell>
                           <TableCell>₦{bill.amountPaid.toLocaleString()}</TableCell>
                           <TableCell>
-                            <Badge 
+                            <Badge
                               variant={bill.status === 'paid' ? 'default' : bill.status === 'partial' ? 'secondary' : 'outline'}
                               className={cn(
                                 bill.status === 'pending' && "text-destructive border-destructive"

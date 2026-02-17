@@ -64,7 +64,7 @@ export default function PharmacyBillingPage() {
 
   // Stats for pharmacy
   const { data: pendingPharmacyBills = [] } = useBills({ department: 'pharmacy', status: 'pending' });
-  const totalPending = pendingPharmacyBills.reduce((sum: number, b: any) => sum + b.balance, 0);
+  const totalPending = pendingPharmacyBills.reduce((sum: number, b: Bill) => sum + b.balance, 0);
 
   const handleView = (bill: Bill) => {
     setDetailsBill(bill);

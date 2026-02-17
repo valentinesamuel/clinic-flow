@@ -23,7 +23,7 @@ export default function ClaimDetailPage() {
   const { data: claimData } = useClaim(id || '');
   const updateClaimStatusMutation = useUpdateClaimStatus();
   const submitClaimMutation = useSubmitClaim();
-  const claim = claimData as any;
+  const claim: HMOClaim | undefined = claimData as HMOClaim | undefined;
 
   if (!claim) {
     return (

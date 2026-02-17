@@ -24,6 +24,8 @@ import { useAppointments } from '@/hooks/queries/useAppointmentQueries';
 import { useQueueByType } from '@/hooks/queries/useQueueQueries';
 import { useDashboardActions } from '@/hooks/useDashboardActions';
 import { useToast } from '@/hooks/use-toast';
+import { QueueEntry } from '@/types/clinical.types';
+import { Appointment } from '@/types/clinical.types';
 
 // Mock lab results and prescription data
 const labResults = [
@@ -44,11 +46,12 @@ export default function DoctorDashboard() {
 
   const { data: todaysAppointments = [] } = useAppointments();
   const { data: doctorQueue = [] } = useQueueByType('doctor');
-  const waitingCount = doctorQueue.filter((e: any) => e.status === 'waiting').length;
-  const completedCount = doctorQueue.filter((e: any) => e.status === 'completed').length;
+  const queueEntries = doctorQueue as QueueEntry[];
+  const waitingCount = queueEntries.filter((e) => e.status === 'waiting').length;
+  const completedCount = queueEntries.filter((e) => e.status === 'completed').length;
 
   // Get first waiting patient
-  const nextPatient = doctorQueue.find((e: any) => e.status === 'waiting');
+  const nextPatient = queueEntries.find((e) => e.status === 'waiting');
 
   const handleViewAllAppointments = () => {
     navigate('/doctor/appointments');
@@ -173,7 +176,7 @@ export default function DoctorDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {todaysAppointments.slice(0, 5).map((apt) => (
+              {(todaysAppointments as Appointment[]).slice(0, 5).map((apt) => (
                 <div
                   key={apt.id}
                   className="flex items-center gap-4 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-pointer"

@@ -40,11 +40,11 @@ export default function LabResultsListPage() {
   const [showAbnormalOnly, setShowAbnormalOnly] = useState(false);
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
-  const completedOrders = useMemo(() => {
-    return (allLabOrders as any[]).filter(o => o.status === 'completed');
+  const completedOrders = useMemo((): LabOrder[] => {
+    return allLabOrders.filter(o => o.status === 'completed');
   }, [allLabOrders]);
 
-  const filteredOrders = useMemo(() => {
+  const filteredOrders = useMemo((): LabOrder[] => {
     let filtered = [...completedOrders];
 
     if (searchQuery) {
@@ -81,7 +81,7 @@ export default function LabResultsListPage() {
     return order.tests.some(test => test.isAbnormal);
   };
 
-  const toggleExpand = (orderId: string) => {
+  const toggleExpand = (orderId: string): void => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
 

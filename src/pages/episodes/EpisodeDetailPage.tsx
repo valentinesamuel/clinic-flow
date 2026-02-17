@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { EpisodeDetailView } from '@/components/billing/organisms/episode/EpisodeDetailView';
 import { useEpisodes } from '@/hooks/queries/useEpisodeQueries';
+import { Episode } from '@/types/episode.types';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
@@ -10,7 +11,7 @@ export default function EpisodeDetailPage() {
   const navigate = useNavigate();
 
   const { data: episodesData = [] } = useEpisodes();
-  const episode = id ? (episodesData as any[]).find((e: any) => e.id === id) : undefined;
+  const episode: Episode | undefined = id ? (episodesData as Episode[]).find((e: Episode) => e.id === id) : undefined;
 
   if (!episode) {
     return (

@@ -65,7 +65,7 @@ export default function NewStockRequestPage() {
   const { toast } = useToast();
   const { data: inventoryData = [] } = useInventory();
   const createStockRequestMutation = useCreateStockRequest();
-  const mockInventory = inventoryData as any[];
+  const mockInventory = inventoryData as InventoryItem[];
 
   // Inventory filters & pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -190,7 +190,7 @@ export default function NewStockRequestPage() {
       urgency,
       reason: reason.trim(),
       notes: combinedNotes,
-    } as any);
+    });
 
     toast({ title: 'Request Submitted', description: `${selectedItems.length} item(s) sent for admin approval` });
     navigate(backPath);

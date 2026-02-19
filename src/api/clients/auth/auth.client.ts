@@ -27,7 +27,7 @@ export const authClient = {
     // const { data: users } = await Client.get<TLoginSuccesResponse>(
     const {
       result: { data: users },
-    } = await Client.get<TLoginSuccesResponse>(ENDPOINTS.USERS.GET_ALL_USERS, {
+    } = await Client.get<TLoginSuccesResponse>(ENDPOINTS.USERS.BASE, {
       params: { role },
     });
     const user = users[0];

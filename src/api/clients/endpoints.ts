@@ -1,6 +1,15 @@
 const ENDPOINTS = {
   USERS: {
-    GET_ALL_USERS: "/users",
+    BASE: "/users",
+  },
+  APPOINTMENTS: {
+    BASE: "/appointments",
+  },
+  BILLS: {
+    BASE: "/bills",
+  },
+  PAYMENTS: {
+    BASE: "/payments",
   },
 };
 

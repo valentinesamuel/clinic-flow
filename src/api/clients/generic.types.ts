@@ -30,3 +30,9 @@ export type TQueryParams = Record<
   string,
   string | number | boolean | undefined | null
 >;
+
+export type TBaseQueryParams = {
+  limit?: number;
+  page?: number;
+  searchTerm?: string;
+};

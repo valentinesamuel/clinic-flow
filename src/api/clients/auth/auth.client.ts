@@ -1,11 +1,13 @@
-import { User, UserRole } from '@/types/user.types';
-import { apiClient } from './client';
+import { apiClient } from "../../client";
+import Client from "../../axios";
+import ENDPOINTS from "../endpoints";
+import { TLoginSuccesResponse, TUser, TUserRole } from "./authClient.types";
 
-const TOKEN_KEY = 'auth_token';
-const USER_KEY = 'auth_user';
+const TOKEN_KEY = "auth_token";
+const USER_KEY = "auth_user";
 
 // Module-level cache for synchronous access (used by API interceptors)
-let cachedUser: User | null = null;
+let cachedUser: TUser | null = null;
 
 function init() {
   try {
@@ -19,10 +21,13 @@ function init() {
 }
 init();
 
-export const authApi = {
-  login: async (role: UserRole): Promise<{ user: User; token: string }> => {
+export const authClient = {
+  login: async (role: TUserRole): Promise<{ user: TUser; token: string }> => {
     // Fetch user by role from json-server
-    const { data: users } = await apiClient.get<User[]>('/users', {
+    // const { data: users } = await Client.get<TLoginSuccesResponse>(
+    const {
+      result: { data: users },
+    } = await Client.get<TLoginSuccesResponse>(ENDPOINTS.USERS.GET_ALL_USERS, {
       params: { role },
     });
     const user = users[0];
@@ -42,7 +47,7 @@ export const authApi = {
     cachedUser = null;
   },
 
-  getCurrentUser: async (): Promise<User | null> => {
+  getCurrentUser: async (): Promise<TUser | null> => {
     return cachedUser;
   },
 

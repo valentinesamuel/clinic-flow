@@ -148,7 +148,7 @@ export function TriagePanel({ entry, onComplete, onCancel }: TriagePanelProps) {
 
       // Update queue entry
       await updateQueue.mutateAsync({
-        entryId: entry.id,
+        id: entry.id,
         updates: {
           priority,
           status: 'waiting',

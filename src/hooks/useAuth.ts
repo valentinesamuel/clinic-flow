@@ -1,6 +1,5 @@
-import { useCurrentUser } from './queries/useAuthQueries';
-import { useLogin, useLogout } from './mutations/useAuthMutations';
-import { User, UserRole, roleMetadata } from '@/types/user.types';
+import { useCurrentUser, useLogin, useLogout } from "@/api/services/auth.service";
+import { TUserRole, roleMetadata } from "@/api/clients/auth/authClient.types";
 
 export function useAuth() {
   const { data: user } = useCurrentUser();
@@ -10,11 +9,9 @@ export function useAuth() {
   return {
     user: user ?? null,
     isAuthenticated: !!user,
-    login: (role: UserRole) => loginMutation.mutate(role),
+    login: (role: TUserRole) => loginMutation.mutate(role),
     logout: () => logoutMutation.mutate(),
   };
 }
 
-// Re-export types for convenience (matches old AuthContext exports)
-export type { User, UserRole };
 export { roleMetadata };

@@ -44,7 +44,7 @@ export interface Appointment {
     createdBy: string;
 }
 
-export type TGetAllAppointemntsSuccessResponse = TGetAPIMetaResponse<
+export type TGetAllAppointmentsSuccessResponse = TGetAPIMetaResponse<
     Appointment[]
 >;
 

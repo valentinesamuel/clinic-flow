@@ -8,6 +8,9 @@ const ENDPOINTS = {
   BILLS: {
     BASE: "/bills",
   },
+  SERVICE: {
+    BASE: "/services",
+  },
   PAYMENTS: {
     BASE: "/payments",
   },

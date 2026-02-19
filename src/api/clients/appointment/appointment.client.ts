@@ -3,7 +3,7 @@ import ENDPOINTS from "../endpoints";
 import {
   TCreateAppointmentRequest,
   TCreateAppointmentSuccessResponse,
-  TGetAllAppointemntsSuccessResponse,
+  TGetAllAppointmentsSuccessResponse,
   TGetAppointmentsQueryParams,
   TUpdateAppointmentStatusRequest,
   TUpdateAppointmentStatusSuccessResponse,
@@ -11,7 +11,7 @@ import {
 
 export const appointmentClient = {
   getAll: async (queryParams: TGetAppointmentsQueryParams) =>
-    await Client.get<TGetAllAppointemntsSuccessResponse>(
+    await Client.get<TGetAllAppointmentsSuccessResponse>(
       ENDPOINTS.APPOINTMENTS.BASE,
       {
         params: queryParams,
@@ -19,7 +19,7 @@ export const appointmentClient = {
     ),
 
   getById: async (id: string) =>
-    await Client.get<TGetAllAppointemntsSuccessResponse>(
+    await Client.get<TGetAllAppointmentsSuccessResponse>(
       `${ENDPOINTS.APPOINTMENTS.BASE}`,
       {
         params: id,
